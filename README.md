@@ -19,6 +19,8 @@ Schemas supports three main operations:
 
 ## Basic Example
 
+[Try it Out – CodeSandbox](https://codesandbox.io/s/agitated-lucy-bxog45)
+
 ```typescript
 import { schema } from 'yaschema';
 
