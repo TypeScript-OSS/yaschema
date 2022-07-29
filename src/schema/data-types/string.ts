@@ -16,7 +16,7 @@ export interface AllowEmptyStringSchema<ValueT extends string> extends Schema<Va
 /** Requires a non-empty string, optionally matching one of the specified values. */
 export interface StringSchema<ValueT extends string> extends Schema<ValueT> {
   schemaType: 'string';
-  oneOf: ValueT[];
+  allowedValues: ValueT[];
   allowEmptyString: () => AllowEmptyStringSchema<ValueT>;
 }
 
@@ -25,8 +25,8 @@ export interface StringSchema<ValueT extends string> extends Schema<ValueT> {
  *
  * Call `.allowEmptyString` to allow empty strings.
  */
-export const string = <ValueT extends string>(...oneOf: ValueT[]): StringSchema<ValueT> => {
-  const equalsSet = new Set(oneOf);
+export const string = <ValueT extends string>(...allowedValues: ValueT[]): StringSchema<ValueT> => {
+  const equalsSet = new Set(allowedValues);
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     if (typeof value !== 'string') {
@@ -37,7 +37,7 @@ export const string = <ValueT extends string>(...oneOf: ValueT[]): StringSchema<
       return noError;
     }
 
-    if (oneOf.length > 0) {
+    if (allowedValues.length > 0) {
       return validateValue(value, { allowed: equalsSet, path });
     }
 
@@ -53,8 +53,8 @@ export const string = <ValueT extends string>(...oneOf: ValueT[]): StringSchema<
       {
         valueType: undefined as any as ValueT,
         schemaType: 'string' as const,
-        oneOf,
-        estimatedValidationTimeComplexity: oneOf.length + 1,
+        allowedValues,
+        estimatedValidationTimeComplexity: allowedValues.length + 1,
         usesCustomSerDes: false
       },
       { internalValidate }

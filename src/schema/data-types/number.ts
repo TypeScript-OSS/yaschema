@@ -6,15 +6,17 @@ import type { InternalValidator } from '../internal/types/internal-validation';
 import { atPath } from '../internal/utils/path-utils';
 import { validateValue } from '../internal/utils/validate-value';
 
+// TODO: add option for serializedAsString
+
 /** Requires a real, finite number, optionally matching one of the specified values. */
 export interface NumberSchema<ValueT extends number> extends Schema<ValueT> {
   schemaType: 'number';
-  oneOf: ValueT[];
+  allowedValues: ValueT[];
 }
 
 /** Requires a real, finite number.  If one or more values are specified, the value must also be equal to one of the specified values */
-export const number = <ValueT extends number>(...oneOf: ValueT[]): NumberSchema<ValueT> => {
-  const equalsNumbers = oneOf.filter((v): v is ValueT => typeof v === 'number');
+export const number = <ValueT extends number>(...allowedValues: ValueT[]): NumberSchema<ValueT> => {
+  const equalsNumbers = allowedValues.filter((v): v is ValueT => typeof v === 'number');
 
   const equalsNumbersSet = new Set(equalsNumbers);
 
@@ -47,8 +49,8 @@ export const number = <ValueT extends number>(...oneOf: ValueT[]): NumberSchema<
     {
       valueType: undefined as any as ValueT,
       schemaType: 'number',
-      oneOf,
-      estimatedValidationTimeComplexity: oneOf.length + 1,
+      allowedValues,
+      estimatedValidationTimeComplexity: allowedValues.length + 1,
       usesCustomSerDes: false
     },
     { internalValidate }

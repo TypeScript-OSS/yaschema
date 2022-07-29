@@ -9,26 +9,28 @@ import type { InternalValidationOptions, InternalValidator } from '../internal/t
 import { atPath } from '../internal/utils/path-utils';
 import { validateValueInRange } from '../internal/utils/validate-value-in-range';
 
+// TODO: add option for serializedAsString
+
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
 export interface DateSchema extends Schema<Date> {
   schemaType: 'date';
 
   /** If one or more values are specified, the value must be equal to one of the specified values or in one of the specified ranges */
-  oneOf?: Array<Range<Date>>;
+  allowedRanges?: Array<Range<Date>>;
 }
 
 /** ISO DateTime string */
 const dateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(.\d{3})?)?(Z|[+-]\d{2}(:\d{2})?)?)?$/;
 
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
-export const date = (oneOf: Array<Range<Date>> = []): DateSchema => {
+export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
   const validateDeserializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: string) => {
     if (validatorOptions.validation === 'none') {
       return noError;
     }
 
-    if (oneOf.length > 0) {
-      const rangeResult = validateValueInRange(value, { allowed: oneOf, path });
+    if (allowedRanges.length > 0) {
+      const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path });
       if (rangeResult.error !== undefined) {
         return rangeResult;
       }

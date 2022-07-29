@@ -6,15 +6,17 @@ import type { InternalValidator } from '../internal/types/internal-validation';
 import { atPath } from '../internal/utils/path-utils';
 import { validateValue } from '../internal/utils/validate-value';
 
+// TODO: add option for serializedAsString
+
 /** Requires a boolean, optionally matching one of the specified values. */
 export interface BooleanSchema<ValueT extends boolean> extends Schema<ValueT> {
   schemaType: 'boolean';
-  oneOf: ValueT[];
+  allowedValues: ValueT[];
 }
 
 /** Requires a boolean.  If one or more values are specified, the boolean must also match one of the specified values. */
-export const boolean = <ValueT extends boolean>(...oneOf: ValueT[]): BooleanSchema<ValueT> => {
-  const equalsSet = new Set(oneOf);
+export const boolean = <ValueT extends boolean>(...allowedValues: ValueT[]): BooleanSchema<ValueT> => {
+  const equalsSet = new Set(allowedValues);
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     if (typeof value !== 'boolean') {
@@ -25,7 +27,7 @@ export const boolean = <ValueT extends boolean>(...oneOf: ValueT[]): BooleanSche
       return noError;
     }
 
-    if (oneOf.length > 0) {
+    if (allowedValues.length > 0) {
       return validateValue(value, { allowed: equalsSet, path });
     }
 
@@ -36,7 +38,7 @@ export const boolean = <ValueT extends boolean>(...oneOf: ValueT[]): BooleanSche
     {
       valueType: undefined as any as ValueT,
       schemaType: 'boolean',
-      oneOf,
+      allowedValues,
       estimatedValidationTimeComplexity: 1,
       usesCustomSerDes: false
     },

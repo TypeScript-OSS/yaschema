@@ -20,20 +20,20 @@ export interface RestrictedNumberSchema extends Schema<number>, RestrictedNumber
   schemaType: 'restricted-number';
 
   /** If one or more values are specified, the value must be equal to one of the specified values or in one of the specified ranges */
-  oneOf?: Array<number | Range<number>>;
+  allowedValuesAndRanges?: Array<number | Range<number>>;
 }
 
 /** Requires a real, finite number.  If one or more values and/or ranges are specified, the value must also be equal to one of the specified
  * values or in one of the specified ranges.  If one or more divisors are specified, the value must also be divisible by one of the
  * specified divisors. */
 export const restrictedNumber = (
-  oneOf: Array<number | Range<number>>,
+  allowedValuesAndRanges: Array<number | Range<number>>,
   { divisibleBy = [], ...options }: RestrictedNumberOptions = {}
 ): RestrictedNumberSchema => {
-  const oneOfNumbers = oneOf.filter((v): v is number => typeof v === 'number');
-  const oneOfRanges = oneOf.filter((v): v is Range<number> => typeof v !== 'number');
+  const allowedNumbers = allowedValuesAndRanges.filter((v): v is number => typeof v === 'number');
+  const allowedRanges = allowedValuesAndRanges.filter((v): v is Range<number> => typeof v !== 'number');
 
-  const oneOfNumbersSet = new Set(oneOfNumbers);
+  const allowedNumbersSet = new Set(allowedNumbers);
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     if (typeof value !== 'number') {
@@ -50,11 +50,11 @@ export const restrictedNumber = (
       return { error: () => `Found non-finite value${atPath(path)}` };
     }
 
-    if (oneOfNumbers.length > 0) {
-      const valueResult = validateValue(value, { allowed: oneOfNumbersSet, path });
+    if (allowedNumbers.length > 0) {
+      const valueResult = validateValue(value, { allowed: allowedNumbersSet, path });
       if (valueResult.error !== undefined) {
-        if (oneOfRanges.length > 0) {
-          const rangeResult = validateValueInRange(value, { allowed: oneOfRanges, path });
+        if (allowedRanges.length > 0) {
+          const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path });
           if (rangeResult.error !== undefined) {
             return rangeResult;
           }
@@ -62,8 +62,8 @@ export const restrictedNumber = (
           return valueResult;
         }
       }
-    } else if (oneOfRanges.length > 0) {
-      const rangeResult = validateValueInRange(value, { allowed: oneOfRanges, path });
+    } else if (allowedRanges.length > 0) {
+      const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path });
       if (rangeResult.error !== undefined) {
         return rangeResult;
       }
@@ -80,10 +80,10 @@ export const restrictedNumber = (
     {
       valueType: undefined as any as number,
       schemaType: 'restricted-number',
-      oneOf,
+      allowedValuesAndRanges,
       divisibleBy,
       ...options,
-      estimatedValidationTimeComplexity: oneOfRanges.length + 1,
+      estimatedValidationTimeComplexity: allowedRanges.length + 1,
       usesCustomSerDes: false
     },
     { internalValidate }

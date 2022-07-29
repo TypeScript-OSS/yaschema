@@ -61,8 +61,6 @@ const flatten = <T extends string>(args: SingleOrArray<T>[]): T[] => {
       output.push(...arg);
     } else if (typeof arg === 'string') {
       output.push(arg);
-    } else {
-      output.push(...(Object.keys(arg) as T[]));
     }
   }
 
