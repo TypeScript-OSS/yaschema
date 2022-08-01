@@ -20,7 +20,7 @@ export interface RestrictedNumberSchema extends Schema<number>, RestrictedNumber
   schemaType: 'restricted-number';
 
   /** If one or more values are specified, the value must be equal to one of the specified values or in one of the specified ranges */
-  allowedValuesAndRanges?: Array<number | Range<number>>;
+  allowedValuesAndRanges: Array<number | Range<number>>;
 }
 
 /** Requires a real, finite number.  If one or more values and/or ranges are specified, the value must also be equal to one of the specified
