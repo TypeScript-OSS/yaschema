@@ -15,8 +15,8 @@ import { atPath } from '../internal/utils/path-utils';
 
 export type CustomValidation<ValueT> = (value: ValueT) => ValidationResult;
 
-export interface CustomSchemaOptions<ValueT> extends CommonSchemaOptions {
-  serDes: SerDes<ValueT>;
+export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> extends CommonSchemaOptions {
+  serDes: SerDes<ValueT, SerializedT>;
   typeName: string;
 
   /** Performs validation logic.  By default, only `isValueType` is checked, using the `serDes` field. */
@@ -24,7 +24,7 @@ export interface CustomSchemaOptions<ValueT> extends CommonSchemaOptions {
 }
 
 /** Used for adding custom schemas for complex types. */
-export interface CustomSchema<ValueT> extends Schema<ValueT>, CustomSchemaOptions<ValueT> {
+export interface CustomSchema<ValueT, SerializedT extends JsonValue> extends Schema<ValueT>, CustomSchemaOptions<ValueT, SerializedT> {
   schemaType: 'custom';
 }
 
@@ -34,7 +34,12 @@ export interface CustomSchema<ValueT> extends Schema<ValueT>, CustomSchemaOption
  * For example, you might want to support a conceptual "big number", which can be serialized into a string or JSON object somehow and then
  * deserialized back into a "big number" value with all of the functions that you'd expect.
  */
-export const custom = <ValueT>({ serDes, typeName, customValidation, ...options }: CustomSchemaOptions<ValueT>): CustomSchema<ValueT> => {
+export const custom = <ValueT, SerializedT extends JsonValue>({
+  serDes,
+  typeName,
+  customValidation,
+  ...options
+}: CustomSchemaOptions<ValueT, SerializedT>): CustomSchema<ValueT, SerializedT> => {
   const serialize = (value: ValueT, validatorOptions: InternalValidationOptions, path: string) => {
     try {
       const serialization = serDes.serialize(value);
@@ -58,9 +63,9 @@ export const custom = <ValueT>({ serDes, typeName, customValidation, ...options 
     }
   };
 
-  const deserialize = (value: any, validatorOptions: InternalValidationOptions, path: string) => {
+  const deserialize = (value: SerializedT, validatorOptions: InternalValidationOptions, path: string) => {
     try {
-      const deserialization = serDes.deserialize(value as JsonValue);
+      const deserialization = serDes.deserialize(value);
 
       const deserializedError = deserialization.error !== undefined ? () => `${deserialization.error}${atPath(path)}` : undefined;
       const deserializedValue = deserialization.deserialized;
@@ -136,7 +141,7 @@ export const custom = <ValueT>({ serDes, typeName, customValidation, ...options 
             return serializedValidation;
           }
 
-          const deserialization = deserialize(value, validatorOptions, path);
+          const deserialization = deserialize(value as SerializedT, validatorOptions, path);
           if (deserialization.error !== undefined) {
             return deserialization;
           }

@@ -188,9 +188,9 @@ import BigNumber from 'bignumber.js';
 import { makeSerDes, schema, ValidationResult } from 'yaschema';
 
 // Defining the serializer-deserializer and a couple pre-requisite checking functions
-const bigNumberSerDes = makeSerDes<BigNumber>({
+const bigNumberSerDes = makeSerDes({
   // Converts from a JSON-compatible value to a BigNumber object
-  deserialize: (value) => ({ deserialized: new BigNumber((value as { bignumber: string }).bignumber) }),
+  deserialize: (value) => ({ deserialized: new BigNumber(value.bignumber) }),
   // Checks if the specified value is a BigNumber object.  This is called before serialization is attempted to avoid dealing with exceptions
   // and other error logic if this isn't the expected type (which will commonly happen when using oneOf, for example)
   isValueType: (value): value is BigNumber => BigNumber.isBigNumber(value),
@@ -213,7 +213,7 @@ const validateBigNumber = (value: BigNumber): ValidationResult => {
 };
 
 // Defining a custom schema
-export const bigNumberSchema = schema.custom<BigNumber>({
+export const bigNumberSchema = schema.custom({
   typeName: 'BigNumber',
   serDes: bigNumberSerDes,
   customValidation: validateBigNumber
