@@ -1,4 +1,3 @@
-import type { JsonValue } from './json-value';
 import type { TransformationOptions } from './transformation-options';
 import { ValidationOptions } from './validation-options';
 
@@ -6,10 +5,7 @@ import { ValidationOptions } from './validation-options';
 export type DeserializationResult<T> = { error?: undefined; deserialized: T } | { error: string; deserialized?: T };
 
 /** Synchronously deserializes the specified value from JSON */
-export type Deserializer<T> = (value: JsonValue, options?: TransformationOptions & ValidationOptions) => DeserializationResult<T>;
+export type Deserializer<T> = (value: any, options?: TransformationOptions & ValidationOptions) => DeserializationResult<T>;
 
 /** Asynchronously deserializes the specified value from JSON */
-export type AsyncDeserializer<T> = (
-  value: JsonValue,
-  options?: TransformationOptions & ValidationOptions
-) => Promise<DeserializationResult<T>>;
+export type AsyncDeserializer<T> = (value: any, options?: TransformationOptions & ValidationOptions) => Promise<DeserializationResult<T>>;
