@@ -2,13 +2,13 @@ import _ from 'lodash';
 
 import { getLogger } from '../../config/logging';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
+import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { JsonValue } from '../../types/json-value';
 import type { Schema } from '../../types/schema';
 import type { SerDes } from '../../types/ser-des';
 import type { ValidationResult } from '../../types/validator';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
-import type { CommonSchemaOptions } from '../internal/types/common-schema-options';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalValidationOptions, InternalValidator } from '../internal/types/internal-validation';
 import { atPath } from '../internal/utils/path-utils';

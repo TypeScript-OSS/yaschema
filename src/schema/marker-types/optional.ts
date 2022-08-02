@@ -1,6 +1,6 @@
+import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
-import type { CommonSchemaOptions } from '../internal/types/common-schema-options';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
 

@@ -17,6 +17,7 @@ export const makeExternalAsyncDeserializer =
       transformation: 'deserialize',
       validation,
       inoutModifiedPaths: modifiedPaths,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       workingValue: okToMutateInputValue ? value : _.cloneDeep(value),
       shouldYield: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
       yield: () => {

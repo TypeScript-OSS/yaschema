@@ -1,3 +1,5 @@
+import type { SingleOrArray } from '../types/single-or-array';
+
 /**
  * Given a list of number literals and/or number subtype arrays, creates a typed, flattened array.
  *
@@ -51,8 +53,6 @@ export type NumberSubtypeArray<T extends number> = T[] & {
 };
 
 // Helpers
-
-type SingleOrArray<T extends number> = T | T[];
 
 const flatten = <T extends number>(args: SingleOrArray<T>[]): T[] => {
   const output: T[] = [];

@@ -1,3 +1,4 @@
+export * from './common-schema-options';
 export * from './data-types';
 export * from './deserializer';
 export * from './json-value';
@@ -9,6 +10,7 @@ export * from './schema-functions';
 export * from './schema-type';
 export * from './ser-des';
 export * from './serializer';
+export * from './single-or-array';
 export * from './transformation-options';
 export * from './validation-options';
 export * from './validator';

@@ -13,6 +13,7 @@ export const makeExternalDeserializer =
       transformation: 'deserialize',
       validation,
       inoutModifiedPaths: modifiedPaths,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       workingValue: okToMutateInputValue ? value : _.cloneDeep(value),
       shouldYield: () => false,
       yield: () => sleep(0)

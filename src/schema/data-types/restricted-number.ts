@@ -1,9 +1,9 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
+import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
-import { CommonSchemaOptions } from '../internal/types/common-schema-options';
 import type { InternalValidator } from '../internal/types/internal-validation';
 import { atPath } from '../internal/utils/path-utils';
 import { validateValue } from '../internal/utils/validate-value';

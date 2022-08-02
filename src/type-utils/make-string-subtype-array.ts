@@ -1,3 +1,5 @@
+import type { SingleOrArray } from '../types/single-or-array';
+
 /**
  * Given a list of string literals and/or string subtype arrays, creates a typed, flattened array.
  *
@@ -51,8 +53,6 @@ export type StringSubtypeArray<T extends string> = T[] & {
 };
 
 // Helpers
-
-type SingleOrArray<T extends string> = T | T[];
 
 const flatten = <T extends string>(args: SingleOrArray<T>[]): T[] => {
   const output: T[] = [];
