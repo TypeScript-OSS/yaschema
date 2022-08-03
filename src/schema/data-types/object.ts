@@ -15,7 +15,7 @@ export type InferRecordOfSchemasFromRecordOfValues<ObjectT extends Record<string
 };
 
 /** Picks the fields of an object type that are never undefined */
-export type PickAlwaysDefinedValues<Base> = Pick<
+type PickAlwaysDefinedValues<Base> = Pick<
   Base,
   {
     [Key in keyof Base]: Base[Key] extends Exclude<Base[Key], undefined> ? Key : never;
@@ -23,10 +23,10 @@ export type PickAlwaysDefinedValues<Base> = Pick<
 >;
 
 /** Picks the fields of an object type that might be undefined */
-export type PickPossiblyUndefinedValues<Base> = Omit<Base, keyof PickAlwaysDefinedValues<Base>>;
+type PickPossiblyUndefinedValues<Base> = Omit<Base, keyof PickAlwaysDefinedValues<Base>>;
 
 /** Converts types like `{ x: string, y: string | undefined }` to types like `{ x: string, y?: string }` */
-export type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysDefinedValues<ObjectT> &
+type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysDefinedValues<ObjectT> &
   Partial<PickPossiblyUndefinedValues<ObjectT>>;
 
 /** Requires an object, where each key has it's own schema. */
