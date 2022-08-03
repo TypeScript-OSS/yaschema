@@ -7,7 +7,6 @@ import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
 import { appendPathComponent, atPath } from '../internal/utils/path-utils';
-import { optional } from '../marker-types/optional';
 
 /** Infers a record where the values of the original type are inferred to be the values of `Schemas` */
 type InferRecordOfSchemasFromRecordOfValues<ObjectT extends Record<string, any>> = {
@@ -33,8 +32,6 @@ type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysD
 export interface ObjectSchema<ObjectT extends Record<string, any>> extends Schema<TreatUndefinedAsOptional<ObjectT>> {
   schemaType: 'object';
   map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
-
-  partial: () => Schema<Partial<ObjectT>>;
 }
 
 /** Requires an object.  Separate schemas a specified per key. */
@@ -172,44 +169,10 @@ export const object = <ObjectT extends Record<string, any>>(
       ...options,
       estimatedValidationTimeComplexity,
       usesCustomSerDes: needsDeepSerDes,
-      map,
-      partial: () => partial(fullObjectSchema)
+      map
     },
     { internalValidate, internalValidateAsync }
   );
 
   return fullObjectSchema;
-};
-
-export interface PartialSchema<ObjectT extends Record<string, any>> extends Schema<Partial<ObjectT>> {
-  schemaType: 'partial';
-  schema: ObjectSchema<ObjectT>;
-}
-
-export const partial = <ObjectT extends Record<string, any>>(
-  schema: ObjectSchema<ObjectT>,
-  options: CommonSchemaOptions = {}
-): PartialSchema<ObjectT> => {
-  const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>> = {};
-  for (const key of Object.keys(schema.map) as Array<keyof typeof schema.map>) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    outputMap[key] = optional(schema.map[key]) as any;
-  }
-
-  const partialSchema = object<Partial<ObjectT>>(outputMap as InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>);
-
-  return makeInternalSchema(
-    {
-      valueType: undefined as any as Partial<ObjectT>,
-      schemaType: 'partial',
-      schema,
-      ...options,
-      estimatedValidationTimeComplexity: partialSchema.estimatedValidationTimeComplexity,
-      usesCustomSerDes: partialSchema.usesCustomSerDes
-    },
-    {
-      internalValidate: (partialSchema as any as InternalSchemaFunctions).internalValidate,
-      internalValidateAsync: (partialSchema as any as InternalSchemaFunctions).internalValidateAsync
-    }
-  );
 };

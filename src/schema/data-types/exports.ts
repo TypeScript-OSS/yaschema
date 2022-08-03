@@ -5,6 +5,7 @@ export * from './custom';
 export * from './date';
 export * from './number';
 export * from './object';
+export * from './partial';
 export * from './record';
 export * from './regex';
 export * from './restricted-number';

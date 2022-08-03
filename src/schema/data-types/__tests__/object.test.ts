@@ -42,24 +42,6 @@ describe('object schema', () => {
     });
   });
 
-  describe('partial', () => {
-    const objectSchema = schema
-      .object({
-        one: schema.string('one', 'ONE'),
-        two: schema.number().optional()
-      })
-      .partial();
-
-    setupBasicTypeOperationsShouldWorkTests({
-      schema: objectSchema,
-      deserializedValues: [{}, { two: 2 }, { one: 'one' }, { one: 'one', two: 2 }, { one: 'ONE', two: 3.14 }]
-    });
-    setupBasicTypeOperationsShouldNotWorkTests({
-      schema: objectSchema,
-      deserializedValues: [null, undefined, '', [true], { one: 1 }, true, false]
-    });
-  });
-
   describe('with custom-serialized sub-elements', () => {
     const objectSchema = schema.object({
       one: schema.string('one', 'ONE'),
