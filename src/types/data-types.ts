@@ -11,7 +11,7 @@ export const dataTypes = makeStringSubtypeArray(
   'object',
   'record',
   'regex',
-  'restricted-number',
+  'restrictedNumber',
   'string',
   'tuple'
 );

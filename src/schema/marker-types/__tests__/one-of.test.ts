@@ -13,6 +13,10 @@ describe('oneOf schema', () => {
     schema.object({ three: schema.boolean() })
   );
 
+  it('schemaType should be "oneOf"', () => {
+    expect(oneOfSchema.schemaType).toBe('oneOf');
+  });
+
   setupBasicTypeOperationsShouldWorkTests({
     schema: oneOfSchema,
     deserializedValues: [{ one: 'one' }, { one: 'one', two: 2 }, { three: false }]

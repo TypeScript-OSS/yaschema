@@ -5,6 +5,12 @@ import {
 import * as schema from '../../exports';
 
 describe('string schema', () => {
+  it('schemaType should be "string"', () => {
+    const stringSchema = schema.string();
+
+    expect(stringSchema.schemaType).toBe('string');
+  });
+
   describe('without expected values', () => {
     const stringSchema = schema.string();
 

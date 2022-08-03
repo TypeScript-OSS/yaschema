@@ -4,7 +4,13 @@ import {
 } from '../../__test_dependency__/schema-value-testing';
 import * as schema from '../../exports';
 
-describe('boolean schema', () => {
+describe('number schema', () => {
+  it('schemaType should be "number"', () => {
+    const numberSchema = schema.number();
+
+    expect(numberSchema.schemaType).toBe('number');
+  });
+
   describe('without expected values', () => {
     const numberSchema = schema.number();
 

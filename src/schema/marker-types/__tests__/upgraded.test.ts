@@ -17,6 +17,10 @@ describe('upgraded schema', () => {
     { deadline: 'January 1, 2030' }
   );
 
+  it('schemaType should be "upgraded"', () => {
+    expect(upgradedSchema.schemaType).toBe('upgraded');
+  });
+
   setupBasicTypeOperationsShouldWorkTests({
     schema: upgradedSchema,
     deserializedValues: [{ one: 'one', two: 2 }, { one: 'ONE', two: 3.14 }, { one: 3 }]

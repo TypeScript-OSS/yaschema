@@ -17,7 +17,7 @@ export interface RestrictedNumberOptions extends CommonSchemaOptions {
 /** Requires a real, finite number, optionally matching one of the specified values or in one of the specified ranges and optionally being
  * divisible by one of the specified divisors. */
 export interface RestrictedNumberSchema extends Schema<number>, RestrictedNumberOptions {
-  schemaType: 'restricted-number';
+  schemaType: 'restrictedNumber';
 
   /** If one or more values are specified, the value must be equal to one of the specified values or in one of the specified ranges */
   allowedValuesAndRanges: Array<number | Range<number>>;
@@ -79,7 +79,7 @@ export const restrictedNumber = (
   return makeInternalSchema(
     {
       valueType: undefined as any as number,
-      schemaType: 'restricted-number',
+      schemaType: 'restrictedNumber',
       allowedValuesAndRanges,
       divisibleBy,
       ...options,

@@ -5,6 +5,12 @@ import {
 import * as schema from '../../exports';
 
 describe('regex schema', () => {
+  it('schemaType should be "regex"', () => {
+    const regexSchema = schema.regex(/^a.*b$/i);
+
+    expect(regexSchema.schemaType).toBe('regex');
+  });
+
   describe('without expected values', () => {
     const regexSchema = schema.regex(/^a.*b$/i);
 

@@ -5,6 +5,12 @@ import {
 import * as schema from '../../exports';
 
 describe('restrictedNumber schema', () => {
+  it('schemaType should be "restrictedNumber"', () => {
+    const restrictedNumberSchema = schema.restrictedNumber([3]);
+
+    expect(restrictedNumberSchema.schemaType).toBe('restrictedNumber');
+  });
+
   describe('with value / range restrictions', () => {
     const restrictedNumberSchema = schema.restrictedNumber([
       3,

@@ -5,6 +5,15 @@ import {
 import * as schema from '../../exports';
 
 describe('object schema', () => {
+  it('schemaType should be "object"', () => {
+    const objectSchema = schema.object({
+      one: schema.string('one', 'ONE'),
+      two: schema.number().optional()
+    });
+
+    expect(objectSchema.schemaType).toBe('object');
+  });
+
   describe('with basic sub-elements', () => {
     const objectSchema = schema.object({
       one: schema.string('one', 'ONE'),

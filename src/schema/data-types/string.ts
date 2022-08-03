@@ -48,19 +48,17 @@ export const string = <ValueT extends string>(...allowedValues: ValueT[]): Strin
     return noError;
   };
 
-  const fullStringSchema: StringSchema<ValueT> = {
-    ...makeInternalSchema(
-      {
-        valueType: undefined as any as ValueT,
-        schemaType: 'string' as const,
-        allowedValues,
-        estimatedValidationTimeComplexity: allowedValues.length + 1,
-        usesCustomSerDes: false
-      },
-      { internalValidate }
-    ),
-    allowEmptyString: () => allowEmptyString(fullStringSchema)
-  };
+  const fullStringSchema: StringSchema<ValueT> = makeInternalSchema(
+    {
+      valueType: undefined as any as ValueT,
+      schemaType: 'string' as const,
+      allowedValues,
+      estimatedValidationTimeComplexity: allowedValues.length + 1,
+      usesCustomSerDes: false,
+      allowEmptyString: () => allowEmptyString(fullStringSchema)
+    },
+    { internalValidate }
+  );
 
   return fullStringSchema;
 };

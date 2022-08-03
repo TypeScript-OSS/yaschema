@@ -13,6 +13,10 @@ describe('root schema', () => {
     })
   );
 
+  it('schemaType should be "root"', () => {
+    expect(rootSchema.schemaType).toBe('root');
+  });
+
   setupBasicTypeOperationsShouldWorkTests({
     schema: rootSchema,
     deserializedValues: [

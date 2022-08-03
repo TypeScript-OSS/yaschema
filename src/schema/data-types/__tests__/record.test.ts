@@ -5,6 +5,12 @@ import {
 import * as schema from '../../exports';
 
 describe('record schema', () => {
+  it('schemaType should be "record"', () => {
+    const recordSchema = schema.record(schema.string('hello', 'world'), schema.number());
+
+    expect(recordSchema.schemaType).toBe('record');
+  });
+
   describe('with basic sub-elements', () => {
     const recordSchema = schema.record(schema.string('hello', 'world'), schema.number());
 

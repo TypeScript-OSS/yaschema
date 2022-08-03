@@ -5,6 +5,12 @@ import {
 import * as schema from '../../exports';
 
 describe('boolean schema', () => {
+  it('schemaType should be "boolean"', () => {
+    const booleanSchema = schema.boolean();
+
+    expect(booleanSchema.schemaType).toBe('boolean');
+  });
+
   describe('without expected values', () => {
     const booleanSchema = schema.boolean();
 

@@ -5,6 +5,12 @@ import {
 import * as schema from '../../exports';
 
 describe('tuple schema', () => {
+  it('schemaType should be "tuple"', () => {
+    const tupleSchema = schema.tuple({ items: [schema.string(), schema.number()] });
+
+    expect(tupleSchema.schemaType).toBe('tuple');
+  });
+
   describe('with zero items', () => {
     const tupleSchema = schema.tuple({ items: [] });
 

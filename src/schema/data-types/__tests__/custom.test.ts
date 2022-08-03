@@ -7,6 +7,10 @@ import {
 } from '../../__test_dependency__/schema-value-testing';
 
 describe('custom schema', () => {
+  it('schemaType should be "custom"', () => {
+    expect(bigNumberSchema.schemaType).toBe('custom');
+  });
+
   it('of string matching schema should work with okToMutateInputValue=true', () => {
     const validation = bigNumberSchema.deserialize({ bignumber: '3.14' }, { okToMutateInputValue: true });
     expect(validation.deserialized).toEqual(new BigNumber('3.14'));

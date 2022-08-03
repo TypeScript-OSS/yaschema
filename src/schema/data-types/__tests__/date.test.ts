@@ -5,6 +5,12 @@ import {
 import * as schema from '../../exports';
 
 describe('date schema', () => {
+  it('schemaType should be "date"', () => {
+    const dateSchema = schema.date();
+
+    expect(dateSchema.schemaType).toBe('date');
+  });
+
   describe('without expected values', () => {
     const dateSchema = schema.date();
 

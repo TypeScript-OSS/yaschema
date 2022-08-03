@@ -5,6 +5,18 @@ import {
 import * as schema from '../../exports';
 
 describe('allOf schema', () => {
+  it('schemaType should be "allOf"', () => {
+    const allOfSchema = schema.allOf(
+      schema.object({
+        one: schema.string('one', 'ONE'),
+        two: schema.number().optional()
+      }),
+      schema.object({ three: schema.boolean() })
+    );
+
+    expect(allOfSchema.schemaType).toBe('allOf');
+  });
+
   describe('with basic sub-elements', () => {
     const allOfSchema = schema.allOf(
       schema.object({

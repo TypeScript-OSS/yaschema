@@ -8,6 +8,12 @@ import {
 import * as schema from '../../exports';
 
 describe('array schema', () => {
+  it('schemaType should be "array"', () => {
+    const arraySchema = schema.array();
+
+    expect(arraySchema.schemaType).toBe('array');
+  });
+
   describe('without any options', () => {
     const arraySchema = schema.array();
 

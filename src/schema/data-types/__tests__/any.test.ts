@@ -7,6 +7,10 @@ import * as schema from '../../exports';
 describe('any schema', () => {
   const anySchema = schema.any();
 
+  it('schemaType should be "any"', () => {
+    expect(anySchema.schemaType).toBe('any');
+  });
+
   setupBasicTypeOperationsShouldWorkTests({ schema: anySchema, deserializedValues: [true, false, 3, 'hello', [true], { one: 1 }] });
   setupBasicTypeOperationsShouldNotWorkTests({ schema: anySchema, deserializedValues: [null, undefined] });
 

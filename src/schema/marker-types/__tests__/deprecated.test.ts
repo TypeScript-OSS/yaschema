@@ -14,6 +14,10 @@ describe('deprecated schema', () => {
     { deadline: 'January 1, 2030' }
   );
 
+  it('schemaType should be "deprecated"', () => {
+    expect(deprecatedSchema.schemaType).toBe('deprecated');
+  });
+
   setupBasicTypeOperationsShouldWorkTests({
     schema: deprecatedSchema,
     deserializedValues: [

@@ -42,13 +42,16 @@ export const object = <ObjectT extends Record<string, any>>(
   map: InferRecordOfSchemasFromRecordOfValues<ObjectT>,
   options: CommonSchemaOptions = {}
 ): ObjectSchema<ObjectT> => {
-  const estimatedValidationTimeComplexity = (Object.values(map) as Schema[]).reduce((out, schema) => {
+  const mapKeys = Object.keys(map);
+  const mapValues = Object.values(map) as Schema[];
+
+  const estimatedValidationTimeComplexity = mapValues.reduce((out, schema) => {
     out += schema.estimatedValidationTimeComplexity;
 
     return out;
   }, 0);
 
-  const needsDeepSerDes = (Object.values(map) as Schema[]).findIndex((schema) => schema.usesCustomSerDes) >= 0;
+  const needsDeepSerDes = mapValues.findIndex((schema) => schema.usesCustomSerDes) >= 0;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
@@ -63,7 +66,7 @@ export const object = <ObjectT extends Record<string, any>>(
 
     let errorResult: InternalValidationResult | undefined;
 
-    for (const key of Object.keys(map)) {
+    for (const key of mapKeys) {
       let valueForKey = undefined;
       try {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -102,8 +105,7 @@ export const object = <ObjectT extends Record<string, any>>(
     let errorResult: InternalValidationResult | undefined;
 
     const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
-    const keys = Object.keys(map);
-    const numKeys = keys.length;
+    const numKeys = mapKeys.length;
 
     let chunkStartIndex = 0;
     const processChunk = async () => {
@@ -115,7 +117,7 @@ export const object = <ObjectT extends Record<string, any>>(
       const chunkKeys: string[] = [];
       let index = chunkStartIndex;
       while (chunkKeys.length === 0 || (estimatedValidationTimeComplexityForKeys <= asyncTimeComplexityThreshold && index < numKeys)) {
-        const key = keys[index];
+        const key = mapKeys[index];
         estimatedValidationTimeComplexityForKeys += map[key].estimatedValidationTimeComplexity;
         chunkKeys.push(key);
 
@@ -163,20 +165,18 @@ export const object = <ObjectT extends Record<string, any>>(
     return errorResult ?? noError;
   };
 
-  const fullObjectSchema: ObjectSchema<ObjectT> = {
-    ...makeInternalSchema(
-      {
-        valueType: undefined as any as TreatUndefinedAsOptional<ObjectT>,
-        schemaType: 'object',
-        ...options,
-        estimatedValidationTimeComplexity,
-        usesCustomSerDes: needsDeepSerDes
-      },
-      { internalValidate, internalValidateAsync }
-    ),
-    map,
-    partial: () => partial(fullObjectSchema)
-  };
+  const fullObjectSchema: ObjectSchema<ObjectT> = makeInternalSchema(
+    {
+      valueType: undefined as any as TreatUndefinedAsOptional<ObjectT>,
+      schemaType: 'object',
+      ...options,
+      estimatedValidationTimeComplexity,
+      usesCustomSerDes: needsDeepSerDes,
+      map,
+      partial: () => partial(fullObjectSchema)
+    },
+    { internalValidate, internalValidateAsync }
+  );
 
   return fullObjectSchema;
 };
