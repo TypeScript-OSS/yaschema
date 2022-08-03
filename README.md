@@ -174,8 +174,6 @@ Yaschema supports three validation modes for serialization or deserialization:
 
 - `root` - any value that satisfies the specified schema - used as a special marker for creating named types, ex. with code generation tools
 
-[API Docs](https://passfolio.github.io/yaschema/)
-
 ## Custom Types Example
 
 It's easy to extend Yaschema with custom types.  In the following example, we demonstrate how to define:
@@ -224,6 +222,8 @@ When working with custom schemas, it's important to make sure they don't ambiguo
 above example that we serialize our values by encapsulating them in an object, like `{ bignumber: "3.14" }`.  If we had simply serialized the `BigNumber` as a string, then we'd have to be extra careful about using these schemas in places where also need plain strings.  For example, `schema.oneOf(bigNumberSchema, schema.string())` isn't very clear with respect to which type will be extracted.  When custom serializer-deserializers are used, the first one, in declaration order, to decode a value, wins.  While this is deterministic, it's not likely good design practice.
 
 However, other strategies can be used as well.  For example, we could have used a string prefix and regular expression pattern matching, with an encoding like `"bignumber:3.14"`.  In fact, we encode `Date` object as ISO 8601 strings and rely on regular expression parsing.  Since ISO 8601 is such a precise format, it's easy to distinguish between date/time strings and other more arbitrary strings.
+
+[API Docs](https://passfolio.github.io/yaschema/)
 
 ## Thanks
 
