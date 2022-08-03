@@ -146,7 +146,6 @@
 <ul>
 <li><code>root</code> - any value that satisfies the specified schema - used as a special marker for creating named types, ex. with code generation tools</li>
 </ul>
-<p><a href="https://passfolio.github.io/yaschema/">API Docs</a></p>
 
 <a href="#custom-types-example" id="custom-types-example" style="color: inherit; text-decoration: none;">
   <h2>Custom Types Example</h2>
@@ -161,6 +160,7 @@
 <p>When working with custom schemas, it&#39;s important to make sure they don&#39;t ambiguously overlap with other types that you&#39;ll use together.  Notice in the
 above example that we serialize our values by encapsulating them in an object, like <code>{ bignumber: &quot;3.14&quot; }</code>.  If we had simply serialized the <code>BigNumber</code> as a string, then we&#39;d have to be extra careful about using these schemas in places where also need plain strings.  For example, <code>schema.oneOf(bigNumberSchema, schema.string())</code> isn&#39;t very clear with respect to which type will be extracted.  When custom serializer-deserializers are used, the first one, in declaration order, to decode a value, wins.  While this is deterministic, it&#39;s not likely good design practice.</p>
 <p>However, other strategies can be used as well.  For example, we could have used a string prefix and regular expression pattern matching, with an encoding like <code>&quot;bignumber:3.14&quot;</code>.  In fact, we encode <code>Date</code> object as ISO 8601 strings and rely on regular expression parsing.  Since ISO 8601 is such a precise format, it&#39;s easy to distinguish between date/time strings and other more arbitrary strings.</p>
+<p><a href="https://passfolio.github.io/yaschema/">API Docs</a></p>
 
 <a href="#thanks" id="thanks" style="color: inherit; text-decoration: none;">
   <h2>Thanks</h2>

@@ -10,7 +10,7 @@ import { appendPathComponent, atPath } from '../internal/utils/path-utils';
 import { optional } from '../marker-types/optional';
 
 /** Infers a record where the values of the original type are inferred to be the values of `Schemas` */
-export type InferRecordOfSchemasFromRecordOfValues<ObjectT extends Record<string, any>> = {
+type InferRecordOfSchemasFromRecordOfValues<ObjectT extends Record<string, any>> = {
   [KeyT in keyof ObjectT]: Schema<ObjectT[KeyT]>;
 };
 
