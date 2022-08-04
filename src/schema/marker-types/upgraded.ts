@@ -15,6 +15,7 @@ export interface UpgradedSchema<OldT, NewT> extends Schema<OldT | NewT> {
   oldSchema: Schema<OldT>;
   newSchema: Schema<NewT>;
   deadline?: string;
+  uniqueName: string;
 }
 
 /**
@@ -90,6 +91,7 @@ export const upgraded = <OldT, NewT>(
       oldSchema: args.old,
       newSchema: args.new,
       deadline,
+      uniqueName,
       ...options,
       estimatedValidationTimeComplexity: args.old.estimatedValidationTimeComplexity + args.new.estimatedValidationTimeComplexity,
       usesCustomSerDes: args.old.usesCustomSerDes || args.new.usesCustomSerDes

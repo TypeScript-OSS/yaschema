@@ -11,6 +11,7 @@ export interface NotSchema<ValueT, ExcludedT> extends Schema<Exclude<ValueT, Exc
   schemaType: 'not';
   schema: Schema<ValueT>;
   notSchema: Schema<ExcludedT>;
+  expectedTypeName?: string;
 }
 
 /**
