@@ -39,4 +39,40 @@ describe('number schema', () => {
     setupBasicTypeOperationsShouldWorkTests({ schema: numberSchema, deserializedValues: [3, 5] });
     setupBasicTypeOperationsShouldNotWorkTests({ schema: numberSchema, deserializedValues: [1, 7] });
   });
+
+  describe("with setAllowedSerializationForms(['string'])", () => {
+    const numberSchema = schema.number(3, 5).setAllowedSerializationForms(['string']);
+
+    setupBasicTypeOperationsShouldWorkTests({ schema: numberSchema, deserializedValues: [3, 5], serializedValues: ['3', '5'] });
+
+    it('serialization and deserialization should work', () => {
+      expect(numberSchema.serialize(3).serialized).toBe('3');
+      expect(numberSchema.deserialize('3').deserialized).toBe(3);
+      expect(numberSchema.deserialize(3).error).toBeDefined();
+    });
+  });
+
+  describe("with setAllowedSerializationForms(['string', 'number'])", () => {
+    const numberSchema = schema.number(3, 5).setAllowedSerializationForms(['string', 'number']);
+
+    setupBasicTypeOperationsShouldWorkTests({ schema: numberSchema, deserializedValues: [3, 5], serializedValues: ['3', '5'] });
+
+    it('serialization and deserialization should work', () => {
+      expect(numberSchema.serialize(3).serialized).toBe('3');
+      expect(numberSchema.deserialize('3').deserialized).toBe(3);
+      expect(numberSchema.deserialize(3).deserialized).toBe(3);
+    });
+  });
+
+  describe("with setAllowedSerializationForms(['number', 'string'])", () => {
+    const numberSchema = schema.number(3, 5).setAllowedSerializationForms(['number', 'string']);
+
+    setupBasicTypeOperationsShouldWorkTests({ schema: numberSchema, deserializedValues: [3, 5], serializedValues: [3, 5] });
+
+    it('serialization and deserialization should work', () => {
+      expect(numberSchema.serialize(3).serialized).toBe(3);
+      expect(numberSchema.deserialize('3').deserialized).toBe(3);
+      expect(numberSchema.deserialize(3).deserialized).toBe(3);
+    });
+  });
 });

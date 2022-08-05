@@ -124,4 +124,52 @@ describe('restrictedNumber schema', () => {
       ]
     });
   });
+
+  describe("with setAllowedSerializationForms(['string'])", () => {
+    const restrictedNumberSchema = schema.restrictedNumber([], { divisibleBy: [2, 3] }).setAllowedSerializationForms(['string']);
+
+    setupBasicTypeOperationsShouldWorkTests({
+      schema: restrictedNumberSchema,
+      deserializedValues: [2, 3, 4, 6],
+      serializedValues: ['2', '3', '4', '6']
+    });
+
+    it('serialization and deserialization should work', () => {
+      expect(restrictedNumberSchema.serialize(3).serialized).toBe('3');
+      expect(restrictedNumberSchema.deserialize('3').deserialized).toBe(3);
+      expect(restrictedNumberSchema.deserialize(3).error).toBeDefined();
+    });
+  });
+
+  describe("with setAllowedSerializationForms(['string', 'number'])", () => {
+    const restrictedNumberSchema = schema.restrictedNumber([], { divisibleBy: [2, 3] }).setAllowedSerializationForms(['string', 'number']);
+
+    setupBasicTypeOperationsShouldWorkTests({
+      schema: restrictedNumberSchema,
+      deserializedValues: [2, 3, 4, 6],
+      serializedValues: ['2', '3', '4', '6']
+    });
+
+    it('serialization and deserialization should work', () => {
+      expect(restrictedNumberSchema.serialize(3).serialized).toBe('3');
+      expect(restrictedNumberSchema.deserialize('3').deserialized).toBe(3);
+      expect(restrictedNumberSchema.deserialize(3).deserialized).toBe(3);
+    });
+  });
+
+  describe("with setAllowedSerializationForms(['number', 'string'])", () => {
+    const restrictedNumberSchema = schema.restrictedNumber([], { divisibleBy: [2, 3] }).setAllowedSerializationForms(['number', 'string']);
+
+    setupBasicTypeOperationsShouldWorkTests({
+      schema: restrictedNumberSchema,
+      deserializedValues: [2, 3, 4, 6],
+      serializedValues: [2, 3, 4, 6]
+    });
+
+    it('serialization and deserialization should work', () => {
+      expect(restrictedNumberSchema.serialize(3).serialized).toBe(3);
+      expect(restrictedNumberSchema.deserialize('3').deserialized).toBe(3);
+      expect(restrictedNumberSchema.deserialize(3).deserialized).toBe(3);
+    });
+  });
 });

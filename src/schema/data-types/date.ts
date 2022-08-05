@@ -9,8 +9,6 @@ import type { InternalValidationOptions, InternalValidator } from '../internal/t
 import { atPath } from '../internal/utils/path-utils';
 import { validateValueInRange } from '../internal/utils/validate-value-in-range';
 
-// TODO: add option for serializedAsString
-
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
 export interface DateSchema extends Schema<Date> {
   schemaType: 'date';
