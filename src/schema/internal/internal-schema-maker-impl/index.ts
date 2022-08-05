@@ -40,6 +40,14 @@ setInternalSchemaMaker(
       not: <ExcludeT>(notSchema: Schema<Exclude<ValueT, ExcludeT>>, options: { expectedTypeName?: string } = {}) =>
         not(fullSchema, notSchema, options),
       optional: () => optional(fullSchema),
+      setDescription: (description?: string) => {
+        fullSchema.description = description;
+        return fullSchema;
+      },
+      setExample: (example?: string) => {
+        fullSchema.example = example;
+        return fullSchema;
+      },
       toString: () => JSON.stringify(pureSchema, undefined, 2),
       deserialize: makeExternalDeserializer<ValueT>(internalValidate),
       deserializeAsync: makeExternalAsyncDeserializer<ValueT>(internalValidateAsync),

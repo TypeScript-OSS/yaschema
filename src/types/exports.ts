@@ -1,4 +1,3 @@
-export * from './common-schema-options';
 export * from './data-types';
 export * from './deserializer';
 export * from './json-value';

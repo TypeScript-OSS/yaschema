@@ -1,6 +1,5 @@
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
@@ -36,8 +35,7 @@ export interface ObjectSchema<ObjectT extends Record<string, any>> extends Schem
 
 /** Requires an object.  Separate schemas a specified per key. */
 export const object = <ObjectT extends Record<string, any>>(
-  map: InferRecordOfSchemasFromRecordOfValues<ObjectT>,
-  options: CommonSchemaOptions = {}
+  map: InferRecordOfSchemasFromRecordOfValues<ObjectT>
 ): ObjectSchema<ObjectT> => {
   const mapKeys = Object.keys(map);
   const mapValues = Object.values(map) as Schema[];
@@ -166,7 +164,6 @@ export const object = <ObjectT extends Record<string, any>>(
     {
       valueType: undefined as any as TreatUndefinedAsOptional<ObjectT>,
       schemaType: 'object',
-      ...options,
       estimatedValidationTimeComplexity,
       usesCustomSerDes: needsDeepSerDes,
       map

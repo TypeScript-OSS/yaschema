@@ -2,7 +2,6 @@ import _ from 'lodash';
 
 import { getLogger } from '../../config/logging';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { JsonValue } from '../../types/json-value';
 import type { Schema } from '../../types/schema';
 import type { SerDes } from '../../types/ser-des';
@@ -15,7 +14,7 @@ import { atPath } from '../internal/utils/path-utils';
 
 export type CustomValidation<ValueT> = (value: ValueT) => ValidationResult;
 
-export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> extends CommonSchemaOptions {
+export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> {
   serDes: SerDes<ValueT, SerializedT>;
   typeName: string;
 
@@ -37,8 +36,7 @@ export interface CustomSchema<ValueT, SerializedT extends JsonValue> extends Sch
 export const custom = <ValueT, SerializedT extends JsonValue>({
   serDes,
   typeName,
-  customValidation,
-  ...options
+  customValidation
 }: CustomSchemaOptions<ValueT, SerializedT>): CustomSchema<ValueT, SerializedT> => {
   const serialize = (value: ValueT, validatorOptions: InternalValidationOptions, path: string) => {
     try {
@@ -169,7 +167,6 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
       schemaType: 'custom',
       serDes,
       typeName,
-      ...options,
       estimatedValidationTimeComplexity: 1,
       usesCustomSerDes: true
     },

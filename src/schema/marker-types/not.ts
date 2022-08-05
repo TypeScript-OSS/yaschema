@@ -1,5 +1,4 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
@@ -24,14 +23,14 @@ export interface NotSchema<ValueT, ExcludedT> extends Schema<Exclude<ValueT, Exc
 export const not = <ValueT, ExcludedT>(
   schema: Schema<ValueT>,
   notSchema: Schema<ExcludedT>,
-  options: CommonSchemaOptions & { expectedTypeName?: string } = {}
+  { expectedTypeName }: { expectedTypeName?: string } = {}
 ): NotSchema<ValueT, ExcludedT> => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     if ((notSchema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path).error === undefined) {
       return {
         error: () =>
-          options.expectedTypeName !== undefined
-            ? `Expected ${options.expectedTypeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
+          expectedTypeName !== undefined
+            ? `Expected ${expectedTypeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
             : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}${atPath(path)}`
       };
     }
@@ -42,8 +41,8 @@ export const not = <ValueT, ExcludedT>(
     if ((await (notSchema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)).error === undefined) {
       return {
         error: () =>
-          options.expectedTypeName !== undefined
-            ? `Expected ${options.expectedTypeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
+          expectedTypeName !== undefined
+            ? `Expected ${expectedTypeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
             : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}${atPath(path)}`
       };
     }
@@ -57,7 +56,7 @@ export const not = <ValueT, ExcludedT>(
       schemaType: 'not',
       schema,
       notSchema,
-      ...options,
+      expectedTypeName,
       estimatedValidationTimeComplexity: notSchema.estimatedValidationTimeComplexity,
       usesCustomSerDes: notSchema.usesCustomSerDes
     },

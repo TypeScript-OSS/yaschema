@@ -1,6 +1,5 @@
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
@@ -35,29 +34,35 @@ export interface ArraySchema<ItemT = any> extends Schema<ItemT[]> {
  * limit the limit that are actually validated.  Note however, that `maxEntriesToValidate` is ignored if needed transformation is required
  * within the array elements, for example with an array of dates where the dates need to be serialized or deserialized.
  */
-export const array = <ItemT = any>(
-  options: {
-    items?: Schema<ItemT>;
-    minLength?: number;
-    maxLength?: number;
-    maxEntriesToValidate?: number;
-  } & CommonSchemaOptions = {}
-): ArraySchema<ItemT> => {
-  const needsDeepSerDes = options.items?.usesCustomSerDes ?? false;
+export const array = <ItemT = any>({
+  items,
+  minLength,
+  maxEntriesToValidate,
+  maxLength
+}: {
+  items?: Schema<ItemT>;
+  minLength?: number;
+  maxLength?: number;
+  maxEntriesToValidate?: number;
+} = {}): ArraySchema<ItemT> => {
+  const needsDeepSerDes = items?.usesCustomSerDes ?? false;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateArray(value, { ...options, needsDeepSerDes, path, validatorOptions });
+    validateArray(value, { items, minLength, maxEntriesToValidate, maxLength, needsDeepSerDes, path, validatorOptions });
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    asyncValidateArray(value, { ...options, needsDeepSerDes, path, validatorOptions });
+    asyncValidateArray(value, { items, minLength, maxEntriesToValidate, maxLength, needsDeepSerDes, path, validatorOptions });
 
   return makeInternalSchema(
     {
       valueType: undefined as any as ItemT[],
       schemaType: 'array',
-      ...options,
+      items,
+      minLength,
+      maxEntriesToValidate,
+      maxLength,
       estimatedValidationTimeComplexity:
-        (options.items?.estimatedValidationTimeComplexity ?? 1) *
-        ((needsDeepSerDes ? options.maxLength : options.maxEntriesToValidate) ?? ESTIMATED_AVG_ARRAY_LENGTH),
+        (items?.estimatedValidationTimeComplexity ?? 1) *
+        ((needsDeepSerDes ? maxLength : maxEntriesToValidate) ?? ESTIMATED_AVG_ARRAY_LENGTH),
       usesCustomSerDes: needsDeepSerDes
     },
     { internalValidate, internalValidateAsync }

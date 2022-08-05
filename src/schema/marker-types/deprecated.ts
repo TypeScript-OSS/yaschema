@@ -1,5 +1,4 @@
 import { getLogger } from '../../config/logging';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
@@ -25,7 +24,7 @@ export interface DeprecatedSchema<ValueT> extends Schema<ValueT> {
 export const deprecated = <ValueT>(
   uniqueName: string,
   schema: Schema<ValueT>,
-  { deadline, ...options }: { deadline?: string } & CommonSchemaOptions = {}
+  { deadline }: { deadline?: string } = {}
 ): DeprecatedSchema<ValueT> => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     if (value === undefined) {
@@ -75,7 +74,6 @@ export const deprecated = <ValueT>(
       schema,
       deadline,
       uniqueName,
-      ...options,
       estimatedValidationTimeComplexity: schema.estimatedValidationTimeComplexity,
       usesCustomSerDes: schema.usesCustomSerDes
     },

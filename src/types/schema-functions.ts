@@ -10,6 +10,12 @@ export interface SchemaFunctions<ValueT> {
   not: <ExcludeT>(notSchema: Schema<ExcludeT>, options?: { expectedTypeName?: string }) => Schema<Exclude<ValueT, ExcludeT>>;
   /** Returns a new schema that requires that either this schema is satisfied or that the value is `undefined`. */
   optional: () => Schema<ValueT | undefined>;
+
+  /** Sets (replaces) the description metadata for this schema and returns the same schema */
+  setDescription: (description: string) => this;
+  /** Sets (replaces) the example metadata for this schema and returns the same schema */
+  setExample: (example: string) => this;
+
   /** Makes a string representation of this schema, mostly for debugging */
   toString: () => string;
 

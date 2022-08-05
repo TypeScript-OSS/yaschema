@@ -1,5 +1,4 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
@@ -9,7 +8,7 @@ import { atPath } from '../internal/utils/path-utils';
 import { validateValue } from '../internal/utils/validate-value';
 import { validateValueInRange } from '../internal/utils/validate-value-in-range';
 
-export interface RestrictedNumberOptions extends CommonSchemaOptions {
+export interface RestrictedNumberOptions {
   /** If one or more values are specified, the value must be divisible by one of the specified options */
   divisibleBy?: number[];
 }
@@ -28,7 +27,7 @@ export interface RestrictedNumberSchema extends Schema<number>, RestrictedNumber
  * specified divisors. */
 export const restrictedNumber = (
   allowedValuesAndRanges: Array<number | Range<number>>,
-  { divisibleBy = [], ...options }: RestrictedNumberOptions = {}
+  { divisibleBy = [] }: RestrictedNumberOptions = {}
 ): RestrictedNumberSchema => {
   const allowedNumbers = allowedValuesAndRanges.filter((v): v is number => typeof v === 'number');
   const allowedRanges = allowedValuesAndRanges.filter((v): v is Range<number> => typeof v !== 'number');
@@ -82,7 +81,6 @@ export const restrictedNumber = (
       schemaType: 'restrictedNumber',
       allowedValuesAndRanges,
       divisibleBy,
-      ...options,
       estimatedValidationTimeComplexity: allowedRanges.length + 1,
       usesCustomSerDes: false
     },

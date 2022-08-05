@@ -1,4 +1,3 @@
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
@@ -15,7 +14,7 @@ export interface RootSchema<ValueT> extends Schema<ValueT> {
  *
  * This is most useful when using automatic code generation tools.
  */
-export const root = <ValueT>(name: string, schema: Schema<ValueT>, options: CommonSchemaOptions = {}): RootSchema<ValueT> => {
+export const root = <ValueT>(name: string, schema: Schema<ValueT>): RootSchema<ValueT> => {
   const internalValidate = (schema as any as InternalSchemaFunctions).internalValidate;
   const internalValidateAsync = (schema as any as InternalSchemaFunctions).internalValidateAsync;
 
@@ -25,7 +24,6 @@ export const root = <ValueT>(name: string, schema: Schema<ValueT>, options: Comm
       schemaType: 'root',
       name,
       schema,
-      ...options,
       estimatedValidationTimeComplexity: schema.estimatedValidationTimeComplexity,
       usesCustomSerDes: schema.usesCustomSerDes
     },

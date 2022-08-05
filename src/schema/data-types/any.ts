@@ -1,5 +1,4 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
@@ -12,7 +11,7 @@ export interface AnySchema extends Schema {
 }
 
 /** Requires a non-null, non-undefined value.  Use `allowNull` or `optional` if `null` or `undefined` values should also be allowed. */
-export const any = (options: CommonSchemaOptions = {}): AnySchema => {
+export const any = (): AnySchema => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     if (validatorOptions.validation === 'none') {
       return noError;
@@ -30,7 +29,6 @@ export const any = (options: CommonSchemaOptions = {}): AnySchema => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       valueType: undefined as any,
       schemaType: 'any',
-      ...options,
       estimatedValidationTimeComplexity: 1,
       usesCustomSerDes: false
     },

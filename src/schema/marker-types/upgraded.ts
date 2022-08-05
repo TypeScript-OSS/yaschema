@@ -1,6 +1,5 @@
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getLogger } from '../../config/logging';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
@@ -27,7 +26,7 @@ export interface UpgradedSchema<OldT, NewT> extends Schema<OldT | NewT> {
 export const upgraded = <OldT, NewT>(
   uniqueName: string,
   args: { old: Schema<OldT>; new: Schema<NewT> },
-  { deadline, ...options }: { deadline?: string } & CommonSchemaOptions = {}
+  { deadline }: { deadline?: string } = {}
 ): UpgradedSchema<OldT, NewT> => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     const newResult = (args.new as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
@@ -92,7 +91,6 @@ export const upgraded = <OldT, NewT>(
       newSchema: args.new,
       deadline,
       uniqueName,
-      ...options,
       estimatedValidationTimeComplexity: args.old.estimatedValidationTimeComplexity + args.new.estimatedValidationTimeComplexity,
       usesCustomSerDes: args.old.usesCustomSerDes || args.new.usesCustomSerDes
     },

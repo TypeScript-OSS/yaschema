@@ -1,6 +1,5 @@
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { CommonSchemaOptions } from '../../types/common-schema-options';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
@@ -39,35 +38,35 @@ export interface TupleSchema<TypeA = void, TypeB = void, TypeC = void, TypeD = v
 }
 
 /** Requires a value where items must positionally match the specified schemas */
-export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>(
-  options: {
-    items:
-      | []
-      | [Schema<TypeA>]
-      | [Schema<TypeA>, Schema<TypeB>]
-      | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>]
-      | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>]
-      | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>, Schema<TypeE>];
-  } & CommonSchemaOptions
-): TupleSchema<TypeA, TypeB, TypeC, TypeD, TypeE> => {
+export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>({
+  items
+}: {
+  items:
+    | []
+    | [Schema<TypeA>]
+    | [Schema<TypeA>, Schema<TypeB>]
+    | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>]
+    | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>]
+    | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>, Schema<TypeE>];
+}): TupleSchema<TypeA, TypeB, TypeC, TypeD, TypeE> => {
   const estimatedValidationTimeComplexity =
-    (options.items[0]?.estimatedValidationTimeComplexity ?? 0) +
-    (options.items[1]?.estimatedValidationTimeComplexity ?? 0) +
-    (options.items[2]?.estimatedValidationTimeComplexity ?? 0) +
-    (options.items[3]?.estimatedValidationTimeComplexity ?? 0) +
-    (options.items[4]?.estimatedValidationTimeComplexity ?? 0);
+    (items[0]?.estimatedValidationTimeComplexity ?? 0) +
+    (items[1]?.estimatedValidationTimeComplexity ?? 0) +
+    (items[2]?.estimatedValidationTimeComplexity ?? 0) +
+    (items[3]?.estimatedValidationTimeComplexity ?? 0) +
+    (items[4]?.estimatedValidationTimeComplexity ?? 0);
   const needsDeepSerDes =
-    (options.items[0]?.usesCustomSerDes ||
-      options.items[1]?.usesCustomSerDes ||
-      options.items[2]?.usesCustomSerDes ||
-      options.items[3]?.usesCustomSerDes ||
-      options.items[4]?.usesCustomSerDes) ??
+    (items[0]?.usesCustomSerDes ||
+      items[1]?.usesCustomSerDes ||
+      items[2]?.usesCustomSerDes ||
+      items[3]?.usesCustomSerDes ||
+      items[4]?.usesCustomSerDes) ??
     false;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateTuple(value, { ...options, needsDeepSerDes, path, validatorOptions });
+    validateTuple(value, { items, needsDeepSerDes, path, validatorOptions });
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    validateTupleAsync(value, { ...options, needsDeepSerDes, path, validatorOptions });
+    validateTupleAsync(value, { items, needsDeepSerDes, path, validatorOptions });
 
   return makeInternalSchema(
     {
@@ -83,7 +82,7 @@ export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
         ? [TypeA, TypeB, TypeC, TypeD]
         : [TypeA, TypeB, TypeC, TypeD, TypeE],
       schemaType: 'tuple',
-      ...options,
+      items,
       estimatedValidationTimeComplexity,
       usesCustomSerDes: needsDeepSerDes
     },
