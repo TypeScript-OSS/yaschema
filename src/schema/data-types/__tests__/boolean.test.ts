@@ -56,4 +56,48 @@ describe('boolean schema', () => {
 
     setupBasicTypeOperationsShouldWorkTests({ schema: booleanSchema, deserializedValues: [true, false] });
   });
+
+  describe("with setAllowedSerializationForms(['string'])", () => {
+    const booleanSchema = schema.boolean().setAllowedSerializationForms(['string']);
+
+    setupBasicTypeOperationsShouldWorkTests({
+      schema: booleanSchema,
+      deserializedValues: [true, false],
+      serializedValues: ['true', 'false']
+    });
+
+    it('serialization and deserialization should work', () => {
+      expect(booleanSchema.serialize(true).serialized).toBe('true');
+      expect(booleanSchema.deserialize('true').deserialized).toBe(true);
+      expect(booleanSchema.deserialize(true).error).toBeDefined();
+    });
+  });
+
+  describe("with setAllowedSerializationForms(['string', 'boolean'])", () => {
+    const booleanSchema = schema.boolean().setAllowedSerializationForms(['string', 'boolean']);
+
+    setupBasicTypeOperationsShouldWorkTests({
+      schema: booleanSchema,
+      deserializedValues: [true, false],
+      serializedValues: ['true', 'false']
+    });
+
+    it('serialization and deserialization should work', () => {
+      expect(booleanSchema.serialize(true).serialized).toBe('true');
+      expect(booleanSchema.deserialize('true').deserialized).toBe(true);
+      expect(booleanSchema.deserialize(true).deserialized).toBe(true);
+    });
+  });
+
+  describe("with setAllowedSerializationForms(['boolean', 'string'])", () => {
+    const booleanSchema = schema.boolean().setAllowedSerializationForms(['boolean', 'string']);
+
+    setupBasicTypeOperationsShouldWorkTests({ schema: booleanSchema, deserializedValues: [true, false], serializedValues: [true, false] });
+
+    it('serialization and deserialization should work', () => {
+      expect(booleanSchema.serialize(true).serialized).toBe(true);
+      expect(booleanSchema.deserialize('true').deserialized).toBe(true);
+      expect(booleanSchema.deserialize(true).deserialized).toBe(true);
+    });
+  });
 });
