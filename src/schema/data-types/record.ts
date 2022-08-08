@@ -5,6 +5,7 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { appendPathComponent, atPath } from '../internal/utils/path-utils';
 
 const ESTIMATED_AVG_RECORD_SIZE = 25;
@@ -12,6 +13,8 @@ const ESTIMATED_AVG_RECORD_SIZE = 25;
 /** Requires a non-null, non-array object where all keys share a schema and all values share a schema */
 export interface RecordSchema<KeyT extends string, ValueT> extends Schema<Partial<Record<KeyT, ValueT>>> {
   schemaType: 'record';
+  clone: () => RecordSchema<KeyT, ValueT>;
+
   keys: RegExp | Schema<KeyT>;
   valueSchema: Schema<ValueT>;
 }
@@ -177,10 +180,11 @@ export const record = <KeyT extends string, ValueT>(
     return errorResult ?? noError;
   };
 
-  return makeInternalSchema(
+  const fullSchema: RecordSchema<KeyT, ValueT> = makeInternalSchema(
     {
       valueType: undefined as any as Partial<Record<KeyT, ValueT>>,
       schemaType: 'record',
+      clone: () => copyMetaFields({ from: fullSchema, to: record(fullSchema.keys, fullSchema.valueSchema) }),
       keys,
       valueSchema,
       estimatedValidationTimeComplexity: estimatedValidationTimeComplexityPerItem * ESTIMATED_AVG_RECORD_SIZE,
@@ -188,4 +192,6 @@ export const record = <KeyT extends string, ValueT>(
     },
     { internalValidate, internalValidateAsync }
   );
+
+  return fullSchema;
 };

@@ -4,18 +4,23 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { atPath } from '../internal/utils/path-utils';
 import { validateValue } from '../internal/utils/validate-value';
 
 /** Requires any string.  */
 export interface AllowEmptyStringSchema<ValueT extends string> extends Schema<ValueT | ''> {
   schemaType: 'allowEmptyString';
+  clone: () => AllowEmptyStringSchema<ValueT>;
+
   schema: Schema<ValueT>;
 }
 
 /** Requires a non-empty string, optionally matching one of the specified values. */
 export interface StringSchema<ValueT extends string> extends Schema<ValueT> {
   schemaType: 'string';
+  clone: () => StringSchema<ValueT>;
+
   allowedValues: ValueT[];
   allowEmptyString: () => AllowEmptyStringSchema<ValueT>;
 }
@@ -48,19 +53,20 @@ export const string = <ValueT extends string>(...allowedValues: ValueT[]): Strin
     return noError;
   };
 
-  const fullStringSchema: StringSchema<ValueT> = makeInternalSchema(
+  const fullSchema: StringSchema<ValueT> = makeInternalSchema(
     {
       valueType: undefined as any as ValueT,
       schemaType: 'string' as const,
+      clone: () => copyMetaFields({ from: fullSchema, to: string(...fullSchema.allowedValues) }),
       allowedValues,
       estimatedValidationTimeComplexity: allowedValues.length + 1,
       usesCustomSerDes: false,
-      allowEmptyString: () => allowEmptyString(fullStringSchema)
+      allowEmptyString: () => allowEmptyString(fullSchema)
     },
     { internalValidate }
   );
 
-  return fullStringSchema;
+  return fullSchema;
 };
 
 // Helpers
@@ -74,14 +80,17 @@ const allowEmptyString = <ValueT extends string>(schema: Schema<ValueT>): AllowE
     return (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
   };
 
-  return makeInternalSchema(
+  const fullSchema: AllowEmptyStringSchema<ValueT> = makeInternalSchema(
     {
       valueType: undefined as any as ValueT | '',
       schemaType: 'allowEmptyString',
+      clone: () => copyMetaFields({ from: fullSchema, to: allowEmptyString(fullSchema.schema) }),
       schema,
       estimatedValidationTimeComplexity: 1,
       usesCustomSerDes: false
     },
     { internalValidate }
   );
+
+  return fullSchema;
 };

@@ -10,11 +10,14 @@ import type {
   InternalValidationResult,
   InternalValidator
 } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { atPath } from '../internal/utils/path-utils';
 
 /** Requires at least one of the schemas be satisfied. */
 export interface OneOfSchema<TypeA, TypeB> extends Schema<TypeA | TypeB> {
   schemaType: 'oneOf';
+  clone: () => OneOfSchema<TypeA, TypeB>;
+
   schemas: [Schema<TypeA>, Schema<TypeB>];
 }
 
@@ -24,7 +27,7 @@ export interface OneOfSchema<TypeA, TypeB> extends Schema<TypeA | TypeB> {
  * The base form takes 2 schemas, but `oneOf3`, `oneOf4`, and `oneOf5` take more.  If you need even more than that, use something like
  * `oneOf(oneOf5(…), oneOf5(…))`
  */
-export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): Schema<TypeA | TypeB> => {
+export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): OneOfSchema<TypeA, TypeB> => {
   const needsDeepSerDes = schemaA.usesCustomSerDes || schemaB.usesCustomSerDes;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) =>
@@ -32,16 +35,19 @@ export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<Type
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
     validateOneOfAsync(value, { schemas: [schemaA, schemaB], needsDeepSerDes, path, validatorOptions });
 
-  return makeInternalSchema(
+  const fullSchema: OneOfSchema<TypeA, TypeB> = makeInternalSchema(
     {
       valueType: undefined as any as TypeA | TypeB,
       schemaType: 'oneOf',
+      clone: () => copyMetaFields({ from: fullSchema, to: oneOf(fullSchema.schemas[0], fullSchema.schemas[1]) }),
       schemas: [schemaA, schemaB],
       estimatedValidationTimeComplexity: schemaA.estimatedValidationTimeComplexity + schemaB.estimatedValidationTimeComplexity,
       usesCustomSerDes: needsDeepSerDes
     },
     { internalValidate, internalValidateAsync }
   );
+
+  return fullSchema;
 };
 
 export const oneOf3 = <TypeA, TypeB, TypeC>(

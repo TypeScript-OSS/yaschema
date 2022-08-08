@@ -5,7 +5,9 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { appendPathComponent, atPath } from '../internal/utils/path-utils';
+import { optional } from '../marker-types/optional';
 
 /** Infers a record where the values of the original type are inferred to be the values of `Schemas` */
 type InferRecordOfSchemasFromRecordOfValues<ObjectT extends Record<string, any>> = {
@@ -30,6 +32,8 @@ type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysD
 /** Requires an object, where each key has it's own schema. */
 export interface ObjectSchema<ObjectT extends Record<string, any>> extends Schema<TreatUndefinedAsOptional<ObjectT>> {
   schemaType: 'object';
+  clone: () => ObjectSchema<ObjectT>;
+
   map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
 }
 
@@ -160,10 +164,11 @@ export const object = <ObjectT extends Record<string, any>>(
     return errorResult ?? noError;
   };
 
-  const fullObjectSchema: ObjectSchema<ObjectT> = makeInternalSchema(
+  const fullSchema: ObjectSchema<ObjectT> = makeInternalSchema(
     {
       valueType: undefined as any as TreatUndefinedAsOptional<ObjectT>,
       schemaType: 'object',
+      clone: () => copyMetaFields({ from: fullSchema, to: object(fullSchema.map) }),
       estimatedValidationTimeComplexity,
       usesCustomSerDes: needsDeepSerDes,
       map
@@ -171,5 +176,16 @@ export const object = <ObjectT extends Record<string, any>>(
     { internalValidate, internalValidateAsync }
   );
 
-  return fullObjectSchema;
+  return fullSchema;
+};
+
+/** Creates a version of the specified object schema where all values are optional.  This doesn't create a distinct schema type.  */
+export const partial = <ObjectT extends Record<string, any>>(schema: ObjectSchema<ObjectT>): ObjectSchema<Partial<ObjectT>> => {
+  const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>> = {};
+  for (const key of Object.keys(schema.map) as Array<keyof typeof schema.map>) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    outputMap[key] = optional(schema.map[key]) as any;
+  }
+
+  return object<Partial<ObjectT>>(outputMap as InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>);
 };

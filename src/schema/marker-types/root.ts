@@ -2,7 +2,7 @@ import type { Schema } from '../../types/schema';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 
-/** A special marker schema for named types, useful for code generation tools. */
+/** A special marker schema for named types, useful for code generation tools.  Roots are not cloneable. */
 export interface RootSchema<ValueT> extends Schema<ValueT> {
   schemaType: 'root';
   name: string;

@@ -1,7 +1,16 @@
 import type { SchemaType } from './schema-type';
 
+/** Optional schema meta commonly available on all schemas  */
+export interface CommonSchemaMeta {
+  /** A description, which can be used by code generation tools to generate documentation */
+  description?: string;
+
+  /** An example, which can be used by code generation tools to generate documentation */
+  example?: string;
+}
+
 /** A schema without any of the automatically added functions */
-export interface PureSchema<ValueT> {
+export interface PureSchema<ValueT> extends CommonSchemaMeta {
   /** The type of schema */
   schemaType: SchemaType;
 
@@ -15,12 +24,4 @@ export interface PureSchema<ValueT> {
 
   /** If `true`, this schema or any sub-elements have a custom serializer-deserializer */
   usesCustomSerDes: boolean;
-
-  // Optional
-
-  /** A description, which can be used by code generation tools to generate documentation */
-  description?: string;
-
-  /** An example, which can be used by code generation tools to generate documentation */
-  example?: string;
 }

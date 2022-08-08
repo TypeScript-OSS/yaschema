@@ -10,6 +10,7 @@ import type {
   InternalValidationResult,
   InternalValidator
 } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { appendPathIndex, atPath } from '../internal/utils/path-utils';
 
 /** Requires a value where items must positionally match the specified schemas */
@@ -28,6 +29,8 @@ export interface TupleSchema<TypeA = void, TypeB = void, TypeC = void, TypeD = v
       : [TypeA, TypeB, TypeC, TypeD, TypeE]
   > {
   schemaType: 'tuple';
+  clone: () => TupleSchema<TypeA, TypeB, TypeC, TypeD, TypeE>;
+
   items:
     | []
     | [Schema<TypeA>]
@@ -68,7 +71,7 @@ export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
     validateTupleAsync(value, { items, needsDeepSerDes, path, validatorOptions });
 
-  return makeInternalSchema(
+  const fullSchema: TupleSchema<TypeA, TypeB, TypeC, TypeD, TypeE> = makeInternalSchema(
     {
       valueType: undefined as any as TypeA extends void
         ? []
@@ -82,12 +85,15 @@ export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
         ? [TypeA, TypeB, TypeC, TypeD]
         : [TypeA, TypeB, TypeC, TypeD, TypeE],
       schemaType: 'tuple',
+      clone: () => copyMetaFields({ from: fullSchema, to: tuple(fullSchema) }),
       items,
       estimatedValidationTimeComplexity,
       usesCustomSerDes: needsDeepSerDes
     },
     { internalValidate, internalValidateAsync }
   );
+
+  return fullSchema;
 };
 
 // Helpers

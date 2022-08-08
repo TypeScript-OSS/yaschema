@@ -4,6 +4,7 @@ import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { atPath } from '../internal/utils/path-utils';
 import { supportVariableSerializationFormsForNumericValues } from '../internal/utils/support-variable-serialization-forms-for-numeric-values';
 import { validateValue } from '../internal/utils/validate-value';
@@ -18,6 +19,8 @@ export interface RestrictedNumberOptions {
  * divisible by one of the specified divisors. */
 export interface RestrictedNumberSchema extends Schema<number>, RestrictedNumberOptions {
   schemaType: 'restrictedNumber';
+  clone: () => RestrictedNumberSchema;
+
   /** If one or more values are specified, the value must be equal to one of the specified values or in one of the specified ranges */
   allowedValuesAndRanges: Array<number | Range<number>>;
 
@@ -91,6 +94,13 @@ export const restrictedNumber = (
     {
       valueType: undefined as any as number,
       schemaType: 'restrictedNumber',
+      clone: () =>
+        copyMetaFields({
+          from: fullSchema,
+          to: restrictedNumber(fullSchema.allowedValuesAndRanges, { divisibleBy: fullSchema.divisibleBy }).setAllowedSerializationForms(
+            fullSchema.allowedSerializationForms
+          )
+        }),
       allowedValuesAndRanges,
       divisibleBy,
       estimatedValidationTimeComplexity: allowedRanges.length + 1,

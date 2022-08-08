@@ -5,12 +5,15 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 
 const alreadyLogUpgradedWarnings = new Set<string>();
 
 /** Requires either and old schema or a new schema be satisfied. */
 export interface UpgradedSchema<OldT, NewT> extends Schema<OldT | NewT> {
   schemaType: 'upgraded';
+  clone: () => UpgradedSchema<OldT, NewT>;
+
   oldSchema: Schema<OldT>;
   newSchema: Schema<NewT>;
   deadline?: string;
@@ -83,10 +86,15 @@ export const upgraded = <OldT, NewT>(
     }
   };
 
-  return makeInternalSchema(
+  const fullSchema: UpgradedSchema<OldT, NewT> = makeInternalSchema(
     {
       valueType: undefined as any as OldT | NewT,
       schemaType: 'upgraded',
+      clone: () =>
+        copyMetaFields({
+          from: fullSchema,
+          to: upgraded(fullSchema.uniqueName, { old: fullSchema.oldSchema, new: fullSchema.newSchema }, { deadline: fullSchema.deadline })
+        }),
       oldSchema: args.old,
       newSchema: args.new,
       deadline,
@@ -96,4 +104,6 @@ export const upgraded = <OldT, NewT>(
     },
     { internalValidate, internalValidateAsync }
   );
+
+  return fullSchema;
 };

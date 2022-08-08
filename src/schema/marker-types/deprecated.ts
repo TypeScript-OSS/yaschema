@@ -4,12 +4,15 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 
 const alreadyLogDeprecationWarnings = new Set<string>();
 
 /** Requires either `undefined` or the specified schema to be satisfied. */
 export interface DeprecatedSchema<ValueT> extends Schema<ValueT> {
   schemaType: 'deprecated';
+  clone: () => DeprecatedSchema<ValueT>;
+
   schema: Schema<ValueT>;
   deadline?: string;
   uniqueName: string;
@@ -67,10 +70,12 @@ export const deprecated = <ValueT>(
     return noError;
   };
 
-  return makeInternalSchema(
+  const fullSchema: DeprecatedSchema<ValueT> = makeInternalSchema(
     {
       valueType: undefined as any as ValueT,
       schemaType: 'deprecated',
+      clone: () =>
+        copyMetaFields({ from: fullSchema, to: deprecated(fullSchema.uniqueName, fullSchema.schema, { deadline: fullSchema.deadline }) }),
       schema,
       deadline,
       uniqueName,
@@ -79,4 +84,6 @@ export const deprecated = <ValueT>(
     },
     { internalValidate, internalValidateAsync }
   );
+
+  return fullSchema;
 };

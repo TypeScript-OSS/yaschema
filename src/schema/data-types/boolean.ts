@@ -3,6 +3,7 @@ import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { atPath } from '../internal/utils/path-utils';
 import { supportVariableSerializationFormsForBooleanValues } from '../internal/utils/support-variable-serialization-forms-for-boolean-values';
 import { validateValue } from '../internal/utils/validate-value';
@@ -12,6 +13,8 @@ import { validateValue } from '../internal/utils/validate-value';
 /** Requires a boolean, optionally matching one of the specified values. */
 export interface BooleanSchema<ValueT extends boolean> extends Schema<ValueT> {
   schemaType: 'boolean';
+  clone: () => BooleanSchema<ValueT>;
+
   allowedValues: ValueT[];
 
   /**
@@ -51,6 +54,11 @@ export const boolean = <ValueT extends boolean>(...allowedValues: ValueT[]): Boo
     {
       valueType: undefined as any as ValueT,
       schemaType: 'boolean',
+      clone: () =>
+        copyMetaFields({
+          from: fullSchema,
+          to: boolean(...fullSchema.allowedValues).setAllowedSerializationForms(fullSchema.allowedSerializationForms)
+        }),
       allowedValues,
       estimatedValidationTimeComplexity: 1,
       usesCustomSerDes: false,

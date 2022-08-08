@@ -10,6 +10,7 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalValidationOptions, InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { atPath } from '../internal/utils/path-utils';
 
 export type CustomValidation<ValueT> = (value: ValueT) => ValidationResult;
@@ -25,6 +26,7 @@ export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> {
 /** Used for adding custom schemas for complex types. */
 export interface CustomSchema<ValueT, SerializedT extends JsonValue> extends Schema<ValueT>, CustomSchemaOptions<ValueT, SerializedT> {
   schemaType: 'custom';
+  clone: () => CustomSchema<ValueT, SerializedT>;
 }
 
 /**
@@ -161,10 +163,11 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
     return noError;
   };
 
-  return makeInternalSchema(
+  const fullSchema: CustomSchema<ValueT, SerializedT> = makeInternalSchema(
     {
       valueType: undefined as any as ValueT,
       schemaType: 'custom',
+      clone: () => copyMetaFields({ from: fullSchema, to: custom(fullSchema) }),
       serDes,
       typeName,
       estimatedValidationTimeComplexity: 1,
@@ -172,4 +175,6 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
     },
     { internalValidate }
   );
+
+  return fullSchema;
 };

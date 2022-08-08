@@ -10,6 +10,7 @@ import type {
   InternalValidationResult,
   InternalValidator
 } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { appendPathIndex, atPath } from '../internal/utils/path-utils';
 
 const ESTIMATED_AVG_ARRAY_LENGTH = 100;
@@ -17,6 +18,8 @@ const ESTIMATED_AVG_ARRAY_LENGTH = 100;
 /** Requires an array. */
 export interface ArraySchema<ItemT = any> extends Schema<ItemT[]> {
   schemaType: 'array';
+  clone: () => ArraySchema<ItemT>;
+
   items?: Schema<ItemT>;
   minLength?: number;
   maxLength?: number;
@@ -52,10 +55,11 @@ export const array = <ItemT = any>({
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
     asyncValidateArray(value, { items, minLength, maxEntriesToValidate, maxLength, needsDeepSerDes, path, validatorOptions });
 
-  return makeInternalSchema(
+  const fullSchema: ArraySchema<ItemT> = makeInternalSchema(
     {
       valueType: undefined as any as ItemT[],
       schemaType: 'array',
+      clone: () => copyMetaFields({ from: fullSchema, to: array(fullSchema) }),
       items,
       minLength,
       maxEntriesToValidate,
@@ -67,6 +71,8 @@ export const array = <ItemT = any>({
     },
     { internalValidate, internalValidateAsync }
   );
+
+  return fullSchema;
 };
 
 // Helpers

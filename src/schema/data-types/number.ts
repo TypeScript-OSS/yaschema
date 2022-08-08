@@ -3,6 +3,7 @@ import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { atPath } from '../internal/utils/path-utils';
 import { supportVariableSerializationFormsForNumericValues } from '../internal/utils/support-variable-serialization-forms-for-numeric-values';
 import { validateValue } from '../internal/utils/validate-value';
@@ -10,6 +11,8 @@ import { validateValue } from '../internal/utils/validate-value';
 /** Requires a real, finite number, optionally matching one of the specified values. */
 export interface NumberSchema<ValueT extends number> extends Schema<ValueT> {
   schemaType: 'number';
+  clone: () => NumberSchema<ValueT>;
+
   allowedValues: ValueT[];
 
   /**
@@ -60,6 +63,11 @@ export const number = <ValueT extends number>(...allowedValues: ValueT[]): Numbe
     {
       valueType: undefined as any as ValueT,
       schemaType: 'number',
+      clone: () =>
+        copyMetaFields({
+          from: fullSchema,
+          to: number(...fullSchema.allowedValues).setAllowedSerializationForms(fullSchema.allowedSerializationForms)
+        }),
       allowedValues,
       estimatedValidationTimeComplexity: allowedValues.length + 1,
       usesCustomSerDes: false,

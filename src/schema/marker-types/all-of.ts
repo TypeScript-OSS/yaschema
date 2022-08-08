@@ -9,10 +9,13 @@ import type {
   InternalValidationResult,
   InternalValidator
 } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 
 /** Requires all of the schemas be satisfied. */
 export interface AllOfSchema<TypeA, TypeB> extends Schema<TypeA & TypeB> {
   schemaType: 'allOf';
+  clone: () => AllOfSchema<TypeA, TypeB>;
+
   schemas: [Schema<TypeA>, Schema<TypeB>];
 }
 
@@ -22,7 +25,7 @@ export interface AllOfSchema<TypeA, TypeB> extends Schema<TypeA & TypeB> {
  * The base form takes 2 schemas, but `allOf3`, `allOf4`, and `allOf5` take more.  If you need even more than that, use something like
  * `allOf(allOf5(…), allOf5(…))`
  */
-export const allOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): Schema<TypeA & TypeB> => {
+export const allOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): AllOfSchema<TypeA, TypeB> => {
   const needsDeepSerDes = schemaA.usesCustomSerDes || schemaB.usesCustomSerDes;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) =>
@@ -30,16 +33,19 @@ export const allOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<Type
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
     asyncValidateAllOf(value, { path, validatorOptions, schemas: [schemaA, schemaB], needsDeepSerDes });
 
-  return makeInternalSchema(
+  const fullSchema: AllOfSchema<TypeA, TypeB> = makeInternalSchema(
     {
       valueType: undefined as any as TypeA & TypeB,
       schemaType: 'allOf',
+      clone: () => copyMetaFields({ from: fullSchema, to: allOf(fullSchema.schemas[0], fullSchema.schemas[1]) }),
       schemas: [schemaA, schemaB],
       estimatedValidationTimeComplexity: schemaA.estimatedValidationTimeComplexity + schemaB.estimatedValidationTimeComplexity,
       usesCustomSerDes: needsDeepSerDes
     },
     { internalValidate, internalValidateAsync }
   );
+
+  return fullSchema;
 };
 
 export const allOf3 = <TypeA, TypeB, TypeC>(

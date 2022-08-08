@@ -9,7 +9,6 @@ export const markerTypes = makeStringSubtypeArray(
   'not',
   'oneOf',
   'optional',
-  'partial',
   'root',
   'upgraded'
 );

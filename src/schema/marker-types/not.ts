@@ -3,11 +3,14 @@ import type { Schema } from '../../types/schema';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
+import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { atPath } from '../internal/utils/path-utils';
 
 /** Requires the first specified schema but the second cannot be satisfied. */
 export interface NotSchema<ValueT, ExcludedT> extends Schema<Exclude<ValueT, ExcludedT>> {
   schemaType: 'not';
+  clone: () => NotSchema<ValueT, ExcludedT>;
+
   schema: Schema<ValueT>;
   notSchema: Schema<ExcludedT>;
   expectedTypeName?: string;
@@ -50,10 +53,15 @@ export const not = <ValueT, ExcludedT>(
     return (schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
   };
 
-  return makeInternalSchema(
+  const fullSchema: NotSchema<ValueT, ExcludedT> = makeInternalSchema(
     {
       valueType: undefined as any as Exclude<ValueT, ExcludedT>,
       schemaType: 'not',
+      clone: () =>
+        copyMetaFields({
+          from: fullSchema,
+          to: not(fullSchema.schema, fullSchema.notSchema, { expectedTypeName: fullSchema.expectedTypeName })
+        }),
       schema,
       notSchema,
       expectedTypeName,
@@ -62,4 +70,6 @@ export const not = <ValueT, ExcludedT>(
     },
     { internalValidate, internalValidateAsync }
   );
+
+  return fullSchema;
 };
