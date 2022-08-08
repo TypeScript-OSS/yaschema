@@ -12,9 +12,9 @@ export interface SchemaFunctions<ValueT> {
   optional: () => Schema<ValueT | undefined>;
 
   /** Sets (replaces) the description metadata for this schema and returns the same schema */
-  setDescription: (description: string) => this;
+  setDescription: (description?: string) => this;
   /** Sets (replaces) the example metadata for this schema and returns the same schema */
-  setExample: (example: string) => this;
+  setExample: (example?: string) => this;
 
   /** Makes a string representation of this schema, mostly for debugging */
   toString: () => string;
