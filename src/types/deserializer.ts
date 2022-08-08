@@ -1,5 +1,5 @@
 import type { TransformationOptions } from './transformation-options';
-import { ValidationOptions } from './validation-options';
+import type { ValidationOptions } from './validation-options';
 
 /** If error is undefined, the result is a success.  Otherwise, there was a problem. */
 export type DeserializationResult<T> = { error?: undefined; deserialized: T } | { error: string; deserialized?: T };

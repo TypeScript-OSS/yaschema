@@ -1,7 +1,7 @@
 import type { PureSchema } from '../../types/pure-schema';
 import type { SchemaFunctions } from '../../types/schema-functions';
 import type { InternalSchemaFunctions } from './types/internal-schema-functions';
-import { InternalAsyncValidator, InternalValidator } from './types/internal-validation';
+import type { InternalAsyncValidator, InternalValidator } from './types/internal-validation';
 
 /** Adds functions such as `validate` and `optional` and the `isYaSchema` marker */
 let globalMakeInternalSchema: InternalSchemaMaker;

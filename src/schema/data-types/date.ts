@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import { Range } from '../../types/range';
+import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';

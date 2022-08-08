@@ -1,5 +1,5 @@
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
-import { Range } from '../../../types/range';
+import type { Range } from '../../../types/range';
 import { noError } from '../consts';
 import { atPath } from './path-utils';
 

@@ -1,6 +1,6 @@
 import type { JsonValue } from './json-value';
 import type { TransformationOptions } from './transformation-options';
-import { ValidationOptions } from './validation-options';
+import type { ValidationOptions } from './validation-options';
 
 /** If error is undefined, the result is a success.  Otherwise, there was a problem. */
 export type SerializationResult = { error?: undefined; serialized: JsonValue } | { error: string; serialized?: JsonValue };

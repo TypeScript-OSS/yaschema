@@ -1,4 +1,4 @@
-import { ValidationMode } from '../../../types/validation-options';
+import type { ValidationMode } from '../../../types/validation-options';
 
 /**
  * - `'none'` - No transformation is performed (used for validation)

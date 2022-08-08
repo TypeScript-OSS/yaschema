@@ -4,7 +4,7 @@ import { allowNull } from '../../marker-types/allow-null';
 import { not } from '../../marker-types/not';
 import { optional } from '../../marker-types/optional';
 import { InternalSchema, InternalSchemaMakerArgs, setInternalSchemaMaker } from '../internal-schema-maker';
-import { InternalAsyncValidator } from '../types/internal-validation';
+import type { InternalAsyncValidator } from '../types/internal-validation';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer';
 import { makeExternalAsyncSerializer } from './make-external-async-serializer';
 import { makeExternalAsyncValidator } from './make-external-async-validator';
