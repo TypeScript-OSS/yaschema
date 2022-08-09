@@ -182,26 +182,23 @@ const asyncValidateArray = async <ItemT>(
 
   let errorResult: InternalValidationResult | undefined;
 
-  if (validatorOptions.validation !== 'none') {
-    if (errorResult === undefined && value.length < minLength) {
-      errorResult = {
-        error: () =>
-          `Expected an array with at least ${minLength} element(s), found an array with ${value.length} element(s)${atPath(path)}`
-      };
+  if (errorResult === undefined && value.length < minLength) {
+    errorResult = {
+      error: () => `Expected an array with at least ${minLength} element(s), found an array with ${value.length} element(s)${atPath(path)}`
+    };
 
-      if (shouldStopOnFirstError) {
-        return errorResult;
-      }
+    if (shouldStopOnFirstError) {
+      return errorResult;
     }
+  }
 
-    if (errorResult === undefined && maxLength !== undefined && value.length > maxLength) {
-      errorResult = {
-        error: () => `Expected an array with at most ${maxLength} element(s), found an array with ${value.length} element(s)${atPath(path)}`
-      };
+  if (errorResult === undefined && maxLength !== undefined && value.length > maxLength) {
+    errorResult = {
+      error: () => `Expected an array with at most ${maxLength} element(s), found an array with ${value.length} element(s)${atPath(path)}`
+    };
 
-      if (shouldStopOnFirstError) {
-        return errorResult;
-      }
+    if (shouldStopOnFirstError) {
+      return errorResult;
     }
   }
 
