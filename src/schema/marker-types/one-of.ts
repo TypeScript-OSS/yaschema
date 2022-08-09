@@ -135,24 +135,31 @@ const validateOneOfAsync = async <TypeA, TypeB>(
     return noError;
   }
 
-  const validationResults: InternalValidationResult[] = [];
-
   const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
 
+  const validationResults: InternalValidationResult[] = [];
+
+  let success = false;
   for (const schema of schemas) {
     const result =
       schema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
         ? await (schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
         : (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
     if (result.error === undefined) {
-      return noError;
+      success = true;
+
+      if (!needsDeepSerDes) {
+        return noError;
+      }
     } else {
       validationResults.push(result);
     }
   }
 
-  return {
-    error: () =>
-      `Expected one of: ${validationResults.map((r) => r.error!()).join(' or ')}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-  };
+  return success
+    ? noError
+    : {
+        error: () =>
+          `Expected one of: ${validationResults.map((r) => r.error!()).join(' or ')}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
+      };
 };

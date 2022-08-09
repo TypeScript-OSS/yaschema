@@ -94,10 +94,6 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
   };
 
   const validateSerializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: string) => {
-    if (validatorOptions.validation === 'none') {
-      return noError;
-    }
-
     const validation = (serDes.serializedSchema() as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
     if (validation.error !== undefined) {
       return validation;
