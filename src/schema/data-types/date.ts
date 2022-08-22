@@ -20,7 +20,7 @@ export interface DateSchema extends Schema<Date> {
 }
 
 /** ISO DateTime string */
-const dateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(.\d{3})?)?(Z|[+-]\d{2}(:\d{2})?)?)?$/;
+const dateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(.\d{1,9})?)?(Z|[+-]\d{2}(:\d{2})?)?)?$/;
 
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
 export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
