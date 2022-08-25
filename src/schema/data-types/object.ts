@@ -189,3 +189,39 @@ export const partial = <ObjectT extends Record<string, any>>(schema: ObjectSchem
 
   return object<Partial<ObjectT>>(outputMap as InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>);
 };
+
+/** Creates a version of the specified object schema with the same number or fewer keys, by picking keys */
+export const pick = <ObjectT extends Record<string, any>, KeyT extends keyof ObjectT>(
+  schema: ObjectSchema<ObjectT>,
+  pickedKeys: KeyT[]
+): ObjectSchema<Pick<ObjectT, KeyT>> => {
+  const pickedKeysSet = new Set<keyof ObjectT>(pickedKeys);
+
+  const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Pick<ObjectT, KeyT>>> = {};
+  for (const key of Object.keys(schema.map) as Array<keyof typeof schema.map>) {
+    if (pickedKeysSet.has(key)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      outputMap[key as KeyT] = schema.map[key] as any;
+    }
+  }
+
+  return object<Pick<ObjectT, KeyT>>(outputMap as InferRecordOfSchemasFromRecordOfValues<Pick<ObjectT, KeyT>>);
+};
+
+/** Creates a version of the specified object schema with the same number or fewer keys, by omitting keys */
+export const omit = <ObjectT extends Record<string, any>, KeyT extends keyof ObjectT>(
+  schema: ObjectSchema<ObjectT>,
+  omittedKeys: KeyT[]
+): ObjectSchema<Omit<ObjectT, KeyT>> => {
+  const omittedKeysSet = new Set<keyof ObjectT>(omittedKeys);
+
+  const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Omit<ObjectT, KeyT>>> = {};
+  for (const key of Object.keys(schema.map) as Array<keyof typeof schema.map>) {
+    if (!omittedKeysSet.has(key)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      outputMap[key as Exclude<keyof ObjectT, KeyT>] = schema.map[key] as any;
+    }
+  }
+
+  return object<Omit<ObjectT, KeyT>>(outputMap as InferRecordOfSchemasFromRecordOfValues<Omit<ObjectT, KeyT>>);
+};

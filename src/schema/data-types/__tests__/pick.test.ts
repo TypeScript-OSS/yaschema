@@ -4,20 +4,21 @@ import {
 } from '../../__test_dependency__/schema-value-testing';
 import * as schema from '../../exports';
 
-describe('partial object schema', () => {
-  const partialSchema = schema.partial(
+describe('picked object schema', () => {
+  const pickedSchema = schema.pick(
     schema.object({
       one: schema.string('one', 'ONE'),
       two: schema.number().optional()
-    })
+    }),
+    ['one']
   );
 
   setupBasicTypeOperationsShouldWorkTests({
-    schema: partialSchema,
-    deserializedValues: [{}, { two: 2 }, { one: 'one' }, { one: 'one', two: 2 }, { one: 'ONE', two: 3.14 }]
+    schema: pickedSchema,
+    deserializedValues: [{ one: 'one' }, { one: 'ONE' }, { one: 'ONE', two: "anything really since this isn't in the schema" }]
   });
   setupBasicTypeOperationsShouldNotWorkTests({
-    schema: partialSchema,
+    schema: pickedSchema,
     deserializedValues: [null, undefined, '', [true], { one: 1 }, true, false]
   });
 });
