@@ -50,10 +50,6 @@ export const record = <KeyT extends string, ValueT>(
       return noError;
     }
 
-    if (validatorOptions.shouldRemoveUnknownKeys) {
-      validatorOptions.inoutUnknownKeysByPath[path] = 'allow-all';
-    }
-
     let errorResult: InternalValidationResult | undefined;
 
     let valueKeys: string[];
@@ -65,11 +61,26 @@ export const record = <KeyT extends string, ValueT>(
       valueKeys = [];
     }
 
+    let unknownKeysSet: Set<string> | undefined;
+    if (validatorOptions.shouldRemoveUnknownKeys) {
+      const unknownKeys = validatorOptions.inoutUnknownKeysByPath[path];
+      if (unknownKeys === undefined) {
+        // If this path hasn't been examined before
+
+        unknownKeysSet = new Set(valueKeys);
+        validatorOptions.inoutUnknownKeysByPath[path] = unknownKeysSet;
+      } else if (unknownKeys instanceof Set) {
+        unknownKeysSet = unknownKeys;
+      }
+    }
+
     for (const valueKey of valueKeys) {
       if (keys instanceof RegExp) {
         if (!keys.test(valueKey)) {
           // Skipping value validation for key not defined in this record type -- because we allow arbitrary extra keys
           continue;
+        } else {
+          unknownKeysSet?.delete(valueKey);
         }
       } else {
         const result = (keys as any as InternalSchemaFunctions).internalValidate(
@@ -80,6 +91,8 @@ export const record = <KeyT extends string, ValueT>(
         if (isErrorResult(result)) {
           // Skipping value validation for key not defined in this record type -- because we allow arbitrary extra keys
           continue;
+        } else {
+          unknownKeysSet?.delete(valueKey);
         }
       }
 

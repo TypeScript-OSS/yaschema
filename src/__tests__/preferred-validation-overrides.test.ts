@@ -14,27 +14,27 @@ describe('preferred validation overrides', () => {
     });
 
     it('valid object should serialize without error', () => {
-      const serialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: 4, five: { six: 6 } } });
-      expect(serialization.error).toBeUndefined();
-      expect(serialization.deserialized).toMatchObject({ one: 'one', two: 2, three: { four: 4, five: { six: 6 } } });
+      const deserialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: 4, five: { six: 6 } } });
+      expect(deserialization.error).toBeUndefined();
+      expect(deserialization.deserialized).toMatchObject({ one: 'one', two: 2, three: { four: 4, five: { six: 6 } } });
     });
 
     it('invalid object in non-overriden parts of schema should fail with error', () => {
-      const serialization = objectSchema.deserialize({ one: 'TWO', two: 2, three: { four: 4, five: { six: 6 } } });
-      expect(serialization.error).toBeDefined();
-      expect(serialization.errorLevel).toBe('error');
+      const deserialization = objectSchema.deserialize({ one: 'TWO', two: 2, three: { four: 4, five: { six: 6 } } });
+      expect(deserialization.error).toBeDefined();
+      expect(deserialization.errorLevel).toBe('error');
     });
 
     it('invalid object in deep soft-overriden parts of schema should fail with warning', () => {
-      const serialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: 4, five: { six: '6' } } });
-      expect(serialization.error).toBeDefined();
-      expect(serialization.errorLevel).toBe('warning');
+      const deserialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: 4, five: { six: '6' } } });
+      expect(deserialization.error).toBeDefined();
+      expect(deserialization.errorLevel).toBe('warning');
     });
 
     it('invalid object in shallow soft-overriden parts of schema should fail with warning', () => {
-      const serialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: '4', five: { six: 6 } } });
-      expect(serialization.error).toBeDefined();
-      expect(serialization.errorLevel).toBe('warning');
+      const deserialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: '4', five: { six: 6 } } });
+      expect(deserialization.error).toBeDefined();
+      expect(deserialization.errorLevel).toBe('warning');
     });
   });
 
@@ -51,15 +51,15 @@ describe('preferred validation overrides', () => {
     });
 
     it('invalid object in deep soft-overriden parts of schema should fail with error', () => {
-      const serialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: 4, five: { six: '6' } } });
-      expect(serialization.error).toBeDefined();
-      expect(serialization.errorLevel).toBe('error');
+      const deserialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: 4, five: { six: '6' } } });
+      expect(deserialization.error).toBeDefined();
+      expect(deserialization.errorLevel).toBe('error');
     });
 
     it('invalid object in shallow soft-overriden parts of schema should fail with warning', () => {
-      const serialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: '4', five: { six: 6 } } });
-      expect(serialization.error).toBeDefined();
-      expect(serialization.errorLevel).toBe('warning');
+      const deserialization = objectSchema.deserialize({ one: 'one', two: 2, three: { four: '4', five: { six: 6 } } });
+      expect(deserialization.error).toBeDefined();
+      expect(deserialization.errorLevel).toBe('warning');
     });
   });
 });
