@@ -5,15 +5,18 @@ import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { JsonValue } from '../../types/json-value';
 import type { Schema } from '../../types/schema';
 import type { SerDes } from '../../types/ser-des';
-import type { ValidationResult } from '../../types/validator';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalValidationOptions, InternalValidator } from '../internal/types/internal-validation';
+import type { InternalValidationOptions, InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isErrorResult } from '../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 
-export type CustomValidation<ValueT> = (value: ValueT) => ValidationResult;
+export type CustomValidationResult = { error?: string } | { error?: undefined };
+
+export type CustomValidation<ValueT> = (value: ValueT) => CustomValidationResult;
 
 export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> {
   serDes: SerDes<ValueT, SerializedT>;
@@ -21,6 +24,9 @@ export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> {
 
   /** Performs validation logic.  By default, only `isValueType` is checked, using the `serDes` field. */
   customValidation?: CustomValidation<ValueT>;
+  /** If `true`, `"shallow"` ancestor validation mode preferences won't be used when this schemas validation mode preference is
+   * `"inherit"`, like other built-in container types */
+  isContainerType?: boolean;
 }
 
 /** Used for adding custom schemas for complex types. */
@@ -38,13 +44,17 @@ export interface CustomSchema<ValueT, SerializedT extends JsonValue> extends Sch
 export const custom = <ValueT, SerializedT extends JsonValue>({
   serDes,
   typeName,
-  customValidation
+  customValidation,
+  isContainerType = false
 }: CustomSchemaOptions<ValueT, SerializedT>): CustomSchema<ValueT, SerializedT> => {
-  const serialize = (value: ValueT, validatorOptions: InternalValidationOptions, path: string) => {
+  const serialize = (
+    value: ValueT,
+    validatorOptions: InternalValidationOptions,
+    path: string
+  ): InternalValidationResult & { serialized?: JsonValue } => {
     try {
       const serialization = serDes.serialize(value);
 
-      const serializationError = serialization.error !== undefined ? () => `${serialization.error}${atPath(path)}` : undefined;
       const serializedValue = serialization.serialized;
 
       if (path === '') {
@@ -56,38 +66,61 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       validatorOptions.inoutModifiedPaths[path] = serializedValue;
 
-      return { error: serializationError, serialized: serializedValue };
+      if (serialization.error !== undefined) {
+        return { error: () => serialization.error, errorLevel: serialization.errorLevel, errorPath: path, serialized: serializedValue };
+      } else {
+        return { serialized: serializedValue };
+      }
     } catch (e) {
-      getLogger().error?.(`Failed to serialize ${typeName}${atPath(path)}`, e);
-      return { error: () => `Failed to serialize ${typeName}${atPath(path)}` };
+      getLogger().error?.(`Failed to serialize ${typeName}`, path, e);
+
+      const validationMode = getValidationMode(validatorOptions);
+
+      return makeErrorResultForValidationMode(validationMode, () => `Failed to serialize ${typeName}`, path);
     }
   };
 
-  const deserialize = (value: SerializedT, validatorOptions: InternalValidationOptions, path: string) => {
+  const deserialize = (
+    value: SerializedT,
+    validatorOptions: InternalValidationOptions,
+    path: string
+  ): InternalValidationResult & { deserialized?: ValueT } => {
     try {
       const deserialization = serDes.deserialize(value);
 
-      const deserializedError = deserialization.error !== undefined ? () => `${deserialization.error}${atPath(path)}` : undefined;
       const deserializedValue = deserialization.deserialized;
 
       validatorOptions.inoutModifiedPaths[path] = deserializedValue;
 
-      return { error: deserializedError, deserialized: deserializedValue };
+      if (deserialization.error !== undefined) {
+        return {
+          error: () => deserialization.error,
+          errorLevel: deserialization.errorLevel,
+          errorPath: path,
+          deserialized: deserializedValue
+        };
+      } else {
+        return { deserialized: deserializedValue };
+      }
     } catch (e) {
-      getLogger().error?.(`Failed to deserialize ${typeName}${atPath(path)}`, e);
-      return { error: () => `Failed to deserialize ${typeName}${atPath(path)}` };
+      getLogger().error?.(`Failed to deserialize ${typeName}`, path, e);
+
+      const validationMode = getValidationMode(validatorOptions);
+
+      return makeErrorResultForValidationMode(validationMode, () => `Failed to deserialize ${typeName}`, path);
     }
   };
 
   const validateDeserializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: string) => {
-    if (validatorOptions.validation === 'none') {
+    const validationMode = getValidationMode(validatorOptions);
+    if (validationMode === 'none') {
       return noError;
     }
 
     const additionalValidation = customValidation?.(value as ValueT);
     const additionalValidationError = additionalValidation?.error;
     if (additionalValidationError !== undefined) {
-      return { error: () => `${additionalValidationError}${atPath(path)}` };
+      return makeErrorResultForValidationMode(validationMode, () => `${additionalValidationError}`, path);
     }
 
     return noError;
@@ -95,7 +128,7 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
 
   const validateSerializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: string) => {
     const validation = (serDes.serializedSchema() as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (validation.error !== undefined) {
+    if (isErrorResult(validation)) {
       return validation;
     }
 
@@ -103,28 +136,34 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
   };
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
+    const validationMode = getValidationMode(validatorOptions);
+
     switch (validatorOptions.transformation) {
       case 'none':
         if (!serDes.isValueType(value)) {
-          return { error: () => `Expected ${typeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+          return makeErrorResultForValidationMode(validationMode, () => `Expected ${typeName}, found ${getMeaningfulTypeof(value)}`, path);
         }
 
         return validateDeserializedForm(value, validatorOptions, path);
       case 'serialize': {
         if (!(path in validatorOptions.inoutModifiedPaths)) {
           if (!serDes.isValueType(value)) {
-            return { error: () => `Expected ${typeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+            return makeErrorResultForValidationMode(
+              validationMode,
+              () => `Expected ${typeName}, found ${getMeaningfulTypeof(value)}`,
+              path
+            );
           }
 
           const validation = validateDeserializedForm(value, validatorOptions, path);
 
           const serialization = serialize(value as ValueT, validatorOptions, path);
-          if (serialization.error !== undefined) {
+          if (isErrorResult(serialization)) {
             return serialization;
           }
           value = serialization.serialized;
 
-          if (validation.error !== undefined) {
+          if (isErrorResult(validation)) {
             return validation;
           }
         }
@@ -133,22 +172,26 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
       case 'deserialize': {
         if (!(path in validatorOptions.inoutModifiedPaths)) {
           const serializedValidation = validateSerializedForm(value, validatorOptions, path);
-          if (serializedValidation.error !== undefined) {
+          if (isErrorResult(serializedValidation)) {
             return serializedValidation;
           }
 
           const deserialization = deserialize(value as SerializedT, validatorOptions, path);
-          if (deserialization.error !== undefined) {
+          if (isErrorResult(deserialization)) {
             return deserialization;
           }
           value = deserialization.deserialized;
 
           if (!serDes.isValueType(value)) {
-            return { error: () => `Expected ${typeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+            return makeErrorResultForValidationMode(
+              validationMode,
+              () => `Expected ${typeName}, found ${getMeaningfulTypeof(value)}`,
+              path
+            );
           }
 
           const deserializedValidation = validateDeserializedForm(value, validatorOptions, path);
-          if (deserializedValidation.error !== undefined) {
+          if (isErrorResult(deserializedValidation)) {
             return deserializedValidation;
           }
         }
@@ -163,10 +206,13 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
     {
       valueType: undefined as any as ValueT,
       schemaType: 'custom',
+      customValidation,
+      isContainerType,
       clone: () => copyMetaFields({ from: fullSchema, to: custom(fullSchema) }),
       serDes,
       typeName,
       estimatedValidationTimeComplexity: 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
       usesCustomSerDes: true
     },
     { internalValidate }

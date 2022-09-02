@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 
+import { schema } from '..';
 import { bigNumberSchema } from '../schema/__test_dependency__/big-number-schema';
-import * as schema from '../schema/exports';
 
 describe('soft validation mode', () => {
   it('valid fields should serialize as expected even when there are validation errors', () => {
@@ -21,6 +21,7 @@ describe('soft validation mode', () => {
       { validation: 'soft' }
     );
     expect(serialization.error).toBeDefined();
+    expect(serialization.errorLevel).toBe('warning');
     expect(serialization.serialized).toMatchObject({
       date1: 'hello',
       date2: '2022-01-01T00:00:00.000Z',

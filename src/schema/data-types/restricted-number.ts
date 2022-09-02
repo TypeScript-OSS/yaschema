@@ -1,11 +1,14 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
+import { ValidationMode } from '../../types/validation-options';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
-import type { InternalValidator } from '../internal/types/internal-validation';
+import type { InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isErrorResult } from '../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 import { supportVariableSerializationFormsForNumericValues } from '../internal/utils/support-variable-serialization-forms-for-numeric-values';
 import { validateValue } from '../internal/utils/validate-value';
 import { validateValueInRange } from '../internal/utils/validate-value-in-range';
@@ -49,26 +52,28 @@ export const restrictedNumber = (
   const internalValidate: InternalValidator = supportVariableSerializationFormsForNumericValues(
     () => fullSchema,
     (value, validatorOptions, path) => {
+      const validationMode = getValidationMode(validatorOptions);
+
       if (typeof value !== 'number') {
-        return { error: () => `Expected number, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+        return makeErrorResultForValidationMode(validationMode, () => `Expected number, found ${getMeaningfulTypeof(value)}`, path);
       }
 
-      if (validatorOptions.validation === 'none') {
+      if (validationMode === 'none') {
         return noError;
       }
 
       if (Number.isNaN(value)) {
-        return { error: () => `Found NaN${atPath(path)}` };
+        return makeErrorResultForValidationMode(validationMode, () => `Found NaN`, path);
       } else if (!Number.isFinite(value)) {
-        return { error: () => `Found non-finite value${atPath(path)}` };
+        return makeErrorResultForValidationMode(validationMode, () => `Found non-finite value`, path);
       }
 
       if (allowedNumbers.length > 0) {
-        const valueResult = validateValue(value, { allowed: allowedNumbersSet, path });
-        if (valueResult.error !== undefined) {
+        const valueResult = validateValue(value, { allowed: allowedNumbersSet, path, validationMode });
+        if (isErrorResult(valueResult)) {
           if (allowedRanges.length > 0) {
-            const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path });
-            if (rangeResult.error !== undefined) {
+            const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path, validationMode });
+            if (isErrorResult(rangeResult)) {
               return rangeResult;
             }
           } else {
@@ -76,14 +81,14 @@ export const restrictedNumber = (
           }
         }
       } else if (allowedRanges.length > 0) {
-        const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path });
-        if (rangeResult.error !== undefined) {
+        const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path, validationMode });
+        if (isErrorResult(rangeResult)) {
           return rangeResult;
         }
       }
 
       if (divisibleBy.length > 0) {
-        return validateValueIsDivisibleBy(value, { allowed: divisibleBy, path });
+        return validateValueIsDivisibleBy(value, { allowed: divisibleBy, path, validationMode });
       }
 
       return noError;
@@ -104,6 +109,7 @@ export const restrictedNumber = (
       allowedValuesAndRanges,
       divisibleBy,
       estimatedValidationTimeComplexity: allowedRanges.length + 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
       usesCustomSerDes: false,
       setAllowedSerializationForms: (allowed?: Array<'number' | 'string'>) => {
         if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'number')) {
@@ -127,11 +133,16 @@ export const restrictedNumber = (
 
 const isValueDivisibleBy = (value: number, divisor: number) => value % divisor === 0;
 
-const validateValueIsDivisibleBy = (value: number, { allowed, path }: { allowed: number[]; path: string }) => {
+const validateValueIsDivisibleBy = (
+  value: number,
+  { allowed, path, validationMode }: { allowed: number[]; path: string; validationMode: ValidationMode }
+): InternalValidationResult => {
   if (allowed.find((divisor) => isValueDivisibleBy(value, divisor)) === undefined) {
-    return {
-      error: () => `Expected a value divisible by ${allowed.join(' or ')}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-    };
+    return makeErrorResultForValidationMode(
+      validationMode,
+      () => `Expected a value divisible by ${allowed.join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+      path
+    );
   }
 
   return noError;

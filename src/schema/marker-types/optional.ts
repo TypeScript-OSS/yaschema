@@ -26,6 +26,7 @@ export const optional = <DefinedValueT>(schema: Schema<DefinedValueT>): Optional
       clone: () => copyMetaFields({ from: fullSchema, to: optional(fullSchema.schema) }),
       schema,
       estimatedValidationTimeComplexity: schema.estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: schema.usesCustomSerDes
     },
     { internalValidate, internalValidateAsync }

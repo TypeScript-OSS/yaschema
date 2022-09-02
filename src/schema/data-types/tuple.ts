@@ -11,7 +11,10 @@ import type {
   InternalValidator
 } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { appendPathIndex, atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { appendPathIndex } from '../internal/utils/path-utils';
 
 /** Requires a value where items must positionally match the specified schemas */
 export interface TupleSchema<TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>
@@ -65,11 +68,18 @@ export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
       items[3]?.usesCustomSerDes ||
       items[4]?.usesCustomSerDes) ??
     false;
+  const isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
+    (items[0]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ||
+      items[1]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ||
+      items[2]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ||
+      items[3]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ||
+      items[4]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) ??
+    false;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateTuple(value, { items, needsDeepSerDes, path, validatorOptions });
+    validateTuple(value, { items, needsDeepSerDes, isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval, path, validatorOptions });
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    validateTupleAsync(value, { items, needsDeepSerDes, path, validatorOptions });
+    validateTupleAsync(value, { items, needsDeepSerDes, isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval, path, validatorOptions });
 
   const fullSchema: TupleSchema<TypeA, TypeB, TypeC, TypeD, TypeE> = makeInternalSchema(
     {
@@ -88,6 +98,7 @@ export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
       clone: () => copyMetaFields({ from: fullSchema, to: tuple(fullSchema) }),
       items,
       estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: needsDeepSerDes
     },
     { internalValidate, internalValidateAsync }
@@ -102,11 +113,13 @@ export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
 const validateTuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>(
   value: any,
   {
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
     items,
     needsDeepSerDes,
     path,
     validatorOptions
   }: {
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     items:
       | []
       | [Schema<TypeA>]
@@ -118,23 +131,26 @@ const validateTuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, T
     path: string;
     validatorOptions: InternalValidationOptions;
   }
-) => {
-  const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
+): InternalValidationResult => {
+  const validationMode = getValidationMode(validatorOptions);
+  const shouldStopOnFirstError = validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
   if (!Array.isArray(value)) {
-    return { error: () => `Expected array, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+    return makeErrorResultForValidationMode(validationMode, () => `Expected array, found ${getMeaningfulTypeof(value)}`, path);
   }
 
-  if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
   let errorResult: InternalValidationResult | undefined;
 
   if (errorResult === undefined && value.length !== items.length) {
-    errorResult = {
-      error: () => `Expected an array with ${items.length} element(s), found an array with ${value.length} element(s)${atPath(path)}`
-    };
+    errorResult = makeErrorResultForValidationMode(
+      validationMode,
+      () => `Expected an array with ${items.length} element(s), found an array with ${value.length} element(s)`,
+      path
+    );
 
     if (shouldStopOnFirstError) {
       return errorResult;
@@ -150,7 +166,7 @@ const validateTuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, T
       validatorOptions,
       appendPathIndex(path, index)
     );
-    if (errorResult === undefined && result.error !== undefined) {
+    if (isMoreSevereResult(result, errorResult)) {
       errorResult = result;
 
       if (shouldStopOnFirstError) {
@@ -166,11 +182,13 @@ const validateTuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, T
 const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>(
   value: any,
   {
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
     items,
     needsDeepSerDes,
     path,
     validatorOptions
   }: {
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     items:
       | []
       | [Schema<TypeA>]
@@ -182,23 +200,26 @@ const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, Type
     path: string;
     validatorOptions: InternalValidationOptions;
   }
-) => {
-  const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
+): Promise<InternalValidationResult> => {
+  const validationMode = getValidationMode(validatorOptions);
+  const shouldStopOnFirstError = validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
   if (!Array.isArray(value)) {
-    return { error: () => `Expected array, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+    return makeErrorResultForValidationMode(validationMode, () => `Expected array, found ${getMeaningfulTypeof(value)}`, path);
   }
 
-  if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
   let errorResult: InternalValidationResult | undefined;
 
   if (errorResult === undefined && value.length !== items.length) {
-    errorResult = {
-      error: () => `Expected an array with ${items.length} element(s), found an array with ${value.length} element(s)${atPath(path)}`
-    };
+    errorResult = makeErrorResultForValidationMode(
+      validationMode,
+      () => `Expected an array with ${items.length} element(s), found an array with ${value.length} element(s)`,
+      path
+    );
 
     if (shouldStopOnFirstError) {
       return errorResult;
@@ -218,7 +239,7 @@ const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, Type
             appendPathIndex(path, index)
           )
         : (items[index] as any as InternalSchemaFunctions).internalValidate(arrayItem, validatorOptions, appendPathIndex(path, index));
-    if (errorResult === undefined && result.error !== undefined) {
+    if (isMoreSevereResult(result, errorResult)) {
       errorResult = result;
 
       if (shouldStopOnFirstError) {

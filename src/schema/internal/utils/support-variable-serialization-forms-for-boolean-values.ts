@@ -4,7 +4,9 @@ import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../../types/schema';
 import { noError } from '../consts';
 import type { InternalValidator } from '../types/internal-validation';
-import { atPath } from './path-utils';
+import { getValidationMode } from './get-validation-mode';
+import { isErrorResult } from './is-error-result';
+import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode';
 
 const booleanRegex = /^true|false$/;
 
@@ -28,7 +30,7 @@ export const supportVariableSerializationFormsForBooleanValues =
       case 'serialize': {
         if (!(path in validatorOptions.inoutModifiedPaths)) {
           const validation = normalizedValidator(value, validatorOptions, path);
-          if (validation.error !== undefined) {
+          if (isErrorResult(validation)) {
             return validation;
           }
 
@@ -49,7 +51,7 @@ export const supportVariableSerializationFormsForBooleanValues =
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 validatorOptions.inoutModifiedPaths[path] = value;
 
-                if (validation.error !== undefined) {
+                if (isErrorResult(validation)) {
                   return validation;
                 }
               }
@@ -81,10 +83,13 @@ export const supportVariableSerializationFormsForBooleanValues =
             }
           }
 
-          return {
-            error: () =>
-              `Expected ${(schema.allowedSerializationForms ?? []).join(' or ')}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-          };
+          const validationMode = getValidationMode(validatorOptions);
+
+          return makeErrorResultForValidationMode(
+            validationMode,
+            () => `Expected ${(schema.allowedSerializationForms ?? []).join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+            path
+          );
         }
         break;
       }

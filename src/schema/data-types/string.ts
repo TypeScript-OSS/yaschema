@@ -5,7 +5,8 @@ import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 import { validateValue } from '../internal/utils/validate-value';
 
 /** Requires any string.  */
@@ -34,20 +35,22 @@ export const string = <ValueT extends string>(...allowedValues: ValueT[]): Strin
   const equalsSet = new Set(allowedValues);
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
+    const validationMode = getValidationMode(validatorOptions);
+
     if (typeof value !== 'string') {
-      return { error: () => `Expected string, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+      return makeErrorResultForValidationMode(validationMode, () => `Expected string, found ${getMeaningfulTypeof(value)}`, path);
     }
 
-    if (validatorOptions.validation === 'none') {
+    if (validationMode === 'none') {
       return noError;
     }
 
     if (allowedValues.length > 0) {
-      return validateValue(value, { allowed: equalsSet, path });
+      return validateValue(value, { allowed: equalsSet, path, validationMode });
     }
 
     if (value.length === 0) {
-      return { error: () => `Expected non-empty string, found empty string${atPath(path)}` };
+      return makeErrorResultForValidationMode(validationMode, () => `Expected non-empty string, found empty string`, path);
     }
 
     return noError;
@@ -60,6 +63,7 @@ export const string = <ValueT extends string>(...allowedValues: ValueT[]): Strin
       clone: () => copyMetaFields({ from: fullSchema, to: string(...fullSchema.allowedValues) }),
       allowedValues,
       estimatedValidationTimeComplexity: allowedValues.length + 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
       usesCustomSerDes: false,
       allowEmptyString: () => allowEmptyString(fullSchema)
     },
@@ -87,6 +91,7 @@ const allowEmptyString = <ValueT extends string>(schema: Schema<ValueT>): AllowE
       clone: () => copyMetaFields({ from: fullSchema, to: allowEmptyString(fullSchema.schema) }),
       schema,
       estimatedValidationTimeComplexity: 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
       usesCustomSerDes: false
     },
     { internalValidate }

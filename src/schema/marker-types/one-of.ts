@@ -11,7 +11,9 @@ import type {
   InternalValidator
 } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isErrorResult } from '../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 
 /** Requires at least one of the schemas be satisfied. */
 export interface OneOfSchema<TypeA, TypeB> extends Schema<TypeA | TypeB> {
@@ -29,11 +31,25 @@ export interface OneOfSchema<TypeA, TypeB> extends Schema<TypeA | TypeB> {
  */
 export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): OneOfSchema<TypeA, TypeB> => {
   const needsDeepSerDes = schemaA.usesCustomSerDes || schemaB.usesCustomSerDes;
+  const isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
+    schemaA.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || schemaB.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateOneOf(value, { schemas: [schemaA, schemaB], needsDeepSerDes, path, validatorOptions });
+    validateOneOf(value, {
+      schemas: [schemaA, schemaB],
+      needsDeepSerDes,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
+      path,
+      validatorOptions
+    });
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    validateOneOfAsync(value, { schemas: [schemaA, schemaB], needsDeepSerDes, path, validatorOptions });
+    validateOneOfAsync(value, {
+      schemas: [schemaA, schemaB],
+      needsDeepSerDes,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
+      path,
+      validatorOptions
+    });
 
   const fullSchema: OneOfSchema<TypeA, TypeB> = makeInternalSchema(
     {
@@ -42,6 +58,7 @@ export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<Type
       clone: () => copyMetaFields({ from: fullSchema, to: oneOf(fullSchema.schemas[0], fullSchema.schemas[1]) }),
       schemas: [schemaA, schemaB],
       estimatedValidationTimeComplexity: schemaA.estimatedValidationTimeComplexity + schemaB.estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: needsDeepSerDes
     },
     { internalValidate, internalValidateAsync }
@@ -78,17 +95,20 @@ const validateOneOf = <TypeA, TypeB>(
   value: any,
   {
     schemas,
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
     needsDeepSerDes,
     path,
     validatorOptions
   }: {
     schemas: [Schema<TypeA>, Schema<TypeB>];
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     needsDeepSerDes: boolean;
     path: string;
     validatorOptions: InternalValidationOptions;
   }
-) => {
-  if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+): InternalValidationResult => {
+  const validationMode = getValidationMode(validatorOptions);
+  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
@@ -97,10 +117,10 @@ const validateOneOf = <TypeA, TypeB>(
   let success = false;
   for (const schema of schemas) {
     const result = (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (result.error === undefined) {
+    if (!isErrorResult(result)) {
       success = true;
 
-      if (!needsDeepSerDes) {
+      if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
         return noError;
       }
     } else {
@@ -110,10 +130,11 @@ const validateOneOf = <TypeA, TypeB>(
 
   return success
     ? noError
-    : {
-        error: () =>
-          `Expected one of: ${validationResults.map((r) => r.error!()).join(' or ')}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-      };
+    : makeErrorResultForValidationMode(
+        validationMode,
+        () => `Expected one of: ${validationResults.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
 };
 
 /** Requires one of the specified schemas to be satisfied */
@@ -121,17 +142,20 @@ const validateOneOfAsync = async <TypeA, TypeB>(
   value: any,
   {
     schemas,
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
     needsDeepSerDes,
     path,
     validatorOptions
   }: {
     schemas: [Schema<TypeA>, Schema<TypeB>];
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     needsDeepSerDes: boolean;
     path: string;
     validatorOptions: InternalValidationOptions;
   }
 ) => {
-  if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+  const validationMode = getValidationMode(validatorOptions);
+  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
@@ -145,10 +169,10 @@ const validateOneOfAsync = async <TypeA, TypeB>(
       schema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
         ? await (schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
         : (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (result.error === undefined) {
+    if (!isErrorResult(result)) {
       success = true;
 
-      if (!needsDeepSerDes) {
+      if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
         return noError;
       }
     } else {
@@ -158,8 +182,9 @@ const validateOneOfAsync = async <TypeA, TypeB>(
 
   return success
     ? noError
-    : {
-        error: () =>
-          `Expected one of: ${validationResults.map((r) => r.error!()).join(' or ')}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-      };
+    : makeErrorResultForValidationMode(
+        validationMode,
+        () => `Expected one of: ${validationResults.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
 };

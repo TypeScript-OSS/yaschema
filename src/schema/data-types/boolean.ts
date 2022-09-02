@@ -2,13 +2,12 @@ import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
-import type { InternalValidator } from '../internal/types/internal-validation';
+import type { InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 import { supportVariableSerializationFormsForBooleanValues } from '../internal/utils/support-variable-serialization-forms-for-boolean-values';
 import { validateValue } from '../internal/utils/validate-value';
-
-// TODO: add option for serializedAsString
 
 /** Requires a boolean, optionally matching one of the specified values. */
 export interface BooleanSchema<ValueT extends boolean> extends Schema<ValueT> {
@@ -33,17 +32,18 @@ export const boolean = <ValueT extends boolean>(...allowedValues: ValueT[]): Boo
 
   const internalValidate: InternalValidator = supportVariableSerializationFormsForBooleanValues(
     () => fullSchema,
-    (value, validatorOptions, path) => {
+    (value, validatorOptions, path): InternalValidationResult => {
+      const validationMode = getValidationMode(validatorOptions);
       if (typeof value !== 'boolean') {
-        return { error: () => `Expected boolean, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+        return makeErrorResultForValidationMode(validationMode, () => `Expected boolean, found ${getMeaningfulTypeof(value)}`, path);
       }
 
-      if (validatorOptions.validation === 'none') {
+      if (validationMode === 'none') {
         return noError;
       }
 
       if (allowedValues.length > 0) {
-        return validateValue(value, { allowed: equalsSet, path });
+        return validateValue(value, { allowed: equalsSet, path, validationMode });
       }
 
       return noError;
@@ -61,6 +61,7 @@ export const boolean = <ValueT extends boolean>(...allowedValues: ValueT[]): Boo
         }),
       allowedValues,
       estimatedValidationTimeComplexity: 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
       usesCustomSerDes: false,
       setAllowedSerializationForms: (allowed?: Array<'boolean' | 'string'>) => {
         if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'boolean')) {

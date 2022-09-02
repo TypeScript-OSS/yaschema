@@ -37,6 +37,7 @@ export const allowNull = <NonNullValueT>(schema: Schema<NonNullValueT>): AllowNu
       clone: () => copyMetaFields({ from: fullSchema, to: allowNull(fullSchema.schema) }),
       schema,
       estimatedValidationTimeComplexity: schema.estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: schema.usesCustomSerDes
     },
     { internalValidate, internalValidateAsync }

@@ -4,7 +4,9 @@ import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isErrorResult } from '../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 
 /** Requires the first specified schema but the second cannot be satisfied. */
 export interface NotSchema<ValueT, ExcludedT> extends Schema<Exclude<ValueT, ExcludedT>> {
@@ -29,25 +31,35 @@ export const not = <ValueT, ExcludedT>(
   { expectedTypeName }: { expectedTypeName?: string } = {}
 ): NotSchema<ValueT, ExcludedT> => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
-    if ((notSchema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path).error === undefined) {
-      return {
-        error: () =>
+    const result = (notSchema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+    if (!isErrorResult(result)) {
+      const validationMode = getValidationMode(validatorOptions);
+
+      return makeErrorResultForValidationMode(
+        validationMode,
+        () =>
           expectedTypeName !== undefined
-            ? `Expected ${expectedTypeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-            : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-      };
+            ? `Expected ${expectedTypeName}, found ${getMeaningfulTypeof(value)}`
+            : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
     return (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
   };
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
-    if ((await (notSchema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)).error === undefined) {
-      return {
-        error: () =>
+    const result = await (notSchema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
+    if (!isErrorResult(result)) {
+      const validationMode = getValidationMode(validatorOptions);
+
+      return makeErrorResultForValidationMode(
+        validationMode,
+        () =>
           expectedTypeName !== undefined
-            ? `Expected ${expectedTypeName}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-            : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-      };
+            ? `Expected ${expectedTypeName}, found ${getMeaningfulTypeof(value)}`
+            : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
     return (schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
@@ -66,6 +78,7 @@ export const not = <ValueT, ExcludedT>(
       notSchema,
       expectedTypeName,
       estimatedValidationTimeComplexity: notSchema.estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: notSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: notSchema.usesCustomSerDes
     },
     { internalValidate, internalValidateAsync }

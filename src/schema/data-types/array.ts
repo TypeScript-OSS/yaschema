@@ -11,7 +11,10 @@ import type {
   InternalValidator
 } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { appendPathIndex, atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { appendPathIndex } from '../internal/utils/path-utils';
 
 const ESTIMATED_AVG_ARRAY_LENGTH = 100;
 
@@ -49,11 +52,30 @@ export const array = <ItemT = any>({
   maxEntriesToValidate?: number;
 } = {}): ArraySchema<ItemT> => {
   const needsDeepSerDes = items?.usesCustomSerDes ?? false;
+  const isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = items?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateArray(value, { items, minLength, maxEntriesToValidate, maxLength, needsDeepSerDes, path, validatorOptions });
+    validateArray(value, {
+      items,
+      minLength,
+      maxEntriesToValidate,
+      maxLength,
+      needsDeepSerDes,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
+      path,
+      validatorOptions
+    });
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    asyncValidateArray(value, { items, minLength, maxEntriesToValidate, maxLength, needsDeepSerDes, path, validatorOptions });
+    asyncValidateArray(value, {
+      items,
+      minLength,
+      maxEntriesToValidate,
+      maxLength,
+      needsDeepSerDes,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
+      path,
+      validatorOptions
+    });
 
   const fullSchema: ArraySchema<ItemT> = makeInternalSchema(
     {
@@ -67,6 +89,7 @@ export const array = <ItemT = any>({
       estimatedValidationTimeComplexity:
         (items?.estimatedValidationTimeComplexity ?? 1) *
         ((needsDeepSerDes ? maxLength : maxEntriesToValidate) ?? ESTIMATED_AVG_ARRAY_LENGTH),
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: needsDeepSerDes
     },
     { internalValidate, internalValidateAsync }
@@ -84,6 +107,7 @@ export const array = <ItemT = any>({
 const validateArray = <ItemT>(
   value: any,
   {
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
     items,
     minLength = 0,
     maxLength,
@@ -92,6 +116,7 @@ const validateArray = <ItemT>(
     path,
     validatorOptions
   }: {
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     items?: Schema<ItemT>;
     minLength?: number;
     maxLength?: number;
@@ -102,22 +127,25 @@ const validateArray = <ItemT>(
     validatorOptions: InternalValidationOptions;
   }
 ) => {
-  const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
+  const validationMode = getValidationMode(validatorOptions);
+  const shouldStopOnFirstError = validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
   if (!Array.isArray(value)) {
-    return { error: () => `Expected array, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+    return makeErrorResultForValidationMode(validationMode, () => `Expected array, found ${getMeaningfulTypeof(value)}`, path);
   }
 
-  if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
   let errorResult: InternalValidationResult | undefined;
 
   if (errorResult === undefined && value.length < minLength) {
-    errorResult = {
-      error: () => `Expected an array with at least ${minLength} element(s), found an array with ${value.length} element(s)${atPath(path)}`
-    };
+    errorResult = makeErrorResultForValidationMode(
+      validationMode,
+      () => `Expected an array with at least ${minLength} element(s), found an array with ${value.length} element(s)`,
+      path
+    );
 
     if (shouldStopOnFirstError) {
       return errorResult;
@@ -125,9 +153,11 @@ const validateArray = <ItemT>(
   }
 
   if (errorResult === undefined && maxLength !== undefined && value.length > maxLength) {
-    errorResult = {
-      error: () => `Expected an array with at most ${maxLength} element(s), found an array with ${value.length} element(s)${atPath(path)}`
-    };
+    errorResult = makeErrorResultForValidationMode(
+      validationMode,
+      () => `Expected an array with at most ${maxLength} element(s), found an array with ${value.length} element(s)`,
+      path
+    );
 
     if (shouldStopOnFirstError) {
       return errorResult;
@@ -137,12 +167,17 @@ const validateArray = <ItemT>(
   if (items !== undefined) {
     let index = 0;
     for (const arrayItem of value) {
-      if (!needsDeepSerDes && maxEntriesToValidate !== undefined && index >= maxEntriesToValidate) {
+      if (
+        !needsDeepSerDes &&
+        !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
+        maxEntriesToValidate !== undefined &&
+        index >= maxEntriesToValidate
+      ) {
         break; // Reached the max number to validate
       }
 
       const result = (items as any as InternalSchemaFunctions).internalValidate(arrayItem, validatorOptions, appendPathIndex(path, index));
-      if (errorResult === undefined && result.error !== undefined) {
+      if (isMoreSevereResult(result, errorResult)) {
         errorResult = result;
 
         if (shouldStopOnFirstError) {
@@ -163,6 +198,7 @@ const validateArray = <ItemT>(
 const asyncValidateArray = async <ItemT>(
   value: any,
   {
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
     items,
     minLength = 0,
     maxLength,
@@ -171,6 +207,7 @@ const asyncValidateArray = async <ItemT>(
     path,
     validatorOptions
   }: {
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     items?: Schema<ItemT>;
     minLength?: number;
     maxLength?: number;
@@ -181,22 +218,25 @@ const asyncValidateArray = async <ItemT>(
     validatorOptions: InternalValidationOptions;
   }
 ) => {
-  const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
+  const validationMode = getValidationMode(validatorOptions);
+  const shouldStopOnFirstError = validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
   if (!Array.isArray(value)) {
-    return { error: () => `Expected array, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+    return makeErrorResultForValidationMode(validationMode, () => `Expected array, found ${getMeaningfulTypeof(value)}`, path);
   }
 
-  if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
   let errorResult: InternalValidationResult | undefined;
 
   if (errorResult === undefined && value.length < minLength) {
-    errorResult = {
-      error: () => `Expected an array with at least ${minLength} element(s), found an array with ${value.length} element(s)${atPath(path)}`
-    };
+    errorResult = makeErrorResultForValidationMode(
+      validationMode,
+      () => `Expected an array with at least ${minLength} element(s), found an array with ${value.length} element(s)`,
+      path
+    );
 
     if (shouldStopOnFirstError) {
       return errorResult;
@@ -204,9 +244,11 @@ const asyncValidateArray = async <ItemT>(
   }
 
   if (errorResult === undefined && maxLength !== undefined && value.length > maxLength) {
-    errorResult = {
-      error: () => `Expected an array with at most ${maxLength} element(s), found an array with ${value.length} element(s)${atPath(path)}`
-    };
+    errorResult = makeErrorResultForValidationMode(
+      validationMode,
+      () => `Expected an array with at most ${maxLength} element(s), found an array with ${value.length} element(s)`,
+      path
+    );
 
     if (shouldStopOnFirstError) {
       return errorResult;
@@ -230,7 +272,12 @@ const asyncValidateArray = async <ItemT>(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const arrayItem = value[index];
 
-      if (!needsDeepSerDes && maxEntriesToValidate !== undefined && index >= maxEntriesToValidate) {
+      if (
+        !needsDeepSerDes &&
+        !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
+        maxEntriesToValidate !== undefined &&
+        index >= maxEntriesToValidate
+      ) {
         return false; // Reached the max number to validate
       }
 
@@ -238,7 +285,7 @@ const asyncValidateArray = async <ItemT>(
         items.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
           ? await (items as any as InternalSchemaFunctions).internalValidateAsync(arrayItem, validatorOptions, appendPathIndex(path, index))
           : (items as any as InternalSchemaFunctions).internalValidate(arrayItem, validatorOptions, appendPathIndex(path, index));
-      if (errorResult === undefined && result.error !== undefined) {
+      if (isMoreSevereResult(result, errorResult)) {
         errorResult = result;
 
         if (shouldStopOnFirstError) {

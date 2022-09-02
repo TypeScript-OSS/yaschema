@@ -1,12 +1,18 @@
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
 import type { Range } from '../../../types/range';
+import type { ValidationMode } from '../../../types/validation-options';
 import { noError } from '../consts';
-import { atPath } from './path-utils';
+import type { InternalValidationResult } from '../types/internal-validation';
+import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode';
 
-export const validateValueInRange = <T extends number | Date>(value: T, { allowed, path }: { allowed: Range<T>[]; path: string }) => {
+export const validateValueInRange = <T extends number | Date>(
+  value: T,
+  { allowed, path, validationMode }: { allowed: Range<T>[]; path: string; validationMode: ValidationMode }
+): InternalValidationResult => {
   if (allowed.find((range) => isValueInRange(value, range)) === undefined) {
-    return {
-      error: () =>
+    return makeErrorResultForValidationMode(
+      validationMode,
+      () =>
         `Expected a value in ${allowed
           .map((range) => {
             const parts: string[] = [];
@@ -19,8 +25,9 @@ export const validateValueInRange = <T extends number | Date>(value: T, { allowe
 
             return `(${parts.join(' and ')})`;
           })
-          .join(' or ')}, found ${getMeaningfulTypeof(value)}${atPath(path)}`
-    };
+          .join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+      path
+    );
   }
 
   return noError;

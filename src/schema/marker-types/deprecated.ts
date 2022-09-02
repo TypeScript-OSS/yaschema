@@ -5,6 +5,7 @@ import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../internal/utils/is-error-result';
 
 const alreadyLogDeprecationWarnings = new Set<string>();
 
@@ -35,7 +36,7 @@ export const deprecated = <ValueT>(
     }
 
     const result = (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (result.error !== undefined) {
+    if (isErrorResult(result)) {
       return result;
     }
 
@@ -55,7 +56,7 @@ export const deprecated = <ValueT>(
     }
 
     const result = await (schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
-    if (result.error !== undefined) {
+    if (isErrorResult(result)) {
       return result;
     }
 
@@ -80,6 +81,7 @@ export const deprecated = <ValueT>(
       deadline,
       uniqueName,
       estimatedValidationTimeComplexity: schema.estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: schema.usesCustomSerDes
     },
     { internalValidate, internalValidateAsync }

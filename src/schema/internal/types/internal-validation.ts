@@ -1,3 +1,5 @@
+import type { SchemaPreferredValidationMode, SchemaPreferredValidationModeDepth } from '../../../types/schema-preferred-validation';
+import type { ValidationErrorLevel } from '../../../types/validation-error-level';
 import type { ValidationMode } from '../../../types/validation-options';
 
 /**
@@ -9,13 +11,25 @@ export type InternalTransformationType = 'none' | 'serialize' | 'deserialize';
 
 export interface InternalValidationOptions {
   transformation: InternalTransformationType;
-  validation: ValidationMode;
+
+  /** The operation-level validation mode */
+  operationValidation: ValidationMode;
+  /** A stack of validation mode preferences */
+  schemaValidationPreferences: Array<{
+    mode: SchemaPreferredValidationMode;
+    depth: SchemaPreferredValidationModeDepth;
+    isContainerType: boolean;
+  }>;
+
+  /** The unknown-key removal mode */
+  shouldRemoveUnknownKeys: boolean;
 
   /**
    * - For serialize: the paths who's values have been replaced as part of the transformation, and the values that were set
    * - For deserialize: the paths who's values should be replaced and the values to replace them with
    */
   inoutModifiedPaths: Record<string, any>;
+  inoutUnknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>>;
   /** A value that's safe to modify by path  */
   workingValue?: any;
 
@@ -35,6 +49,6 @@ export type InternalAsyncValidator = (
   path: string
 ) => Promise<InternalValidationResult> | InternalValidationResult;
 
-export interface InternalValidationResult {
-  error?: () => string;
-}
+export type InternalValidationResult =
+  | { error: () => string; errorPath: string; errorLevel: ValidationErrorLevel }
+  | { error?: undefined; errorPath?: undefined; errorLevel?: undefined };

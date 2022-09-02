@@ -1,4 +1,4 @@
-import * as schema from '../schema/exports';
+import { schema } from '..';
 
 describe('cloning', () => {
   it('objects should work', () => {

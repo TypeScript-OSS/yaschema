@@ -4,7 +4,8 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 
 /** Requires a string matching the specified regular expression. */
 export interface RegexSchema extends Schema<string> {
@@ -17,16 +18,22 @@ export interface RegexSchema extends Schema<string> {
 /** Requires a string matching the specified regular expression. */
 export const regex = (pattern: RegExp): RegexSchema => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
+    const validationMode = getValidationMode(validatorOptions);
+
     if (typeof value !== 'string') {
-      return { error: () => `Expected string, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+      return makeErrorResultForValidationMode(validationMode, () => `Expected string, found ${getMeaningfulTypeof(value)}`, path);
     }
 
-    if (validatorOptions.validation === 'none') {
+    if (validationMode === 'none') {
       return noError;
     }
 
     if (!pattern.test(value)) {
-      return { error: () => `Expected string matching ${String(pattern)}, found non-matching string${atPath(path)}` };
+      return makeErrorResultForValidationMode(
+        validationMode,
+        () => `Expected string matching ${String(pattern)}, found non-matching string`,
+        path
+      );
     }
 
     return noError;
@@ -39,6 +46,7 @@ export const regex = (pattern: RegExp): RegexSchema => {
       clone: () => copyMetaFields({ from: fullSchema, to: regex(fullSchema.regex) }),
       regex: pattern,
       estimatedValidationTimeComplexity: 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
       usesCustomSerDes: false
     },
     { internalValidate }

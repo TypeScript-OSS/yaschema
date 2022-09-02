@@ -25,6 +25,7 @@ export const root = <ValueT>(name: string, schema: Schema<ValueT>): RootSchema<V
       name,
       schema,
       estimatedValidationTimeComplexity: schema.estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: schema.usesCustomSerDes
     },
     { internalValidate, internalValidateAsync }

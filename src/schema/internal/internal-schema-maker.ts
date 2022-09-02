@@ -1,4 +1,4 @@
-import type { PureSchema } from '../../types/pure-schema';
+import type { CommonSchemaMeta, PureSchema } from '../../types/pure-schema';
 import type { SchemaFunctions } from '../../types/schema-functions';
 import type { InternalSchemaFunctions } from './types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from './types/internal-validation';
@@ -23,10 +23,10 @@ export interface InternalSchemaMakerArgs {
 }
 
 /** A function that can be used to inject functionality into a `PureSchema`, turning it into an `InternalSchema`. */
-export type InternalSchemaMaker = <ValueT, PureSchemaT extends PureSchema<ValueT>>(
-  pureSchema: PureSchemaT,
+export type InternalSchemaMaker = <ValueT, IncompletePureSchemaT extends Omit<PureSchema<ValueT>, keyof CommonSchemaMeta>>(
+  pureSchema: IncompletePureSchemaT,
   args: InternalSchemaMakerArgs
-) => InternalSchema<ValueT, PureSchemaT>;
+) => InternalSchema<ValueT, IncompletePureSchemaT & CommonSchemaMeta>;
 
 /** Adds functions such as `validate` and `optional` and the `isYaSchema` marker */
 export const makeInternalSchema: InternalSchemaMaker = (pureSchema, args) => globalMakeInternalSchema(pureSchema, args);

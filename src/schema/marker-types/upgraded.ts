@@ -6,6 +6,7 @@ import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../internal/utils/is-error-result';
 
 const alreadyLogUpgradedWarnings = new Set<string>();
 
@@ -33,12 +34,12 @@ export const upgraded = <OldT, NewT>(
 ): UpgradedSchema<OldT, NewT> => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     const newResult = (args.new as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (newResult.error === undefined) {
+    if (!isErrorResult(newResult)) {
       return noError;
     }
 
     const oldResult = (args.old as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (oldResult.error === undefined) {
+    if (!isErrorResult(oldResult)) {
       if (value !== undefined && !alreadyLogUpgradedWarnings.has(uniqueName)) {
         alreadyLogUpgradedWarnings.add(uniqueName);
         getLogger().warn?.(
@@ -61,7 +62,7 @@ export const upgraded = <OldT, NewT>(
       args.new.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
         ? await (args.new as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
         : (args.new as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (newResult.error === undefined) {
+    if (!isErrorResult(newResult)) {
       return noError;
     }
 
@@ -69,7 +70,7 @@ export const upgraded = <OldT, NewT>(
       args.old.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
         ? await (args.old as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
         : (args.old as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (oldResult.error === undefined) {
+    if (!isErrorResult(oldResult)) {
       if (value !== undefined && !alreadyLogUpgradedWarnings.has(uniqueName)) {
         alreadyLogUpgradedWarnings.add(uniqueName);
         getLogger().warn?.(
@@ -100,6 +101,8 @@ export const upgraded = <OldT, NewT>(
       deadline,
       uniqueName,
       estimatedValidationTimeComplexity: args.old.estimatedValidationTimeComplexity + args.new.estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval:
+        args.old.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || args.new.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: args.old.usesCustomSerDes || args.new.usesCustomSerDes
     },
     { internalValidate, internalValidateAsync }

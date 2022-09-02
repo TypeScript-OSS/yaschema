@@ -9,6 +9,8 @@ export interface ValidationOptions {
   /**
    * The mode for validation.
    *
+   * Individual schemas may lower the validation mode.
+   *
    * @defaultValue `'hard'`
    */
   validation?: ValidationMode;

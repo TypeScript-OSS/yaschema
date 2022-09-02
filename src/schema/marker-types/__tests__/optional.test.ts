@@ -1,4 +1,4 @@
-import * as schema from '../../exports';
+import { schema } from '../../..';
 
 describe('optional schema', () => {
   describe('directly created', () => {

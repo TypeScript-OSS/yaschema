@@ -1,8 +1,8 @@
+import { schema } from '../../..';
 import {
   setupBasicTypeOperationsShouldNotWorkTests,
   setupBasicTypeOperationsShouldWorkTests
 } from '../../__test_dependency__/schema-value-testing';
-import * as schema from '../../exports';
 
 describe('picked object schema', () => {
   const pickedSchema = schema.pick(

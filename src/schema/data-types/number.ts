@@ -4,7 +4,9 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isErrorResult } from '../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 import { supportVariableSerializationFormsForNumericValues } from '../internal/utils/support-variable-serialization-forms-for-numeric-values';
 import { validateValue } from '../internal/utils/validate-value';
 
@@ -34,23 +36,25 @@ export const number = <ValueT extends number>(...allowedValues: ValueT[]): Numbe
   const internalValidate: InternalValidator = supportVariableSerializationFormsForNumericValues(
     () => fullSchema,
     (value, validatorOptions, path) => {
+      const validationMode = getValidationMode(validatorOptions);
+
       if (typeof value !== 'number') {
-        return { error: () => `Expected number, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+        return makeErrorResultForValidationMode(validationMode, () => `Expected number, found ${getMeaningfulTypeof(value)}`, path);
       }
 
-      if (validatorOptions.validation === 'none') {
+      if (getValidationMode(validatorOptions) === 'none') {
         return noError;
       }
 
       if (Number.isNaN(value)) {
-        return { error: () => `Found NaN${atPath(path)}` };
+        return makeErrorResultForValidationMode(validationMode, () => `Found NaN`, path);
       } else if (!Number.isFinite(value)) {
-        return { error: () => `Found non-finite value${atPath(path)}` };
+        return makeErrorResultForValidationMode(validationMode, () => `Found non-finite value`, path);
       }
 
       if (equalsNumbers.length > 0) {
-        const result = validateValue(value, { allowed: equalsNumbersSet, path });
-        if (result.error !== undefined) {
+        const result = validateValue(value, { allowed: equalsNumbersSet, path, validationMode });
+        if (isErrorResult(result)) {
           return result;
         }
       }
@@ -70,6 +74,7 @@ export const number = <ValueT extends number>(...allowedValues: ValueT[]): Numbe
         }),
       allowedValues,
       estimatedValidationTimeComplexity: allowedValues.length + 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
       usesCustomSerDes: false,
       setAllowedSerializationForms: (allowed?: Array<'number' | 'string'>) => {
         if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'number')) {

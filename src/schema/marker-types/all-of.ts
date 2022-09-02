@@ -10,6 +10,8 @@ import type {
   InternalValidator
 } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
 
 /** Requires all of the schemas be satisfied. */
 export interface AllOfSchema<TypeA, TypeB> extends Schema<TypeA & TypeB> {
@@ -27,11 +29,25 @@ export interface AllOfSchema<TypeA, TypeB> extends Schema<TypeA & TypeB> {
  */
 export const allOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): AllOfSchema<TypeA, TypeB> => {
   const needsDeepSerDes = schemaA.usesCustomSerDes || schemaB.usesCustomSerDes;
+  const isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
+    schemaA.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || schemaB.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
   const internalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateAllOf(value, { path, validatorOptions, schemas: [schemaA, schemaB], needsDeepSerDes });
+    validateAllOf(value, {
+      path,
+      validatorOptions,
+      schemas: [schemaA, schemaB],
+      needsDeepSerDes,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval
+    });
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    asyncValidateAllOf(value, { path, validatorOptions, schemas: [schemaA, schemaB], needsDeepSerDes });
+    asyncValidateAllOf(value, {
+      path,
+      validatorOptions,
+      schemas: [schemaA, schemaB],
+      needsDeepSerDes,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval
+    });
 
   const fullSchema: AllOfSchema<TypeA, TypeB> = makeInternalSchema(
     {
@@ -40,6 +56,7 @@ export const allOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<Type
       clone: () => copyMetaFields({ from: fullSchema, to: allOf(fullSchema.schemas[0], fullSchema.schemas[1]) }),
       schemas: [schemaA, schemaB],
       estimatedValidationTimeComplexity: schemaA.estimatedValidationTimeComplexity + schemaB.estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: needsDeepSerDes
     },
     { internalValidate, internalValidateAsync }
@@ -75,26 +92,29 @@ const validateAllOf = <TypeA, TypeB>(
   value: any,
   {
     schemas,
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
     needsDeepSerDes,
     path,
     validatorOptions
   }: {
     schemas: [Schema<TypeA>, Schema<TypeB>];
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     needsDeepSerDes: boolean;
     path: string;
     validatorOptions: InternalValidationOptions;
   }
 ) => {
-  const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
+  const validationMode = getValidationMode(validatorOptions);
+  const shouldStopOnFirstError = validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
-  if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
   let errorResult: InternalValidationResult | undefined = undefined;
   for (const schema of schemas) {
     const result = (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (errorResult === undefined && result.error !== undefined) {
+    if (isMoreSevereResult(result, errorResult)) {
       errorResult = result;
 
       if (shouldStopOnFirstError) {
@@ -110,19 +130,22 @@ const asyncValidateAllOf = async <TypeA, TypeB>(
   value: any,
   {
     schemas,
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
     needsDeepSerDes,
     path,
     validatorOptions
   }: {
     schemas: [Schema<TypeA>, Schema<TypeB>];
+    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     needsDeepSerDes: boolean;
     path: string;
     validatorOptions: InternalValidationOptions;
   }
 ) => {
-  const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
+  const validationMode = getValidationMode(validatorOptions);
+  const shouldStopOnFirstError = validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
-  if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
@@ -134,7 +157,7 @@ const asyncValidateAllOf = async <TypeA, TypeB>(
       schema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
         ? await (schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
         : (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
-    if (errorResult === undefined && result.error !== undefined) {
+    if (isMoreSevereResult(result, errorResult)) {
       errorResult = result;
 
       if (shouldStopOnFirstError) {

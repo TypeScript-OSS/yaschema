@@ -4,7 +4,8 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 
 /** Requires a non-null, non-undefined value. */
 export interface AnySchema extends Schema {
@@ -15,12 +16,21 @@ export interface AnySchema extends Schema {
 /** Requires a non-null, non-undefined value.  Use `allowNull` or `optional` if `null` or `undefined` values should also be allowed. */
 export const any = (): AnySchema => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
-    if (validatorOptions.validation === 'none') {
+    if (validatorOptions.shouldRemoveUnknownKeys) {
+      validatorOptions.inoutUnknownKeysByPath[path] = 'allow-all';
+    }
+
+    const validationMode = getValidationMode(validatorOptions);
+    if (validationMode === 'none') {
       return noError;
     }
 
     if (value === null || value === undefined) {
-      return { error: () => `Expected any non-null/undefined value, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+      return makeErrorResultForValidationMode(
+        validationMode,
+        () => `Expected any non-null/undefined value, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
     return noError;
@@ -33,6 +43,7 @@ export const any = (): AnySchema => {
       schemaType: 'any',
       clone: () => copyMetaFields({ from: fullSchema, to: any() }),
       estimatedValidationTimeComplexity: 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
       usesCustomSerDes: false
     },
     { internalValidate }

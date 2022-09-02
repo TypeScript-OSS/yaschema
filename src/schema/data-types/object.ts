@@ -6,7 +6,11 @@ import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { appendPathComponent, atPath } from '../internal/utils/path-utils';
+import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
+import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { appendPathComponent } from '../internal/utils/path-utils';
+import { updateUnknownKeysForPath } from '../internal/utils/update-unknown-keys-for-path';
 import { optional } from '../marker-types/optional';
 
 /** Infers a record where the values of the original type are inferred to be the values of `Schemas` */
@@ -52,15 +56,23 @@ export const object = <ObjectT extends Record<string, any>>(
 
   const needsDeepSerDes = mapValues.findIndex((schema) => schema.usesCustomSerDes) >= 0;
 
+  const isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = true;
+
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
-    const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
+    const validationMode = getValidationMode(validatorOptions);
+    const shouldStopOnFirstError =
+      validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
     if (value === null || Array.isArray(value) || typeof value !== 'object') {
-      return { error: () => `Expected object, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+      return makeErrorResultForValidationMode(validationMode, () => `Expected object, found ${getMeaningfulTypeof(value)}`, path);
     }
 
-    if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+    if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
       return noError;
+    }
+
+    if (validatorOptions.shouldRemoveUnknownKeys) {
+      updateUnknownKeysForPath({ validatorOptions, path, value: value as Record<string, any>, mapKeys });
     }
 
     let errorResult: InternalValidationResult | undefined;
@@ -79,7 +91,7 @@ export const object = <ObjectT extends Record<string, any>>(
         validatorOptions,
         appendPathComponent(path, key)
       );
-      if (errorResult === undefined && result.error !== undefined) {
+      if (isMoreSevereResult(result, errorResult)) {
         errorResult = result;
 
         if (shouldStopOnFirstError) {
@@ -91,14 +103,20 @@ export const object = <ObjectT extends Record<string, any>>(
     return errorResult ?? noError;
   };
   const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
-    const shouldStopOnFirstError = validatorOptions.validation === 'hard' || !needsDeepSerDes;
+    const validationMode = getValidationMode(validatorOptions);
+    const shouldStopOnFirstError =
+      validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
     if (value === null || Array.isArray(value) || typeof value !== 'object') {
-      return { error: () => `Expected object, found ${getMeaningfulTypeof(value)}${atPath(path)}` };
+      return makeErrorResultForValidationMode(validationMode, () => `Expected object, found ${getMeaningfulTypeof(value)}`, path);
     }
 
-    if (!needsDeepSerDes && validatorOptions.validation === 'none') {
+    if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
       return noError;
+    }
+
+    if (validatorOptions.shouldRemoveUnknownKeys) {
+      updateUnknownKeysForPath({ validatorOptions, path, value: value as Record<string, any>, mapKeys });
     }
 
     let errorResult: InternalValidationResult | undefined;
@@ -140,7 +158,7 @@ export const object = <ObjectT extends Record<string, any>>(
                 appendPathComponent(path, key)
               )
             : (map[key] as any as InternalSchemaFunctions).internalValidate(valueForKey, validatorOptions, appendPathComponent(path, key));
-        if (errorResult === undefined && result.error !== undefined) {
+        if (isMoreSevereResult(result, errorResult)) {
           errorResult = result;
 
           if (shouldStopOnFirstError) {
@@ -170,6 +188,7 @@ export const object = <ObjectT extends Record<string, any>>(
       schemaType: 'object',
       clone: () => copyMetaFields({ from: fullSchema, to: object(fullSchema.map) }),
       estimatedValidationTimeComplexity,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
       usesCustomSerDes: needsDeepSerDes,
       map
     },

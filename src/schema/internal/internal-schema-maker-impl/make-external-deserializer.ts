@@ -2,17 +2,23 @@ import _ from 'lodash';
 
 import type { Deserializer } from '../../../types/deserializer';
 import type { InternalValidationOptions, InternalValidator } from '../types/internal-validation';
+import { atPath } from '../utils/path-utils';
+import { processRemoveUnknownKeys } from '../utils/process-remove-unknown-keys';
 import { sleep } from '../utils/sleep';
 
 /** Makes the public synchronous deserializer interface */
 export const makeExternalDeserializer =
   <T>(validator: InternalValidator): Deserializer<T> =>
-  (value, { okToMutateInputValue = false, validation = 'hard' } = {}) => {
+  (value, { okToMutateInputValue = false, removeUnknownKeys = false, validation = 'hard' } = {}) => {
     const modifiedPaths: Record<string, any> = {};
+    const unknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>> = {};
     const internalOptions: InternalValidationOptions = {
       transformation: 'deserialize',
-      validation,
+      operationValidation: validation,
+      schemaValidationPreferences: [],
+      shouldRemoveUnknownKeys: removeUnknownKeys,
       inoutModifiedPaths: modifiedPaths,
+      inoutUnknownKeysByPath: unknownKeysByPath,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       workingValue: okToMutateInputValue ? value : _.cloneDeep(value),
       shouldYield: () => false,
@@ -30,8 +36,21 @@ export const makeExternalDeserializer =
       }
     }
 
-    return {
-      error: output.error?.(),
-      deserialized: internalOptions.workingValue as T
-    };
+    if (removeUnknownKeys && (output.error === undefined || output.errorLevel !== 'error')) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      processRemoveUnknownKeys({ workingValue: internalOptions.workingValue, unknownKeysByPath });
+    }
+
+    if (output.error !== undefined) {
+      return {
+        error: `${output.error()}${atPath(output.errorPath)}`,
+        errorPath: output.errorPath,
+        errorLevel: output.errorLevel,
+        deserialized: internalOptions.workingValue as T
+      };
+    } else {
+      return {
+        deserialized: internalOptions.workingValue as T
+      };
+    }
   };
