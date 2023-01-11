@@ -28,7 +28,7 @@ describe('makeStringSubtypeArray', () => {
 
   it('to work with expected types', () => {
     const values = makeStringSubtypeArray('one', 'two');
-    type Value = typeof values[0];
+    type Value = (typeof values)[0];
     const one: Value = 'one';
     expect(one).toBe('one'); // Just a compilation check really here
   });

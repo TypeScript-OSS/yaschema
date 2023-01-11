@@ -15,4 +15,4 @@ export const dataTypes = makeStringSubtypeArray(
   'string',
   'tuple'
 );
-export type DataType = typeof dataTypes[0];
+export type DataType = (typeof dataTypes)[0];

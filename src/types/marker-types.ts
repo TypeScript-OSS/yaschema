@@ -12,4 +12,4 @@ export const markerTypes = makeStringSubtypeArray(
   'root',
   'upgraded'
 );
-export type MarkerType = typeof markerTypes[0];
+export type MarkerType = (typeof markerTypes)[0];

@@ -21,14 +21,13 @@ describe('makeNumberSubtypeArray', () => {
 
   it('to work with expected types', () => {
     const values = makeNumberSubtypeArray(1, 2);
-    type Value = typeof values[0];
+    type Value = (typeof values)[0];
     const one: Value = 1;
     expect(one).toBe(1); // Just a compilation check really here
   });
 
   describe('with values 1 and 2', () => {
     const values = makeNumberSubtypeArray(1, 2);
-    // type Value = typeof values[0];
 
     describe('checked', () => {
       it('to work with 1', () => {
