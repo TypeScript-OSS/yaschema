@@ -4,7 +4,8 @@ import type { SchemaPreferredValidationMode, SchemaPreferredValidationModeDepth 
 import { allowNull } from '../../marker-types/allow-null';
 import { not } from '../../marker-types/not';
 import { optional } from '../../marker-types/optional';
-import { InternalSchema, InternalSchemaMakerArgs, setInternalSchemaMaker } from '../internal-schema-maker';
+import type { InternalSchema, InternalSchemaMakerArgs } from '../internal-schema-maker';
+import { setInternalSchemaMaker } from '../internal-schema-maker';
 import type { InternalAsyncValidator, InternalValidator } from '../types/internal-validation';
 import { isContainerType } from '../utils/is-container-type';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer';

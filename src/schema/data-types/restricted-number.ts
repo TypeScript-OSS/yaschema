@@ -1,7 +1,7 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
-import { ValidationMode } from '../../types/validation-options';
+import type { ValidationMode } from '../../types/validation-options';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
