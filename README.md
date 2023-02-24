@@ -228,8 +228,6 @@ However, other strategies can be used as well.  For example, we could have used 
 
 Thanks for checking it out.  Feel free to create issues or otherwise provide feedback.
 
-yaschema is maintained by the team at [Passfolio](https://www.passfolio.com).
-
 Be sure to check out our other [Open Source @ Passfolio](https://github.com/Passfolio) projects as well.
 
 <!-- Definitions -->
