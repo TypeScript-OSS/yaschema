@@ -222,11 +222,11 @@ When working with custom schemas, it's important to make sure they don't ambiguo
 
 However, other strategies can be used as well.  For example, we could have used a string prefix and regular expression pattern matching, with an encoding like `"bignumber:3.14"`.  In fact, we encode `Date` object as ISO 8601 strings and rely on regular expression parsing.  Since ISO 8601 is such a precise format, it's easy to distinguish between date/time strings and other more arbitrary strings.
 
-[API Docs](https://passfolio.github.io/yaschema/)
-
 ## Thanks
 
 Thanks for checking it out.  Feel free to create issues or otherwise provide feedback.
+
+[API Docs](https://passfolio.github.io/yaschema/)
 
 Be sure to check out our other [Open Source @ Passfolio](https://github.com/Passfolio) projects as well.
 
