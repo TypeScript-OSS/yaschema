@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.2] - 2023-01-23
+
+Now including src folder into npm package so source maps can resolve properly.
+
+## [2.0.1] - 2023-01-11
+
+- Updated codebase to TypeScript 4.9
+
 ## [2.0.0-alpha.x] - 2022-09-02
 
 ### Added
