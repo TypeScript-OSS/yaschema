@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-Please report vulnerabilities to <security@passfolio.com> - which is private and monitored by our maintainers.  We usually respond within 2-3 days, but if you believe your report is "critical", please include the word "critical" in your email subject.
+Please report vulnerabilities to <typescript.oss@gmail.com> - which is private and monitored by our maintainers.  We usually respond within 2-3 days, but if you believe your report is "critical", please include the word "critical" in your email subject.
 
 When reporting an issue, where possible, please include:
 

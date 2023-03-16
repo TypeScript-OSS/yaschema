@@ -1,18 +1,22 @@
 # Changelog
 
+## [2.0.3] - 2023-03-16
+
+- Pointing to new home at TypeScript OSS.
+
 ## [2.0.2] - 2023-01-23
 
-Now including src folder into npm package so source maps can resolve properly.
+- Now including src folder into npm package so source maps can resolve properly.
 
 ## [2.0.1] - 2023-01-11
 
-- Updated codebase to TypeScript 4.9
+- Updated codebase to TypeScript 4.9.
 
 ## [2.0.0-alpha.x] - 2022-09-02
 
 ### Added
 
-See notes below for more details on each.
+_See notes below for more details on each._
 
 - Support for per-schema and hierarchical, validation mode preferences (overrides).
 - `errorLevel` and `errorPath` fields on validation, serialization, and deserialization results that had errors.
@@ -37,11 +41,11 @@ See notes below for more details on each.
 
 ### Added
 
-- Added `schema.pick` and `schema.omit` which operate, like `schema.partial`, on `ObjectSchemas` to reduce the number of considered keys in an object schema.
+- `schema.pick` and `schema.omit` which operate, like `schema.partial`, on `ObjectSchemas` to reduce the number of considered keys in an object schema.
 
 ## [1.4.2] - 2022-08-22
 
-### Added
+### Changed
 
 - Date strings can now be deserialized using 1-9 sub-second digits, if sub-seconds are specified.
 
@@ -49,13 +53,13 @@ See notes below for more details on each.
 
 ### Fixed
 
-- Fixed an issue where async validation of `schema.oneOf` in `"none"` validation mode with child elements that needed custom ser-des would short-circuit incorrectly causing the custom ser-des to be skipped.
+- An issue where async validation of `schema.oneOf` in `"none"` validation mode with child elements that needed custom ser-des would short-circuit incorrectly causing the custom ser-des to be skipped.
 
 ## [1.4.0] - 2022-08-08
 
 ### Added
 
-- All schema types, except 'root', now have a `clone` function
+- All schema types, except 'root', now have a `clone` function.
 
 ### Removed
 
@@ -107,12 +111,14 @@ See notes below for more details on each.
 
 ### Fixed
 
-- Bug with indirectly optional object and string schemas where extra values and functions (ex. map) were excluded in optional version of schema.
+- An issue with indirectly optional object and string schemas where extra values and functions (ex. map) were excluded in optional version of schema.
 
 ## [1.0.1] - 2022-08-03
 
-- Removed exported types `TreatUndefinedAsOptional`, `PickPossiblyUndefinedValues`, and `PickAlwaysDefinedValues`, which were causing TypeScript to erase important type information.
+### Removed
+
+- Exported types `TreatUndefinedAsOptional`, `PickPossiblyUndefinedValues`, and `PickAlwaysDefinedValues`, which were causing TypeScript to erase important type information.
 
 ## [1.0.0] - 2022-08-02
 
-- Initial official public release
+- Initial official public release.
