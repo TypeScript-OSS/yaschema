@@ -20,8 +20,8 @@ export const makeExternalSerializer = <ValueT>(validator: InternalValidator): Se
       inoutModifiedPaths: modifiedPaths,
       inoutUnknownKeysByPath: unknownKeysByPath,
       workingValue: okToMutateInputValue ? value : _.cloneDeep(value),
-      shouldYield: () => false,
-      yield: () => sleep(0)
+      shouldRelax: () => false,
+      relax: () => sleep(0)
     };
     const output = validator(internalOptions.workingValue, internalOptions, '');
 

@@ -25,8 +25,8 @@ export const makeExternalAsyncSerializer =
       inoutModifiedPaths: modifiedPaths,
       inoutUnknownKeysByPath: unknownKeysByPath,
       workingValue: okToMutateInputValue ? value : _.cloneDeep(value),
-      shouldYield: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
-      yield: () => {
+      shouldRelax: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
+      relax: () => {
         lastYieldTimeMSec = performance.now();
         return sleep(0);
       }

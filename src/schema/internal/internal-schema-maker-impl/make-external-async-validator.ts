@@ -23,8 +23,8 @@ export const makeExternalAsyncValidator =
       inoutModifiedPaths: modifiedPaths,
       inoutUnknownKeysByPath: unknownKeysByPath,
       workingValue: undefined,
-      shouldYield: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
-      yield: () => {
+      shouldRelax: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
+      relax: () => {
         lastYieldTimeMSec = performance.now();
         return sleep(0);
       }

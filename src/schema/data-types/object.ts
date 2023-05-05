@@ -126,8 +126,8 @@ export const object = <ObjectT extends Record<string, any>>(
 
     let chunkStartIndex = 0;
     const processChunk = async () => {
-      if (validatorOptions.shouldYield()) {
-        await validatorOptions.yield();
+      if (validatorOptions.shouldRelax()) {
+        await validatorOptions.relax();
       }
 
       let estimatedValidationTimeComplexityForKeys = 0;

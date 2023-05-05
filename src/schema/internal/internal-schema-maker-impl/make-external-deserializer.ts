@@ -21,8 +21,8 @@ export const makeExternalDeserializer =
       inoutUnknownKeysByPath: unknownKeysByPath,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       workingValue: okToMutateInputValue ? value : _.cloneDeep(value),
-      shouldYield: () => false,
-      yield: () => sleep(0)
+      shouldRelax: () => false,
+      relax: () => sleep(0)
     };
     const output = validator(internalOptions.workingValue, internalOptions, '');
 

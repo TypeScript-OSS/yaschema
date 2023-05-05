@@ -19,8 +19,8 @@ export const makeExternalValidator =
       inoutModifiedPaths: modifiedPaths,
       inoutUnknownKeysByPath: unknownKeysByPath,
       workingValue: undefined,
-      shouldYield: () => false,
-      yield: () => sleep(0)
+      shouldRelax: () => false,
+      relax: () => sleep(0)
     };
     const output = validator(value, internalOptions, '');
 

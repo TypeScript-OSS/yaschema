@@ -264,8 +264,8 @@ const asyncValidateArray = async <ItemT>(
   const numValues = value.length;
 
   const processChunk = async (chunkStartIndex: number) => {
-    if (validatorOptions.shouldYield()) {
-      await validatorOptions.yield();
+    if (validatorOptions.shouldRelax()) {
+      await validatorOptions.relax();
     }
 
     for (let index = chunkStartIndex; index < numValues && index < chunkStartIndex + chunkSize; index += 1) {

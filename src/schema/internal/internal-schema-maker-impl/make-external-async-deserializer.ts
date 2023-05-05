@@ -25,8 +25,8 @@ export const makeExternalAsyncDeserializer =
       inoutUnknownKeysByPath: unknownKeysByPath,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       workingValue: okToMutateInputValue ? value : _.cloneDeep(value),
-      shouldYield: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
-      yield: () => {
+      shouldRelax: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
+      relax: () => {
         lastYieldTimeMSec = performance.now();
         return sleep(0);
       }

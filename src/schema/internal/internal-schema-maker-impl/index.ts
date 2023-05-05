@@ -46,8 +46,8 @@ setInternalSchemaMaker(
       }
     };
     const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
-      if (validatorOptions.shouldYield()) {
-        await validatorOptions.yield();
+      if (validatorOptions.shouldRelax()) {
+        await validatorOptions.relax();
       }
 
       if (validatorOptions.shouldRemoveUnknownKeys && fullSchema.disableRemoveUnknownKeys) {

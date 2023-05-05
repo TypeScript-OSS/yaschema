@@ -148,8 +148,8 @@ export const record = <KeyT extends string, ValueT>(
     const chunkSize = Math.max(1, Math.floor(asyncTimeComplexityThreshold / estimatedValidationTimeComplexityPerItem));
 
     const processChunk = async (chunkStartIndex: number) => {
-      if (validatorOptions.shouldYield()) {
-        await validatorOptions.yield();
+      if (validatorOptions.shouldRelax()) {
+        await validatorOptions.relax();
       }
 
       for (let index = chunkStartIndex; index < numValueKeys && index < chunkStartIndex + chunkSize; index += 1) {

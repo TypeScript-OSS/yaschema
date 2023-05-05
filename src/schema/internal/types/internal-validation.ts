@@ -33,10 +33,11 @@ export interface InternalValidationOptions {
   /** A value that's safe to modify by path  */
   workingValue?: any;
 
-  /** In async mode, returns true whenever enough time has elapsed that we should yield to other work being done */
-  shouldYield: () => boolean;
+  /** In async mode, returns true whenever enough time has elapsed that we should yield ("relax") to other work being done */
+  shouldRelax: () => boolean;
+  // This was originally called yield, but that seemed to be breaking expos minifier
   /** Waits to let other work be done */
-  yield: () => Promise<void>;
+  relax: () => Promise<void>;
 }
 
 /** Synchronously validates and potentially transforms the specified value */

@@ -9,7 +9,7 @@ export const getAsyncTimeComplexityThreshold = () => globalAsyncTimeComplexityTh
  * Updates the time complexity threshold, which is the approximate number of items we want to validate synchronously in a single batch when
  * in async mode.  If no value is provided, the default value (250) is used.
  *
- * After each batch, complex validators check if they should yield.
+ * After each batch, complex validators check if they should yield ("relax").
  *
  * @see `setAsyncMaxWorkIntervalMSec`
  */
