@@ -47,9 +47,9 @@ export const number = <ValueT extends number>(...allowedValues: ValueT[]): Numbe
       }
 
       if (Number.isNaN(value)) {
-        return makeErrorResultForValidationMode(validationMode, () => `Found NaN`, path);
+        return makeErrorResultForValidationMode(validationMode, () => 'Found NaN', path);
       } else if (!Number.isFinite(value)) {
-        return makeErrorResultForValidationMode(validationMode, () => `Found non-finite value`, path);
+        return makeErrorResultForValidationMode(validationMode, () => 'Found non-finite value', path);
       }
 
       if (equalsNumbers.length > 0) {

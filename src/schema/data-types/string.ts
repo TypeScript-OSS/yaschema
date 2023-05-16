@@ -50,7 +50,7 @@ export const string = <ValueT extends string>(...allowedValues: ValueT[]): Strin
     }
 
     if (value.length === 0) {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected non-empty string, found empty string`, path);
+      return makeErrorResultForValidationMode(validationMode, () => 'Expected non-empty string, found empty string', path);
     }
 
     return noError;

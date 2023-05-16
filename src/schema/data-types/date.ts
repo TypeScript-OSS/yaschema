@@ -93,7 +93,7 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
             validatorOptions.inoutModifiedPaths[path] = date;
             value = date;
           } catch (e) {
-            return makeErrorResultForValidationMode(validationMode, () => `Failed to convert string to Date`, path);
+            return makeErrorResultForValidationMode(validationMode, () => 'Failed to convert string to Date', path);
           }
 
           if (!(value instanceof Date)) {
