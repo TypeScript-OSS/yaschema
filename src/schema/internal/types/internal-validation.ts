@@ -29,10 +29,11 @@ export interface InternalValidationOptions {
    * - For serialize: the paths who's values have been replaced as part of the transformation, and the values that were set
    * - For deserialize: the paths who's values should be replaced and the values to replace them with
    */
-  inoutModifiedPaths: Record<string, any>;
+  inoutModifiedPaths: Map<string, any>;
   inoutUnknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>>;
   /** A value that's safe to modify by path  */
-  workingValue?: any;
+  workingValue?: Readonly<any>;
+  modifyWorkingValueAtPath: (path: LazyPath, newValue: any) => void;
 
   /** In async mode, returns true whenever enough time has elapsed that we should yield ("relax") to other work being done */
   shouldRelax: () => boolean;
@@ -40,6 +41,8 @@ export interface InternalValidationOptions {
   /** Waits to let other work be done */
   relax: () => Promise<void>;
 }
+
+export type MutableInternalValidationOptions = Omit<InternalValidationOptions, 'workingValue'> & { workingValue?: any };
 
 /** Synchronously validates and potentially transforms the specified value */
 export type InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: LazyPath) => InternalValidationResult;

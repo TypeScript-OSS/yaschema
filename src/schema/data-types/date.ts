@@ -56,7 +56,7 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
         return validateDeserializedForm(value, validatorOptions, path);
       case 'serialize': {
         const resolvedPath = resolveLazyPath(path);
-        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
+        if (!validatorOptions.inoutModifiedPaths.has(resolvedPath)) {
           if (!(value instanceof Date)) {
             return makeErrorResultForValidationMode(
               validationMode,
@@ -69,15 +69,7 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
 
           value = (value as Date).toISOString();
 
-          if (resolvedPath === '') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            validatorOptions.workingValue = value;
-          } else {
-            _.set(validatorOptions.workingValue, resolvedPath, value);
-          }
-
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          validatorOptions.inoutModifiedPaths[resolvedPath] = value;
+          validatorOptions.modifyWorkingValueAtPath(resolvedPath, value);
 
           if (isErrorResult(validation)) {
             return validation;
@@ -87,7 +79,7 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
       }
       case 'deserialize': {
         const resolvedPath = resolveLazyPath(path);
-        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
+        if (!validatorOptions.inoutModifiedPaths.has(resolvedPath)) {
           if (typeof value !== 'string' || !dateRegex.test(value)) {
             return makeErrorResultForValidationMode(
               validationMode,
@@ -98,7 +90,7 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
 
           try {
             const date = new Date(value);
-            validatorOptions.inoutModifiedPaths[resolvedPath] = date;
+            validatorOptions.modifyWorkingValueAtPath(resolvedPath, date);
             value = date;
           } catch (e) {
             return makeErrorResultForValidationMode(validationMode, () => 'Failed to convert string to Date', resolvedPath);

@@ -13,7 +13,7 @@ export const makeExternalAsyncValidator =
     const asyncMaxWorkIntervalMSec = getAsyncMaxWorkIntervalMSec();
     let lastYieldTimeMSec = performance.now();
 
-    const modifiedPaths: Record<string, any> = {};
+    const modifiedPaths = new Map<string, any>();
     const unknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>> = {};
     const internalOptions: InternalValidationOptions = {
       transformation: 'none',
@@ -23,6 +23,9 @@ export const makeExternalAsyncValidator =
       inoutModifiedPaths: modifiedPaths,
       inoutUnknownKeysByPath: unknownKeysByPath,
       workingValue: undefined,
+      modifyWorkingValueAtPath: () => {
+        // No-op
+      },
       shouldRelax: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
       relax: () => {
         lastYieldTimeMSec = performance.now();

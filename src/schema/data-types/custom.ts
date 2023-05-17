@@ -59,15 +59,7 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
 
       const serializedValue = serialization.serialized;
 
-      const resolvedPath = resolveLazyPath(path);
-      if (resolvedPath === '') {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        validatorOptions.workingValue = serializedValue;
-      } else {
-        _.set(validatorOptions.workingValue, resolvedPath, serializedValue);
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      validatorOptions.inoutModifiedPaths[resolvedPath] = serializedValue;
+      validatorOptions.modifyWorkingValueAtPath(path, serializedValue);
 
       if (serialization.error !== undefined) {
         return { error: () => serialization.error, errorLevel: serialization.errorLevel, errorPath: path, serialized: serializedValue };
@@ -93,8 +85,7 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
 
       const deserializedValue = deserialization.deserialized;
 
-      const resolvedPath = resolveLazyPath(path);
-      validatorOptions.inoutModifiedPaths[resolvedPath] = deserializedValue;
+      validatorOptions.modifyWorkingValueAtPath(path, deserializedValue);
 
       if (deserialization.error !== undefined) {
         return {

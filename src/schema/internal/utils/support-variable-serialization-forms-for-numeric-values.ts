@@ -30,7 +30,7 @@ export const supportVariableSerializationFormsForNumericValues =
     switch (validatorOptions.transformation) {
       case 'serialize': {
         const resolvedPath = resolveLazyPath(path);
-        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
+        if (!validatorOptions.inoutModifiedPaths.has(resolvedPath)) {
           const validation = normalizedValidator(value, validatorOptions, resolvedPath);
           if (isErrorResult(validation)) {
             return validation;
@@ -43,15 +43,7 @@ export const supportVariableSerializationFormsForNumericValues =
               case 'string': {
                 value = String(value);
 
-                if (resolvedPath === '') {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                  validatorOptions.workingValue = value;
-                } else {
-                  _.set(validatorOptions.workingValue, resolvedPath, value);
-                }
-
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                validatorOptions.inoutModifiedPaths[resolvedPath] = value;
+                validatorOptions.modifyWorkingValueAtPath(resolvedPath, value);
 
                 if (isErrorResult(validation)) {
                   return validation;
@@ -76,7 +68,7 @@ export const supportVariableSerializationFormsForNumericValues =
               case 'string': {
                 if (typeof value === 'string' && numberRegex.test(value)) {
                   const numericValue = Number(value);
-                  validatorOptions.inoutModifiedPaths[resolvedPath] = numericValue;
+                  validatorOptions.modifyWorkingValueAtPath(resolvedPath, numericValue);
                   value = numericValue;
 
                   return normalizedValidator(value, validatorOptions, resolvedPath);

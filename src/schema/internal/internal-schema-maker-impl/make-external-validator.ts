@@ -9,7 +9,7 @@ import { sleep } from '../utils/sleep';
 export const makeExternalValidator =
   (validator: InternalValidator): Validator =>
   (value) => {
-    const modifiedPaths: Record<string, any> = {};
+    const modifiedPaths = new Map<string, any>();
     const unknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>> = {};
     const internalOptions: InternalValidationOptions = {
       transformation: 'none',
@@ -19,6 +19,9 @@ export const makeExternalValidator =
       inoutModifiedPaths: modifiedPaths,
       inoutUnknownKeysByPath: unknownKeysByPath,
       workingValue: undefined,
+      modifyWorkingValueAtPath: () => {
+        // No-op
+      },
       shouldRelax: () => false,
       relax: () => sleep(0)
     };

@@ -30,7 +30,7 @@ export const supportVariableSerializationFormsForBooleanValues =
     switch (validatorOptions.transformation) {
       case 'serialize': {
         const resolvedPath = resolveLazyPath(path);
-        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
+        if (!validatorOptions.inoutModifiedPaths.has(resolvedPath)) {
           const validation = normalizedValidator(value, validatorOptions, resolvedPath);
           if (isErrorResult(validation)) {
             return validation;
@@ -43,15 +43,7 @@ export const supportVariableSerializationFormsForBooleanValues =
               case 'string': {
                 value = String(value);
 
-                if (resolvedPath === '') {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                  validatorOptions.workingValue = value;
-                } else {
-                  _.set(validatorOptions.workingValue, resolvedPath, value);
-                }
-
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                validatorOptions.inoutModifiedPaths[resolvedPath] = value;
+                validatorOptions.modifyWorkingValueAtPath(resolvedPath, value);
 
                 if (isErrorResult(validation)) {
                   return validation;
@@ -76,7 +68,7 @@ export const supportVariableSerializationFormsForBooleanValues =
               case 'string': {
                 if (typeof value === 'string' && booleanRegex.test(value)) {
                   const booleanValue = value === 'true';
-                  validatorOptions.inoutModifiedPaths[resolvedPath] = booleanValue;
+                  validatorOptions.modifyWorkingValueAtPath(resolvedPath, booleanValue);
                   value = booleanValue;
 
                   return normalizedValidator(value, validatorOptions, resolvedPath);
