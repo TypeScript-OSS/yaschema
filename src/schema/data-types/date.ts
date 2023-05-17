@@ -11,7 +11,6 @@ import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { resolveLazyPath } from '../internal/utils/path-utils';
 import { validateValueInRange } from '../internal/utils/validate-value-in-range';
 
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
@@ -55,59 +54,45 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
 
         return validateDeserializedForm(value, validatorOptions, path);
       case 'serialize': {
-        const resolvedPath = resolveLazyPath(path);
-        if (!validatorOptions.inoutModifiedPaths.has(resolvedPath)) {
-          if (!(value instanceof Date)) {
-            return makeErrorResultForValidationMode(
-              validationMode,
-              () => `Expected Date, found ${getMeaningfulTypeof(value)}`,
-              resolvedPath
-            );
-          }
+        if (!(value instanceof Date)) {
+          return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
+        }
 
-          const validation = validateDeserializedForm(value, validatorOptions, resolvedPath);
+        const validation = validateDeserializedForm(value, validatorOptions, path);
 
-          value = (value as Date).toISOString();
+        value = (value as Date).toISOString();
 
-          validatorOptions.modifyWorkingValueAtPath(resolvedPath, value);
+        validatorOptions.modifyWorkingValueAtPath(path, value);
 
-          if (isErrorResult(validation)) {
-            return validation;
-          }
+        if (isErrorResult(validation)) {
+          return validation;
         }
         break;
       }
       case 'deserialize': {
-        const resolvedPath = resolveLazyPath(path);
-        if (!validatorOptions.inoutModifiedPaths.has(resolvedPath)) {
-          if (typeof value !== 'string' || !dateRegex.test(value)) {
-            return makeErrorResultForValidationMode(
-              validationMode,
-              () => `Expected ISO Date or Date/Time string, found ${getMeaningfulTypeof(value)}`,
-              resolvedPath
-            );
-          }
+        if (typeof value !== 'string' || !dateRegex.test(value)) {
+          return makeErrorResultForValidationMode(
+            validationMode,
+            () => `Expected ISO Date or Date/Time string, found ${getMeaningfulTypeof(value)}`,
+            path
+          );
+        }
 
-          try {
-            const date = new Date(value);
-            validatorOptions.modifyWorkingValueAtPath(resolvedPath, date);
-            value = date;
-          } catch (e) {
-            return makeErrorResultForValidationMode(validationMode, () => 'Failed to convert string to Date', resolvedPath);
-          }
+        try {
+          const date = new Date(value);
+          validatorOptions.modifyWorkingValueAtPath(path, date);
+          value = date;
+        } catch (e) {
+          return makeErrorResultForValidationMode(validationMode, () => 'Failed to convert string to Date', path);
+        }
 
-          if (!(value instanceof Date)) {
-            return makeErrorResultForValidationMode(
-              validationMode,
-              () => `Expected Date, found ${getMeaningfulTypeof(value)}`,
-              resolvedPath
-            );
-          }
+        if (!(value instanceof Date)) {
+          return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
+        }
 
-          const validation = validateDeserializedForm(value, validatorOptions, resolvedPath);
-          if (isErrorResult(validation)) {
-            return validation;
-          }
+        const validation = validateDeserializedForm(value, validatorOptions, path);
+        if (isErrorResult(validation)) {
+          return validation;
         }
         break;
       }
