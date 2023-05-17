@@ -6,10 +6,12 @@ import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidationOptions, InternalValidator } from '../internal/types/internal-validation';
+import type { LazyPath } from '../internal/types/lazy-path';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { resolveLazyPath } from '../internal/utils/path-utils';
 import { validateValueInRange } from '../internal/utils/validate-value-in-range';
 
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
@@ -26,7 +28,7 @@ const dateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(.\d{1,9})?)?(Z|[+-]\d{
 
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
 export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
-  const validateDeserializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: string) => {
+  const validateDeserializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: LazyPath) => {
     const validationMode = getValidationMode(validatorOptions);
     if (validationMode === 'none') {
       return noError;
@@ -53,24 +55,29 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
 
         return validateDeserializedForm(value, validatorOptions, path);
       case 'serialize': {
-        if (!(path in validatorOptions.inoutModifiedPaths)) {
+        const resolvedPath = resolveLazyPath(path);
+        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
           if (!(value instanceof Date)) {
-            return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
+            return makeErrorResultForValidationMode(
+              validationMode,
+              () => `Expected Date, found ${getMeaningfulTypeof(value)}`,
+              resolvedPath
+            );
           }
 
-          const validation = validateDeserializedForm(value, validatorOptions, path);
+          const validation = validateDeserializedForm(value, validatorOptions, resolvedPath);
 
           value = (value as Date).toISOString();
 
-          if (path === '') {
+          if (resolvedPath === '') {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             validatorOptions.workingValue = value;
           } else {
-            _.set(validatorOptions.workingValue, path, value);
+            _.set(validatorOptions.workingValue, resolvedPath, value);
           }
 
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          validatorOptions.inoutModifiedPaths[path] = value;
+          validatorOptions.inoutModifiedPaths[resolvedPath] = value;
 
           if (isErrorResult(validation)) {
             return validation;
@@ -79,28 +86,33 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
         break;
       }
       case 'deserialize': {
-        if (!(path in validatorOptions.inoutModifiedPaths)) {
+        const resolvedPath = resolveLazyPath(path);
+        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
           if (typeof value !== 'string' || !dateRegex.test(value)) {
             return makeErrorResultForValidationMode(
               validationMode,
               () => `Expected ISO Date or Date/Time string, found ${getMeaningfulTypeof(value)}`,
-              path
+              resolvedPath
             );
           }
 
           try {
             const date = new Date(value);
-            validatorOptions.inoutModifiedPaths[path] = date;
+            validatorOptions.inoutModifiedPaths[resolvedPath] = date;
             value = date;
           } catch (e) {
-            return makeErrorResultForValidationMode(validationMode, () => 'Failed to convert string to Date', path);
+            return makeErrorResultForValidationMode(validationMode, () => 'Failed to convert string to Date', resolvedPath);
           }
 
           if (!(value instanceof Date)) {
-            return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
+            return makeErrorResultForValidationMode(
+              validationMode,
+              () => `Expected Date, found ${getMeaningfulTypeof(value)}`,
+              resolvedPath
+            );
           }
 
-          const validation = validateDeserializedForm(value, validatorOptions, path);
+          const validation = validateDeserializedForm(value, validatorOptions, resolvedPath);
           if (isErrorResult(validation)) {
             return validation;
           }

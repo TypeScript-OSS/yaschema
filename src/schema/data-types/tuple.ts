@@ -10,6 +10,7 @@ import type {
   InternalValidationResult,
   InternalValidator
 } from '../internal/types/internal-validation';
+import type { LazyPath } from '../internal/types/lazy-path';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
@@ -128,7 +129,7 @@ const validateTuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, T
       | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>]
       | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>, Schema<TypeE>];
     needsDeepSerDes: boolean;
-    path: string;
+    path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ): InternalValidationResult => {
@@ -197,7 +198,7 @@ const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, Type
       | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>]
       | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>, Schema<TypeE>];
     needsDeepSerDes: boolean;
-    path: string;
+    path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ): Promise<InternalValidationResult> => {

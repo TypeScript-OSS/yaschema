@@ -10,6 +10,7 @@ import type {
   InternalValidationResult,
   InternalValidator
 } from '../internal/types/internal-validation';
+import type { LazyPath } from '../internal/types/lazy-path';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
@@ -103,7 +104,7 @@ const validateOneOf = <TypeA, TypeB>(
     schemas: [Schema<TypeA>, Schema<TypeB>];
     isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     needsDeepSerDes: boolean;
-    path: string;
+    path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ): InternalValidationResult => {
@@ -150,7 +151,7 @@ const validateOneOfAsync = async <TypeA, TypeB>(
     schemas: [Schema<TypeA>, Schema<TypeB>];
     isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
     needsDeepSerDes: boolean;
-    path: string;
+    path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ) => {

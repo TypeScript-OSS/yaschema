@@ -1,4 +1,6 @@
 import type { InternalValidationOptions } from '../types/internal-validation';
+import type { LazyPath } from '../types/lazy-path';
+import { resolveLazyPath } from './path-utils';
 
 export const updateUnknownKeysForPath = ({
   validatorOptions,
@@ -7,11 +9,12 @@ export const updateUnknownKeysForPath = ({
   mapKeys
 }: {
   validatorOptions: InternalValidationOptions;
-  path: string;
+  path: LazyPath;
   value: Record<string, any>;
   mapKeys: string[];
 }) => {
-  const unknownKeys = validatorOptions.inoutUnknownKeysByPath[path];
+  const resolvedPath = resolveLazyPath(path);
+  const unknownKeys = validatorOptions.inoutUnknownKeysByPath[resolvedPath];
   if (unknownKeys === undefined) {
     // If this path hasn't been examined before
 
@@ -27,7 +30,7 @@ export const updateUnknownKeysForPath = ({
       valueKeys.delete(mapKey);
     }
 
-    validatorOptions.inoutUnknownKeysByPath[path] = valueKeys;
+    validatorOptions.inoutUnknownKeysByPath[resolvedPath] = valueKeys;
   } else if (unknownKeys instanceof Set && unknownKeys.size > 0) {
     // If this path has been examined before and still has unknown keys
 

@@ -10,7 +10,7 @@ import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { appendPathComponent } from '../internal/utils/path-utils';
+import { appendPathComponent, resolveLazyPath } from '../internal/utils/path-utils';
 
 const ESTIMATED_AVG_RECORD_SIZE = 25;
 
@@ -63,12 +63,13 @@ export const record = <KeyT extends string, ValueT>(
 
     let unknownKeysSet: Set<string> | undefined;
     if (validatorOptions.shouldRemoveUnknownKeys) {
-      const unknownKeys = validatorOptions.inoutUnknownKeysByPath[path];
+      const resolvedPath = resolveLazyPath(path);
+      const unknownKeys = validatorOptions.inoutUnknownKeysByPath[resolvedPath];
       if (unknownKeys === undefined) {
         // If this path hasn't been examined before
 
         unknownKeysSet = new Set(valueKeys);
-        validatorOptions.inoutUnknownKeysByPath[path] = unknownKeysSet;
+        validatorOptions.inoutUnknownKeysByPath[resolvedPath] = unknownKeysSet;
       } else if (unknownKeys instanceof Set) {
         unknownKeysSet = unknownKeys;
       }
@@ -127,7 +128,7 @@ export const record = <KeyT extends string, ValueT>(
     }
 
     if (validatorOptions.shouldRemoveUnknownKeys) {
-      validatorOptions.inoutUnknownKeysByPath[path] = 'allow-all';
+      validatorOptions.inoutUnknownKeysByPath[resolveLazyPath(path)] = 'allow-all';
     }
 
     let errorResult: InternalValidationResult | undefined;

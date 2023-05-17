@@ -2,12 +2,13 @@ import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
 import type { ValidationMode } from '../../../types/validation-options';
 import { noError } from '../consts';
 import type { InternalValidationResult } from '../types/internal-validation';
+import type { LazyPath } from '../types/lazy-path';
 import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode';
 
 /** Checks that the specified value is one of the specified allowed values using `.has` on the set. */
 export const validateValue = <ValueT extends boolean | number | string>(
   value: any,
-  { allowed, path, validationMode }: { allowed: Set<ValueT>; path: string; validationMode: ValidationMode }
+  { allowed, path, validationMode }: { allowed: Set<ValueT>; path: LazyPath; validationMode: ValidationMode }
 ): InternalValidationResult => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   if (!allowed.has(value)) {

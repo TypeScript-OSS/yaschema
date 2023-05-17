@@ -1,6 +1,7 @@
 import type { SchemaPreferredValidationMode, SchemaPreferredValidationModeDepth } from '../../../types/schema-preferred-validation';
 import type { ValidationErrorLevel } from '../../../types/validation-error-level';
 import type { ValidationMode } from '../../../types/validation-options';
+import type { LazyPath } from './lazy-path';
 
 /**
  * - `'none'` - No transformation is performed (used for validation)
@@ -41,15 +42,15 @@ export interface InternalValidationOptions {
 }
 
 /** Synchronously validates and potentially transforms the specified value */
-export type InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: string) => InternalValidationResult;
+export type InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: LazyPath) => InternalValidationResult;
 
 /** Asynchronously validates and potentially transforms the specified value */
 export type InternalAsyncValidator = (
   value: any,
   validatorOptions: InternalValidationOptions,
-  path: string
+  path: LazyPath
 ) => Promise<InternalValidationResult> | InternalValidationResult;
 
 export type InternalValidationResult =
-  | { error: () => string; errorPath: string; errorLevel: ValidationErrorLevel }
+  | { error: () => string; errorPath: LazyPath; errorLevel: ValidationErrorLevel }
   | { error?: undefined; errorPath?: undefined; errorLevel?: undefined };

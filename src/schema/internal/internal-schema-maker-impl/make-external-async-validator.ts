@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { getAsyncMaxWorkIntervalMSec } from '../../../config/async-max-work-interval-msec';
 import type { AsyncValidator } from '../../../types/validator';
 import type { InternalAsyncValidator, InternalValidationOptions } from '../types/internal-validation';
-import { atPath } from '../utils/path-utils';
+import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { sleep } from '../utils/sleep';
 
 /** Makes the public async validator interface */
@@ -34,7 +34,7 @@ export const makeExternalAsyncValidator =
     if (output.error !== undefined) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: output.errorPath,
+        errorPath: resolveLazyPath(output.errorPath),
         errorLevel: output.errorLevel
       };
     } else {

@@ -8,6 +8,7 @@ import type { InternalSchema, InternalSchemaMakerArgs } from '../internal-schema
 import { setInternalSchemaMaker } from '../internal-schema-maker';
 import type { InternalAsyncValidator, InternalValidator } from '../types/internal-validation';
 import { isContainerType } from '../utils/is-container-type';
+import { resolveLazyPath } from '../utils/path-utils';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer';
 import { makeExternalAsyncSerializer } from './make-external-async-serializer';
 import { makeExternalAsyncValidator } from './make-external-async-validator';
@@ -24,7 +25,7 @@ setInternalSchemaMaker(
   ): InternalSchema<ValueT, IncompletePureSchemaT & CommonSchemaMeta> => {
     const internalValidate: InternalValidator = (value, validatorOptions, path) => {
       if (validatorOptions.shouldRemoveUnknownKeys && fullSchema.disableRemoveUnknownKeys) {
-        validatorOptions.inoutUnknownKeysByPath[path] = 'allow-all';
+        validatorOptions.inoutUnknownKeysByPath[resolveLazyPath(path)] = 'allow-all';
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -51,7 +52,7 @@ setInternalSchemaMaker(
       }
 
       if (validatorOptions.shouldRemoveUnknownKeys && fullSchema.disableRemoveUnknownKeys) {
-        validatorOptions.inoutUnknownKeysByPath[path] = 'allow-all';
+        validatorOptions.inoutUnknownKeysByPath[resolveLazyPath(path)] = 'allow-all';
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

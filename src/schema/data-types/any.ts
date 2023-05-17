@@ -6,6 +6,7 @@ import type { InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { resolveLazyPath } from '../internal/utils/path-utils';
 
 /** Requires a non-null, non-undefined value. */
 export interface AnySchema extends Schema {
@@ -17,7 +18,7 @@ export interface AnySchema extends Schema {
 export const any = (): AnySchema => {
   const internalValidate: InternalValidator = (value, validatorOptions, path) => {
     if (validatorOptions.shouldRemoveUnknownKeys) {
-      validatorOptions.inoutUnknownKeysByPath[path] = 'allow-all';
+      validatorOptions.inoutUnknownKeysByPath[resolveLazyPath(path)] = 'allow-all';
     }
 
     const validationMode = getValidationMode(validatorOptions);

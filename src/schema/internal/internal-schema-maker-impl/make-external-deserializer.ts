@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import type { Deserializer } from '../../../types/deserializer';
 import type { InternalValidationOptions, InternalValidator } from '../types/internal-validation';
-import { atPath } from '../utils/path-utils';
+import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { processRemoveUnknownKeys } from '../utils/process-remove-unknown-keys';
 import { sleep } from '../utils/sleep';
 
@@ -44,7 +44,7 @@ export const makeExternalDeserializer =
     if (output.error !== undefined) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: output.errorPath,
+        errorPath: resolveLazyPath(output.errorPath),
         errorLevel: output.errorLevel,
         deserialized: internalOptions.workingValue as T
       };

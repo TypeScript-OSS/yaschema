@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { getAsyncMaxWorkIntervalMSec } from '../../../config/async-max-work-interval-msec';
 import type { AsyncDeserializer } from '../../../types/deserializer';
 import type { InternalAsyncValidator, InternalValidationOptions } from '../types/internal-validation';
-import { atPath } from '../utils/path-utils';
+import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { processRemoveUnknownKeys } from '../utils/process-remove-unknown-keys';
 import { sleep } from '../utils/sleep';
 
@@ -51,7 +51,7 @@ export const makeExternalAsyncDeserializer =
     if (output.error !== undefined) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: output.errorPath,
+        errorPath: resolveLazyPath(output.errorPath),
         errorLevel: output.errorLevel,
         deserialized: internalOptions.workingValue as T
       };

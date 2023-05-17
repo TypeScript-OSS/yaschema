@@ -3,11 +3,12 @@ import type { Range } from '../../../types/range';
 import type { ValidationMode } from '../../../types/validation-options';
 import { noError } from '../consts';
 import type { InternalValidationResult } from '../types/internal-validation';
+import type { LazyPath } from '../types/lazy-path';
 import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode';
 
 export const validateValueInRange = <T extends number | Date>(
   value: T,
-  { allowed, path, validationMode }: { allowed: Range<T>[]; path: string; validationMode: ValidationMode }
+  { allowed, path, validationMode }: { allowed: Range<T>[]; path: LazyPath; validationMode: ValidationMode }
 ): InternalValidationResult => {
   if (allowed.find((range) => isValueInRange(value, range)) === undefined) {
     return makeErrorResultForValidationMode(

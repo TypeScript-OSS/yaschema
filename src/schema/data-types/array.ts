@@ -10,6 +10,7 @@ import type {
   InternalValidationResult,
   InternalValidator
 } from '../internal/types/internal-validation';
+import type { LazyPath } from '../internal/types/lazy-path';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
@@ -123,7 +124,7 @@ const validateArray = <ItemT>(
     /** If specified, only the first maxEntriesToValidate entries are validated -- applies to item validation but not pattern validation */
     maxEntriesToValidate?: number;
     needsDeepSerDes: boolean;
-    path: string;
+    path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ) => {
@@ -214,7 +215,7 @@ const asyncValidateArray = async <ItemT>(
     /** If specified, only the first maxEntriesToValidate entries are validated -- applies to item validation but not pattern validation */
     maxEntriesToValidate?: number;
     needsDeepSerDes: boolean;
-    path: string;
+    path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ) => {

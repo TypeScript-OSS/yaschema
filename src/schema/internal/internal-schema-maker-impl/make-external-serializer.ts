@@ -3,7 +3,7 @@ import _ from 'lodash';
 import type { JsonValue } from '../../../types/json-value';
 import type { Serializer } from '../../../types/serializer';
 import type { InternalValidationOptions, InternalValidator } from '../types/internal-validation';
-import { atPath } from '../utils/path-utils';
+import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { processRemoveUnknownKeys } from '../utils/process-remove-unknown-keys';
 import { sleep } from '../utils/sleep';
 
@@ -33,7 +33,7 @@ export const makeExternalSerializer = <ValueT>(validator: InternalValidator): Se
     if (output.error !== undefined) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: output.errorPath,
+        errorPath: resolveLazyPath(output.errorPath),
         errorLevel: output.errorLevel,
         serialized: internalOptions.workingValue as JsonValue
       };

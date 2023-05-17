@@ -5,6 +5,7 @@ import type { ValidationMode } from '../../types/validation-options';
 import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
+import type { LazyPath } from '../internal/types/lazy-path';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
@@ -135,7 +136,7 @@ const isValueDivisibleBy = (value: number, divisor: number) => value % divisor =
 
 const validateValueIsDivisibleBy = (
   value: number,
-  { allowed, path, validationMode }: { allowed: number[]; path: string; validationMode: ValidationMode }
+  { allowed, path, validationMode }: { allowed: number[]; path: LazyPath; validationMode: ValidationMode }
 ): InternalValidationResult => {
   if (allowed.find((divisor) => isValueDivisibleBy(value, divisor)) === undefined) {
     return makeErrorResultForValidationMode(

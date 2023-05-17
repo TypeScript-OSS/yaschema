@@ -9,10 +9,12 @@ import { noError } from '../internal/consts';
 import { makeInternalSchema } from '../internal/internal-schema-maker';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalValidationOptions, InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
+import type { LazyPath } from '../internal/types/lazy-path';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { resolveLazyPath } from '../internal/utils/path-utils';
 
 export type CustomValidationResult = { error?: string } | { error?: undefined };
 
@@ -50,21 +52,22 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
   const serialize = (
     value: ValueT,
     validatorOptions: InternalValidationOptions,
-    path: string
+    path: LazyPath
   ): InternalValidationResult & { serialized?: JsonValue } => {
     try {
       const serialization = serDes.serialize(value);
 
       const serializedValue = serialization.serialized;
 
-      if (path === '') {
+      const resolvedPath = resolveLazyPath(path);
+      if (resolvedPath === '') {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         validatorOptions.workingValue = serializedValue;
       } else {
-        _.set(validatorOptions.workingValue, path, serializedValue);
+        _.set(validatorOptions.workingValue, resolvedPath, serializedValue);
       }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      validatorOptions.inoutModifiedPaths[path] = serializedValue;
+      validatorOptions.inoutModifiedPaths[resolvedPath] = serializedValue;
 
       if (serialization.error !== undefined) {
         return { error: () => serialization.error, errorLevel: serialization.errorLevel, errorPath: path, serialized: serializedValue };
@@ -83,14 +86,15 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
   const deserialize = (
     value: SerializedT,
     validatorOptions: InternalValidationOptions,
-    path: string
+    path: LazyPath
   ): InternalValidationResult & { deserialized?: ValueT } => {
     try {
       const deserialization = serDes.deserialize(value);
 
       const deserializedValue = deserialization.deserialized;
 
-      validatorOptions.inoutModifiedPaths[path] = deserializedValue;
+      const resolvedPath = resolveLazyPath(path);
+      validatorOptions.inoutModifiedPaths[resolvedPath] = deserializedValue;
 
       if (deserialization.error !== undefined) {
         return {
@@ -111,7 +115,7 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
     }
   };
 
-  const validateDeserializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: string) => {
+  const validateDeserializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: LazyPath) => {
     const validationMode = getValidationMode(validatorOptions);
     if (validationMode === 'none') {
       return noError;
@@ -126,7 +130,7 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
     return noError;
   };
 
-  const validateSerializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: string) => {
+  const validateSerializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: LazyPath) => {
     const validation = (serDes.serializedSchema() as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
     if (isErrorResult(validation)) {
       return validation;
@@ -146,18 +150,19 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
 
         return validateDeserializedForm(value, validatorOptions, path);
       case 'serialize': {
-        if (!(path in validatorOptions.inoutModifiedPaths)) {
+        const resolvedPath = resolveLazyPath(path);
+        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
           if (!serDes.isValueType(value)) {
             return makeErrorResultForValidationMode(
               validationMode,
               () => `Expected ${typeName}, found ${getMeaningfulTypeof(value)}`,
-              path
+              resolvedPath
             );
           }
 
-          const validation = validateDeserializedForm(value, validatorOptions, path);
+          const validation = validateDeserializedForm(value, validatorOptions, resolvedPath);
 
-          const serialization = serialize(value as ValueT, validatorOptions, path);
+          const serialization = serialize(value as ValueT, validatorOptions, resolvedPath);
           if (isErrorResult(serialization)) {
             return serialization;
           }
@@ -170,13 +175,14 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
         break;
       }
       case 'deserialize': {
-        if (!(path in validatorOptions.inoutModifiedPaths)) {
-          const serializedValidation = validateSerializedForm(value, validatorOptions, path);
+        const resolvedPath = resolveLazyPath(path);
+        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
+          const serializedValidation = validateSerializedForm(value, validatorOptions, resolvedPath);
           if (isErrorResult(serializedValidation)) {
             return serializedValidation;
           }
 
-          const deserialization = deserialize(value as SerializedT, validatorOptions, path);
+          const deserialization = deserialize(value as SerializedT, validatorOptions, resolvedPath);
           if (isErrorResult(deserialization)) {
             return deserialization;
           }
@@ -186,11 +192,11 @@ export const custom = <ValueT, SerializedT extends JsonValue>({
             return makeErrorResultForValidationMode(
               validationMode,
               () => `Expected ${typeName}, found ${getMeaningfulTypeof(value)}`,
-              path
+              resolvedPath
             );
           }
 
-          const deserializedValidation = validateDeserializedForm(value, validatorOptions, path);
+          const deserializedValidation = validateDeserializedForm(value, validatorOptions, resolvedPath);
           if (isErrorResult(deserializedValidation)) {
             return deserializedValidation;
           }

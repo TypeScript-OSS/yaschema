@@ -4,7 +4,7 @@ import { getAsyncMaxWorkIntervalMSec } from '../../../config/async-max-work-inte
 import type { JsonValue } from '../../../types/json-value';
 import type { AsyncSerializer } from '../../../types/serializer';
 import type { InternalAsyncValidator, InternalValidationOptions } from '../types/internal-validation';
-import { atPath } from '../utils/path-utils';
+import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { processRemoveUnknownKeys } from '../utils/process-remove-unknown-keys';
 import { sleep } from '../utils/sleep';
 
@@ -41,7 +41,7 @@ export const makeExternalAsyncSerializer =
     if (output.error !== undefined) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: output.errorPath,
+        errorPath: resolveLazyPath(output.errorPath),
         errorLevel: output.errorLevel,
         serialized: internalOptions.workingValue as JsonValue
       };
