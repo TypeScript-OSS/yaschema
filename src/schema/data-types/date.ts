@@ -100,6 +100,13 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
         try {
           const date = new Date(value);
+          if (isNaN(date.getTime())) {
+            return makeErrorResultForValidationMode(
+              validationMode,
+              () => `Expected ISO Date or Date/Time string, found ${getMeaningfulTypeof(value)}`,
+              path
+            );
+          }
           validatorOptions.modifyWorkingValueAtPath(path, date);
           value = date;
         } catch (e) {
