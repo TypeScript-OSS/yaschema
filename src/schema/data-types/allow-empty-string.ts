@@ -7,35 +7,36 @@ import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 import { validateValue } from '../internal/utils/validate-value';
-import type { AllowEmptyStringSchema } from './allow-empty-string';
-import { allowEmptyString } from './allow-empty-string';
 
-/** Requires a non-empty string, optionally matching one of the specified values. */
-export interface StringSchema<ValueT extends string> extends Schema<ValueT> {
-  schemaType: 'string';
-  clone: () => StringSchema<ValueT>;
+/** Requires a string, optionally matching one of the specified values. */
+export interface AllowEmptyStringSchema<ValueT extends string> extends Schema<ValueT | ''> {
+  schemaType: 'allowEmptyString';
+  clone: () => AllowEmptyStringSchema<ValueT>;
 
+  /** Note that this doesn't include `''` */
   allowedValues: ValueT[];
-  allowEmptyString: () => AllowEmptyStringSchema<ValueT>;
 }
 
 /**
- * Requires a non-empty string.  If one or more values are specified, the string must match ones of the specified values.
- *
- * Call `.allowEmptyString` to allow empty strings.
+ * Requires a string, which may be empty.  If one or more values are specified, the string must either be empty or match ones of the
+ * specified values.
  */
-export const string = <ValueT extends string>(...allowedValues: ValueT[]): StringSchema<ValueT> => new StringSchemaImpl(...allowedValues);
+export const allowEmptyString = <ValueT extends string>(...allowedValues: ValueT[]): AllowEmptyStringSchema<ValueT> =>
+  new AllowEmptyStringSchemaImpl(...allowedValues);
 
 // Helpers
 
-class StringSchemaImpl<ValueT extends string> extends InternalSchemaMakerImpl<ValueT> implements StringSchema<ValueT> {
+class AllowEmptyStringSchemaImpl<ValueT extends string>
+  extends InternalSchemaMakerImpl<ValueT | ''>
+  implements AllowEmptyStringSchema<ValueT>
+{
   // Public Fields
 
   public readonly allowedValues: ValueT[];
 
   // PureSchema Field Overrides
 
-  public override readonly schemaType = 'string';
+  public override readonly schemaType = 'allowEmptyString';
 
   public override readonly valueType = undefined as any as ValueT;
 
@@ -62,9 +63,8 @@ class StringSchemaImpl<ValueT extends string> extends InternalSchemaMakerImpl<Va
 
   // Public Methods
 
-  public readonly allowEmptyString = () => allowEmptyString(...this.allowedValues);
-
-  public readonly clone = (): StringSchema<ValueT> => copyMetaFields({ from: this, to: new StringSchemaImpl(...this.allowedValues) });
+  public readonly clone = (): AllowEmptyStringSchema<ValueT> =>
+    copyMetaFields({ from: this, to: new AllowEmptyStringSchemaImpl(...this.allowedValues) });
 
   // Method Overrides
 
@@ -75,16 +75,12 @@ class StringSchemaImpl<ValueT extends string> extends InternalSchemaMakerImpl<Va
       return makeErrorResultForValidationMode(validationMode, () => `Expected string, found ${getMeaningfulTypeof(value)}`, path);
     }
 
-    if (validationMode === 'none') {
+    if (validationMode === 'none' || value === '') {
       return noError;
     }
 
     if (this.allowedValues.length > 0) {
       return validateValue(value, { allowed: this.equalsSet_, path, validationMode });
-    }
-
-    if (value.length === 0) {
-      return makeErrorResultForValidationMode(validationMode, () => 'Expected non-empty string, found empty string', path);
     }
 
     return noError;

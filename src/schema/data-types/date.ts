@@ -4,7 +4,7 @@ import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalValidationOptions, InternalValidator } from '../internal/types/internal-validation';
 import type { LazyPath } from '../internal/types/lazy-path';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
@@ -26,24 +26,44 @@ export interface DateSchema extends Schema<Date> {
 const dateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(.\d{1,9})?)?(Z|[+-]\d{2}(:\d{2})?)?)?$/;
 
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
-export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
-  const validateDeserializedForm: InternalValidator = (value: any, validatorOptions: InternalValidationOptions, path: LazyPath) => {
-    const validationMode = getValidationMode(validatorOptions);
-    if (validationMode === 'none') {
-      return noError;
-    }
+export const date = (...allowedRanges: Array<Range<Date>>): DateSchema => new DateSchemaImpl(...allowedRanges);
 
-    if (allowedRanges.length > 0) {
-      const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path, validationMode });
-      if (isErrorResult(rangeResult)) {
-        return rangeResult;
-      }
-    }
+// Helpers
 
-    return noError;
-  };
+class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema {
+  // Public Fields
 
-  const internalValidate: InternalValidator = (value, validatorOptions, path) => {
+  public readonly allowedRanges: Array<Range<Date>>;
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'date';
+
+  public override readonly valueType = undefined as any as Date;
+
+  public override readonly estimatedValidationTimeComplexity = 1;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+
+  public override readonly usesCustomSerDes = true;
+
+  public override readonly isContainerType = false;
+
+  // Initialization
+
+  constructor(...allowedRanges: Array<Range<Date>>) {
+    super();
+
+    this.allowedRanges = allowedRanges;
+  }
+
+  // Public Methods
+
+  public readonly clone = (): DateSchema => copyMetaFields({ from: this, to: new DateSchemaImpl(...this.allowedRanges) });
+
+  // Method Overrides
+
+  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
     const validationMode = getValidationMode(validatorOptions);
 
     switch (validatorOptions.transformation) {
@@ -52,13 +72,13 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
           return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
         }
 
-        return validateDeserializedForm(value, validatorOptions, path);
+        return this.validateDeserializedForm_(value, validatorOptions, path);
       case 'serialize': {
         if (!(value instanceof Date)) {
           return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
         }
 
-        const validation = validateDeserializedForm(value, validatorOptions, path);
+        const validation = this.validateDeserializedForm_(value, validatorOptions, path);
 
         value = (value as Date).toISOString();
 
@@ -90,7 +110,7 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
           return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
         }
 
-        const validation = validateDeserializedForm(value, validatorOptions, path);
+        const validation = this.validateDeserializedForm_(value, validatorOptions, path);
         if (isErrorResult(validation)) {
           return validation;
         }
@@ -101,17 +121,31 @@ export const date = (allowedRanges: Array<Range<Date>> = []): DateSchema => {
     return noError;
   };
 
-  const fullSchema: DateSchema = makeInternalSchema(
-    {
-      valueType: undefined as any as Date,
-      schemaType: 'date',
-      clone: () => copyMetaFields({ from: fullSchema, to: date(fullSchema.allowedRanges) }),
-      estimatedValidationTimeComplexity: 1,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
-      usesCustomSerDes: true
-    },
-    { internalValidate }
-  );
+  protected override overridableInternalValidateAsync = undefined;
 
-  return fullSchema;
-};
+  protected override overridableGetExtraToStringFields = () => ({
+    allowedRanges: this.allowedRanges
+  });
+
+  // Private Methods
+
+  private readonly validateDeserializedForm_: InternalValidator = (
+    value: any,
+    validatorOptions: InternalValidationOptions,
+    path: LazyPath
+  ) => {
+    const validationMode = getValidationMode(validatorOptions);
+    if (validationMode === 'none') {
+      return noError;
+    }
+
+    if (this.allowedRanges.length > 0) {
+      const rangeResult = validateValueInRange(value, { allowed: this.allowedRanges, path, validationMode });
+      if (isErrorResult(rangeResult)) {
+        return rangeResult;
+      }
+    }
+
+    return noError;
+  };
+}

@@ -2,7 +2,7 @@ import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complex
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type {
   InternalAsyncValidator,
@@ -25,8 +25,8 @@ export interface ArraySchema<ItemT = any> extends Schema<ItemT[]> {
   clone: () => ArraySchema<ItemT>;
 
   items?: Schema<ItemT>;
-  minLength?: number;
-  maxLength?: number;
+  minLength: number;
+  maxLength: number;
   /**
    * If specified, only the first maxEntriesToValidate entries are validated -- applies to item validation but not pattern validation.
    * This is ignored if the items require custom serialization or deserialization
@@ -41,63 +41,12 @@ export interface ArraySchema<ItemT = any> extends Schema<ItemT[]> {
  * limit the limit that are actually validated.  Note however, that `maxEntriesToValidate` is ignored if needed transformation is required
  * within the array elements, for example with an array of dates where the dates need to be serialized or deserialized.
  */
-export const array = <ItemT = any>({
-  items,
-  minLength,
-  maxEntriesToValidate,
-  maxLength
-}: {
+export const array = <ItemT = any>(args?: {
   items?: Schema<ItemT>;
   minLength?: number;
   maxLength?: number;
   maxEntriesToValidate?: number;
-} = {}): ArraySchema<ItemT> => {
-  const needsDeepSerDes = items?.usesCustomSerDes ?? false;
-  const isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = items?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false;
-
-  const internalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateArray(value, {
-      items,
-      minLength,
-      maxEntriesToValidate,
-      maxLength,
-      needsDeepSerDes,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-      path,
-      validatorOptions
-    });
-  const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    asyncValidateArray(value, {
-      items,
-      minLength,
-      maxEntriesToValidate,
-      maxLength,
-      needsDeepSerDes,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-      path,
-      validatorOptions
-    });
-
-  const fullSchema: ArraySchema<ItemT> = makeInternalSchema(
-    {
-      valueType: undefined as any as ItemT[],
-      schemaType: 'array',
-      clone: () => copyMetaFields({ from: fullSchema, to: array(fullSchema) }),
-      items,
-      minLength,
-      maxEntriesToValidate,
-      maxLength,
-      estimatedValidationTimeComplexity:
-        (items?.estimatedValidationTimeComplexity ?? 1) *
-        ((needsDeepSerDes ? maxLength : maxEntriesToValidate) ?? ESTIMATED_AVG_ARRAY_LENGTH),
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-      usesCustomSerDes: needsDeepSerDes
-    },
-    { internalValidate, internalValidateAsync }
-  );
-
-  return fullSchema;
-};
+}) => new ArraySchemaImpl(args);
 
 // Helpers
 
@@ -108,43 +57,33 @@ export const array = <ItemT = any>({
 const validateArray = <ItemT>(
   value: any,
   {
-    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-    items,
-    minLength = 0,
-    maxLength,
-    maxEntriesToValidate,
-    needsDeepSerDes,
+    schema,
     path,
     validatorOptions
   }: {
-    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
-    items?: Schema<ItemT>;
-    minLength?: number;
-    maxLength?: number;
-    /** If specified, only the first maxEntriesToValidate entries are validated -- applies to item validation but not pattern validation */
-    maxEntriesToValidate?: number;
-    needsDeepSerDes: boolean;
+    schema: ArraySchema<ItemT>;
     path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ) => {
   const validationMode = getValidationMode(validatorOptions);
-  const shouldStopOnFirstError = validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
+  const shouldStopOnFirstError =
+    validationMode === 'hard' || (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
   if (!Array.isArray(value)) {
     return makeErrorResultForValidationMode(validationMode, () => `Expected array, found ${getMeaningfulTypeof(value)}`, path);
   }
 
-  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
   let errorResult: InternalValidationResult | undefined;
 
-  if (errorResult === undefined && value.length < minLength) {
+  if (errorResult === undefined && value.length < schema.minLength) {
     errorResult = makeErrorResultForValidationMode(
       validationMode,
-      () => `Expected an array with at least ${minLength} element(s), found an array with ${value.length} element(s)`,
+      () => `Expected an array with at least ${schema.minLength} element(s), found an array with ${value.length} element(s)`,
       path
     );
 
@@ -153,10 +92,10 @@ const validateArray = <ItemT>(
     }
   }
 
-  if (errorResult === undefined && maxLength !== undefined && value.length > maxLength) {
+  if (errorResult === undefined && schema.maxLength !== undefined && value.length > schema.maxLength) {
     errorResult = makeErrorResultForValidationMode(
       validationMode,
-      () => `Expected an array with at most ${maxLength} element(s), found an array with ${value.length} element(s)`,
+      () => `Expected an array with at most ${schema.maxLength} element(s), found an array with ${value.length} element(s)`,
       path
     );
 
@@ -165,14 +104,15 @@ const validateArray = <ItemT>(
     }
   }
 
+  const items = schema.items;
   if (items !== undefined) {
     let index = 0;
     for (const arrayItem of value) {
       if (
-        !needsDeepSerDes &&
-        !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
-        maxEntriesToValidate !== undefined &&
-        index >= maxEntriesToValidate
+        !schema.usesCustomSerDes &&
+        !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
+        schema.maxEntriesToValidate !== undefined &&
+        index >= schema.maxEntriesToValidate
       ) {
         break; // Reached the max number to validate
       }
@@ -199,43 +139,33 @@ const validateArray = <ItemT>(
 const asyncValidateArray = async <ItemT>(
   value: any,
   {
-    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-    items,
-    minLength = 0,
-    maxLength,
-    maxEntriesToValidate,
-    needsDeepSerDes,
+    schema,
     path,
     validatorOptions
   }: {
-    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
-    items?: Schema<ItemT>;
-    minLength?: number;
-    maxLength?: number;
-    /** If specified, only the first maxEntriesToValidate entries are validated -- applies to item validation but not pattern validation */
-    maxEntriesToValidate?: number;
-    needsDeepSerDes: boolean;
+    schema: ArraySchema<ItemT>;
     path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ) => {
   const validationMode = getValidationMode(validatorOptions);
-  const shouldStopOnFirstError = validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
+  const shouldStopOnFirstError =
+    validationMode === 'hard' || (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
   if (!Array.isArray(value)) {
     return makeErrorResultForValidationMode(validationMode, () => `Expected array, found ${getMeaningfulTypeof(value)}`, path);
   }
 
-  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
   let errorResult: InternalValidationResult | undefined;
 
-  if (errorResult === undefined && value.length < minLength) {
+  if (errorResult === undefined && value.length < schema.minLength) {
     errorResult = makeErrorResultForValidationMode(
       validationMode,
-      () => `Expected an array with at least ${minLength} element(s), found an array with ${value.length} element(s)`,
+      () => `Expected an array with at least ${schema.minLength} element(s), found an array with ${value.length} element(s)`,
       path
     );
 
@@ -244,10 +174,10 @@ const asyncValidateArray = async <ItemT>(
     }
   }
 
-  if (errorResult === undefined && maxLength !== undefined && value.length > maxLength) {
+  if (errorResult === undefined && schema.maxLength !== undefined && value.length > schema.maxLength) {
     errorResult = makeErrorResultForValidationMode(
       validationMode,
-      () => `Expected an array with at most ${maxLength} element(s), found an array with ${value.length} element(s)`,
+      () => `Expected an array with at most ${schema.maxLength} element(s), found an array with ${value.length} element(s)`,
       path
     );
 
@@ -256,6 +186,7 @@ const asyncValidateArray = async <ItemT>(
     }
   }
 
+  const items = schema.items;
   if (items === undefined) {
     return errorResult ?? noError;
   }
@@ -274,10 +205,10 @@ const asyncValidateArray = async <ItemT>(
       const arrayItem = value[index];
 
       if (
-        !needsDeepSerDes &&
-        !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
-        maxEntriesToValidate !== undefined &&
-        index >= maxEntriesToValidate
+        !schema.usesCustomSerDes &&
+        !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
+        schema.maxEntriesToValidate !== undefined &&
+        index >= schema.maxEntriesToValidate
       ) {
         return false; // Reached the max number to validate
       }
@@ -309,3 +240,93 @@ const asyncValidateArray = async <ItemT>(
 
   return errorResult ?? noError;
 };
+
+class ArraySchemaImpl<ItemT = any> extends InternalSchemaMakerImpl<ItemT[]> implements ArraySchema<ItemT> {
+  // Public Fields
+
+  public readonly items?: Schema<ItemT>;
+
+  public readonly minLength: number;
+
+  public readonly maxLength: number;
+
+  public readonly maxEntriesToValidate?: number;
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'array';
+
+  public override readonly valueType = undefined as any as ItemT[];
+
+  public override readonly estimatedValidationTimeComplexity: number;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+
+  public override readonly usesCustomSerDes: boolean;
+
+  public override readonly isContainerType = true;
+
+  // Initialization
+
+  constructor({
+    items,
+    minLength,
+    maxEntriesToValidate,
+    maxLength
+  }: {
+    items?: Schema<ItemT>;
+    minLength?: number;
+    maxLength?: number;
+    maxEntriesToValidate?: number;
+  } = {}) {
+    super();
+
+    this.items = items;
+    this.minLength = minLength ?? 0;
+    this.maxLength = maxLength ?? Number.MAX_SAFE_INTEGER;
+    this.maxEntriesToValidate = maxEntriesToValidate;
+
+    this.usesCustomSerDes = items?.usesCustomSerDes ?? false;
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = items?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false;
+
+    this.estimatedValidationTimeComplexity =
+      (items?.estimatedValidationTimeComplexity ?? 1) *
+      ((this.usesCustomSerDes ? maxLength : maxEntriesToValidate) ?? ESTIMATED_AVG_ARRAY_LENGTH);
+  }
+
+  // Public Methods
+
+  public readonly clone = (): ArraySchema<ItemT> =>
+    copyMetaFields({
+      from: this,
+      to: new ArraySchemaImpl({
+        items: this.items,
+        minLength: this.minLength,
+        maxLength: this.maxLength,
+        maxEntriesToValidate: this.maxEntriesToValidate
+      })
+    });
+
+  // Method Overrides
+
+  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) =>
+    validateArray(value, {
+      schema: this,
+      path,
+      validatorOptions
+    });
+
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
+    asyncValidateArray(value, {
+      schema: this,
+      path,
+      validatorOptions
+    });
+
+  protected override overridableGetExtraToStringFields = () => ({
+    items: this.items,
+    minLength: this.minLength,
+    maxLength: this.maxLength,
+    maxEntriesToValidate: this.maxEntriesToValidate
+  });
+}

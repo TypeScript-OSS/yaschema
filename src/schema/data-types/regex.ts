@@ -1,7 +1,7 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
@@ -16,8 +16,44 @@ export interface RegexSchema extends Schema<string> {
 }
 
 /** Requires a string matching the specified regular expression. */
-export const regex = (pattern: RegExp): RegexSchema => {
-  const internalValidate: InternalValidator = (value, validatorOptions, path) => {
+export const regex = (pattern: RegExp): RegexSchema => new RegexSchemaImpl(pattern);
+
+// Helpers
+
+class RegexSchemaImpl extends InternalSchemaMakerImpl<string> implements RegexSchema {
+  // Public Fields
+
+  public readonly regex: RegExp;
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'regex';
+
+  public override readonly valueType = undefined as any as string;
+
+  public override readonly estimatedValidationTimeComplexity = 1;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+
+  public override readonly usesCustomSerDes = false;
+
+  public override readonly isContainerType = false;
+
+  // Initialization
+
+  constructor(pattern: RegExp) {
+    super();
+
+    this.regex = pattern;
+  }
+
+  // Public Methods
+
+  public readonly clone = (): RegexSchema => copyMetaFields({ from: this, to: new RegexSchemaImpl(this.regex) });
+
+  // Method Overrides
+
+  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
     const validationMode = getValidationMode(validatorOptions);
 
     if (typeof value !== 'string') {
@@ -28,10 +64,10 @@ export const regex = (pattern: RegExp): RegexSchema => {
       return noError;
     }
 
-    if (!pattern.test(value)) {
+    if (!this.regex.test(value)) {
       return makeErrorResultForValidationMode(
         validationMode,
-        () => `Expected string matching ${String(pattern)}, found non-matching string`,
+        () => `Expected string matching ${String(this.regex)}, found non-matching string`,
         path
       );
     }
@@ -39,18 +75,9 @@ export const regex = (pattern: RegExp): RegexSchema => {
     return noError;
   };
 
-  const fullSchema: RegexSchema = makeInternalSchema(
-    {
-      valueType: undefined as any as string,
-      schemaType: 'regex',
-      clone: () => copyMetaFields({ from: fullSchema, to: regex(fullSchema.regex) }),
-      regex: pattern,
-      estimatedValidationTimeComplexity: 1,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
-      usesCustomSerDes: false
-    },
-    { internalValidate }
-  );
+  protected override overridableInternalValidateAsync = undefined;
 
-  return fullSchema;
-};
+  protected override overridableGetExtraToStringFields = () => ({
+    regex: String(this.regex)
+  });
+}

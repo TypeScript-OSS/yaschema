@@ -1,8 +1,8 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
-import type { InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
+import type { InternalValidationResult } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
@@ -27,11 +27,72 @@ export interface BooleanSchema<ValueT extends boolean> extends Schema<ValueT> {
 }
 
 /** Requires a boolean.  If one or more values are specified, the boolean must also match one of the specified values. */
-export const boolean = <ValueT extends boolean>(...allowedValues: ValueT[]): BooleanSchema<ValueT> => {
-  const equalsSet = new Set(allowedValues);
+export const boolean = <ValueT extends boolean>(...allowedValues: ValueT[]): BooleanSchema<ValueT> =>
+  new BooleanSchemaImpl(...allowedValues);
 
-  const internalValidate: InternalValidator = supportVariableSerializationFormsForBooleanValues(
-    () => fullSchema,
+// Helpers
+
+class BooleanSchemaImpl<ValueT extends boolean> extends InternalSchemaMakerImpl<ValueT> implements BooleanSchema<ValueT> {
+  // Public Fields
+
+  public readonly allowedValues: ValueT[];
+
+  public allowedSerializationForms?: Array<'boolean' | 'string'>;
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'boolean';
+
+  public override readonly valueType = undefined as any as ValueT;
+
+  public override readonly estimatedValidationTimeComplexity = 1;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+
+  public override get usesCustomSerDes() {
+    return this.usesCustomSerDes_;
+  }
+
+  public override readonly isContainerType = false;
+
+  // Private Fields
+
+  private readonly equalsSet_: Set<ValueT>;
+  private usesCustomSerDes_ = false;
+
+  // Initialization
+
+  constructor(...allowedValues: ValueT[]) {
+    super();
+
+    this.allowedValues = allowedValues;
+    this.equalsSet_ = new Set(allowedValues);
+  }
+
+  // Public Methods
+
+  public readonly clone = (): BooleanSchema<ValueT> =>
+    copyMetaFields({
+      from: this,
+      to: new BooleanSchemaImpl(...this.allowedValues).setAllowedSerializationForms(this.allowedSerializationForms)
+    });
+
+  public readonly setAllowedSerializationForms = (allowed?: Array<'boolean' | 'string'>): this => {
+    if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'boolean')) {
+      this.allowedSerializationForms = undefined;
+      this.usesCustomSerDes_ = false;
+    } else {
+      this.allowedSerializationForms = allowed;
+      this.usesCustomSerDes_ = true;
+    }
+
+    return this;
+  };
+
+  // Method Overrides
+
+  protected override overridableInternalValidate = supportVariableSerializationFormsForBooleanValues(
+    () => this,
     (value, validatorOptions, path): InternalValidationResult => {
       const validationMode = getValidationMode(validatorOptions);
       if (typeof value !== 'boolean') {
@@ -42,41 +103,18 @@ export const boolean = <ValueT extends boolean>(...allowedValues: ValueT[]): Boo
         return noError;
       }
 
-      if (allowedValues.length > 0) {
-        return validateValue(value, { allowed: equalsSet, path, validationMode });
+      if (this.allowedValues.length > 0) {
+        return validateValue(value, { allowed: this.equalsSet_, path, validationMode });
       }
 
       return noError;
     }
   );
 
-  const fullSchema: BooleanSchema<ValueT> = makeInternalSchema(
-    {
-      valueType: undefined as any as ValueT,
-      schemaType: 'boolean',
-      clone: () =>
-        copyMetaFields({
-          from: fullSchema,
-          to: boolean(...fullSchema.allowedValues).setAllowedSerializationForms(fullSchema.allowedSerializationForms)
-        }),
-      allowedValues,
-      estimatedValidationTimeComplexity: 1,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
-      usesCustomSerDes: false,
-      setAllowedSerializationForms: (allowed?: Array<'boolean' | 'string'>) => {
-        if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'boolean')) {
-          fullSchema.allowedSerializationForms = undefined;
-          fullSchema.usesCustomSerDes = false;
-        } else {
-          fullSchema.allowedSerializationForms = allowed;
-          fullSchema.usesCustomSerDes = true;
-        }
+  protected override overridableInternalValidateAsync = undefined;
 
-        return fullSchema;
-      }
-    },
-    { internalValidate }
-  );
-
-  return fullSchema;
-};
+  protected override overridableGetExtraToStringFields = () => ({
+    allowedValues: this.allowedValues,
+    allowedSerializationForms: this.allowedSerializationForms
+  });
+}

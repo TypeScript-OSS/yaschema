@@ -22,15 +22,16 @@ export interface InternalValidationOptions {
     isContainerType: boolean;
   }>;
 
-  /** The unknown-key removal mode */
+  /** If `true`, one or more of `shouldFailOnUnknownKeys` or `shouldRemoveUnknownKeys` is `true` */
+  shouldProcessUnknownKeys: boolean;
+  /** If `true`, unknown keys will cause errors unless schemas have `disableFailOnUnknownKeys` set to `true` */
+  shouldFailOnUnknownKeys: boolean;
+  /** If `true`, unknown keys will be removed unless schemas have `disableRemoveUnknownKeys` set to `true` */
   shouldRemoveUnknownKeys: boolean;
 
-  /**
-   * - For serialize: the paths who's values have been replaced as part of the transformation, and the values that were set
-   * - For deserialize: the paths who's values should be replaced and the values to replace them with
-   */
-  inoutModifiedPaths: Map<string, any>;
-  inoutUnknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>>;
+  setAllowAllKeysForPath: (path: LazyPath) => void;
+  registerPotentiallyUnknownKeysForPath: (path: LazyPath, keys: () => Set<string>) => Set<string> | undefined;
+
   /** A value that's safe to modify by path  */
   workingValue?: Readonly<any>;
   modifyWorkingValueAtPath: (path: LazyPath, newValue: any) => void;
@@ -54,6 +55,16 @@ export type InternalAsyncValidator = (
   path: LazyPath
 ) => Promise<InternalValidationResult> | InternalValidationResult;
 
-export type InternalValidationResult =
-  | { error: () => string; errorPath: LazyPath; errorLevel: ValidationErrorLevel }
-  | { error?: undefined; errorPath?: undefined; errorLevel?: undefined };
+export interface InternalValidationErrorResult {
+  error: () => string;
+  errorPath: LazyPath;
+  errorLevel: ValidationErrorLevel;
+}
+
+export interface InternalValidationSuccessResult {
+  error?: undefined;
+  errorPath?: undefined;
+  errorLevel?: undefined;
+}
+
+export type InternalValidationResult = InternalValidationErrorResult | InternalValidationSuccessResult;

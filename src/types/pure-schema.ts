@@ -10,10 +10,10 @@ export interface CommonSchemaMeta {
   example?: string;
 
   /**
-   * If `true`, extra keys aren't removed even if `removeUnknownKeys` is `true` for the operation.  This effects the directly described
-   * value but not sub-values.
+   * If `true`, extra keys don't cause errors and won't be removed, even if `failOnUnknownKeys` and/or `removeUnknownKeys` is `true` for the
+   * operation.  This effects the directly described value but not sub-values.
    */
-  disableRemoveUnknownKeys: boolean;
+  allowUnknownKeys: boolean;
 
   /**
    * The preferred validation mode for this schema.
@@ -57,4 +57,8 @@ export interface PureSchema<ValueT> extends CommonSchemaMeta {
 
   /** If `true`, this schema or any sub-elements have a custom serializer-deserializer */
   usesCustomSerDes: boolean;
+
+  /** If `true`, `"shallow"` ancestor validation mode preferences won't be used when this schemas validation mode preference is
+   * `"inherit"`, like other built-in container types */
+  isContainerType: boolean;
 }

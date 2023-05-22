@@ -1,4 +1,4 @@
-import { atPath } from '../path-utils';
+import { appendPathComponent, appendPathIndex, atPath } from '../path-utils';
 
 describe('atPath', () => {
   it('should work with undefined path', () => {
@@ -6,10 +6,20 @@ describe('atPath', () => {
   });
 
   it('should work with empty path', () => {
-    expect(atPath('')).toBe('');
+    expect(atPath(() => {})).toBe('');
   });
 
   it('should work with non-empty path', () => {
-    expect(atPath('["hello"]["world"][3]')).toBe(' @ ["hello"]["world"][3]');
+    expect(
+      atPath(
+        appendPathIndex(
+          appendPathComponent(
+            appendPathComponent(() => {}, 'hello'),
+            'world'
+          ),
+          3
+        )
+      )
+    ).toBe(' @ ["hello"]["world"][3]');
   });
 });

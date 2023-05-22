@@ -3,8 +3,8 @@ import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
 import type { ValidationMode } from '../../types/validation-options';
 import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
-import type { InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
+import type { InternalValidationResult } from '../internal/types/internal-validation';
 import type { LazyPath } from '../internal/types/lazy-path';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
@@ -21,12 +21,14 @@ export interface RestrictedNumberOptions {
 
 /** Requires a real, finite number, optionally matching one of the specified values or in one of the specified ranges and optionally being
  * divisible by one of the specified divisors. */
-export interface RestrictedNumberSchema extends Schema<number>, RestrictedNumberOptions {
+export interface RestrictedNumberSchema extends Schema<number> {
   schemaType: 'restrictedNumber';
   clone: () => RestrictedNumberSchema;
 
   /** If one or more values are specified, the value must be equal to one of the specified values or in one of the specified ranges */
   allowedValuesAndRanges: Array<number | Range<number>>;
+  /** If one or more values are specified, the value must be divisible by one of the specified options */
+  divisibleBy: number[];
 
   /**
    * For serialization, the first type will be used. `['number']` is assumed if nothing is specified.
@@ -41,94 +43,8 @@ export interface RestrictedNumberSchema extends Schema<number>, RestrictedNumber
 /** Requires a real, finite number.  If one or more values and/or ranges are specified, the value must also be equal to one of the specified
  * values or in one of the specified ranges.  If one or more divisors are specified, the value must also be divisible by one of the
  * specified divisors. */
-export const restrictedNumber = (
-  allowedValuesAndRanges: Array<number | Range<number>>,
-  { divisibleBy = [] }: RestrictedNumberOptions = {}
-): RestrictedNumberSchema => {
-  const allowedNumbers = allowedValuesAndRanges.filter((v): v is number => typeof v === 'number');
-  const allowedRanges = allowedValuesAndRanges.filter((v): v is Range<number> => typeof v !== 'number');
-
-  const allowedNumbersSet = new Set(allowedNumbers);
-
-  const internalValidate: InternalValidator = supportVariableSerializationFormsForNumericValues(
-    () => fullSchema,
-    (value, validatorOptions, path) => {
-      const validationMode = getValidationMode(validatorOptions);
-
-      if (typeof value !== 'number') {
-        return makeErrorResultForValidationMode(validationMode, () => `Expected number, found ${getMeaningfulTypeof(value)}`, path);
-      }
-
-      if (validationMode === 'none') {
-        return noError;
-      }
-
-      if (Number.isNaN(value)) {
-        return makeErrorResultForValidationMode(validationMode, () => 'Found NaN', path);
-      } else if (!Number.isFinite(value)) {
-        return makeErrorResultForValidationMode(validationMode, () => 'Found non-finite value', path);
-      }
-
-      if (allowedNumbers.length > 0) {
-        const valueResult = validateValue(value, { allowed: allowedNumbersSet, path, validationMode });
-        if (isErrorResult(valueResult)) {
-          if (allowedRanges.length > 0) {
-            const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path, validationMode });
-            if (isErrorResult(rangeResult)) {
-              return rangeResult;
-            }
-          } else {
-            return valueResult;
-          }
-        }
-      } else if (allowedRanges.length > 0) {
-        const rangeResult = validateValueInRange(value, { allowed: allowedRanges, path, validationMode });
-        if (isErrorResult(rangeResult)) {
-          return rangeResult;
-        }
-      }
-
-      if (divisibleBy.length > 0) {
-        return validateValueIsDivisibleBy(value, { allowed: divisibleBy, path, validationMode });
-      }
-
-      return noError;
-    }
-  );
-
-  const fullSchema: RestrictedNumberSchema = makeInternalSchema(
-    {
-      valueType: undefined as any as number,
-      schemaType: 'restrictedNumber',
-      clone: () =>
-        copyMetaFields({
-          from: fullSchema,
-          to: restrictedNumber(fullSchema.allowedValuesAndRanges, { divisibleBy: fullSchema.divisibleBy }).setAllowedSerializationForms(
-            fullSchema.allowedSerializationForms
-          )
-        }),
-      allowedValuesAndRanges,
-      divisibleBy,
-      estimatedValidationTimeComplexity: allowedRanges.length + 1,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
-      usesCustomSerDes: false,
-      setAllowedSerializationForms: (allowed?: Array<'number' | 'string'>) => {
-        if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'number')) {
-          fullSchema.allowedSerializationForms = undefined;
-          fullSchema.usesCustomSerDes = false;
-        } else {
-          fullSchema.allowedSerializationForms = allowed;
-          fullSchema.usesCustomSerDes = true;
-        }
-
-        return fullSchema;
-      }
-    },
-    { internalValidate }
-  );
-
-  return fullSchema;
-};
+export const restrictedNumber = (allowedValuesAndRanges: Array<number | Range<number>>, options?: RestrictedNumberOptions) =>
+  new RestrictedNumberSchemaImpl(allowedValuesAndRanges, options);
 
 // Helpers
 
@@ -148,3 +64,130 @@ const validateValueIsDivisibleBy = (
 
   return noError;
 };
+
+class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> implements RestrictedNumberSchema {
+  // Public Fields
+
+  public allowedSerializationForms?: Array<'number' | 'string'>;
+
+  public readonly allowedValuesAndRanges: Array<number | Range<number>>;
+
+  public readonly divisibleBy: number[];
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'restrictedNumber';
+
+  public override readonly valueType = undefined as any as number;
+
+  public override readonly estimatedValidationTimeComplexity: number;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+
+  public override get usesCustomSerDes() {
+    return this.usesCustomSerDes_;
+  }
+
+  public override readonly isContainerType = false;
+
+  // Private Fields
+
+  private readonly allowedNumbersSet_: Set<number>;
+
+  private readonly allowedRanges_: Array<Range<number>>;
+
+  private usesCustomSerDes_ = false;
+
+  // Initialization
+
+  constructor(allowedValuesAndRanges: Array<number | Range<number>>, { divisibleBy = [] }: RestrictedNumberOptions = {}) {
+    super();
+
+    this.allowedValuesAndRanges = allowedValuesAndRanges;
+    this.divisibleBy = divisibleBy;
+
+    const allowedNumbers = allowedValuesAndRanges.filter((v): v is number => typeof v === 'number');
+    this.allowedNumbersSet_ = new Set(allowedNumbers);
+
+    this.allowedRanges_ = allowedValuesAndRanges.filter((v): v is Range<number> => typeof v !== 'number');
+
+    this.estimatedValidationTimeComplexity = this.allowedRanges_.length + 1;
+  }
+
+  // Public Methods
+
+  public readonly clone = (): RestrictedNumberSchema =>
+    copyMetaFields({
+      from: this,
+      to: restrictedNumber(this.allowedValuesAndRanges, { divisibleBy: this.divisibleBy }).setAllowedSerializationForms(
+        this.allowedSerializationForms
+      )
+    });
+
+  public readonly setAllowedSerializationForms = (allowed?: Array<'number' | 'string'>): this => {
+    if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'number')) {
+      this.allowedSerializationForms = undefined;
+      this.usesCustomSerDes_ = false;
+    } else {
+      this.allowedSerializationForms = allowed;
+      this.usesCustomSerDes_ = true;
+    }
+
+    return this;
+  };
+
+  // Method Overrides
+
+  protected override overridableInternalValidate = supportVariableSerializationFormsForNumericValues(
+    () => this,
+    (value, validatorOptions, path) => {
+      const validationMode = getValidationMode(validatorOptions);
+
+      if (typeof value !== 'number') {
+        return makeErrorResultForValidationMode(validationMode, () => `Expected number, found ${getMeaningfulTypeof(value)}`, path);
+      }
+
+      if (validationMode === 'none') {
+        return noError;
+      }
+
+      if (Number.isNaN(value)) {
+        return makeErrorResultForValidationMode(validationMode, () => 'Found NaN', path);
+      } else if (!Number.isFinite(value)) {
+        return makeErrorResultForValidationMode(validationMode, () => 'Found non-finite value', path);
+      }
+
+      if (this.allowedNumbersSet_.size > 0) {
+        const valueResult = validateValue(value, { allowed: this.allowedNumbersSet_, path, validationMode });
+        if (isErrorResult(valueResult)) {
+          if (this.allowedRanges_.length > 0) {
+            const rangeResult = validateValueInRange(value, { allowed: this.allowedRanges_, path, validationMode });
+            if (isErrorResult(rangeResult)) {
+              return rangeResult;
+            }
+          } else {
+            return valueResult;
+          }
+        }
+      } else if (this.allowedRanges_.length > 0) {
+        const rangeResult = validateValueInRange(value, { allowed: this.allowedRanges_, path, validationMode });
+        if (isErrorResult(rangeResult)) {
+          return rangeResult;
+        }
+      }
+
+      if (this.divisibleBy.length > 0) {
+        return validateValueIsDivisibleBy(value, { allowed: this.divisibleBy, path, validationMode });
+      }
+
+      return noError;
+    }
+  );
+
+  protected override overridableInternalValidateAsync = undefined;
+
+  protected override overridableGetExtraToStringFields = () => ({
+    allowedValuesAndRanges: this.allowedValuesAndRanges,
+    divisibleBy: this.divisibleBy
+  });
+}

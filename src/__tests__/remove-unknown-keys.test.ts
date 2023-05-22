@@ -1,5 +1,7 @@
 import { schema } from '..';
 
+// TODO: make tests for failOnUnknownKey
+
 describe('remove unknown keys', () => {
   describe('simple objects', () => {
     const objectSchema = schema.object({
@@ -89,7 +91,7 @@ describe('remove unknown keys', () => {
     });
   });
 
-  describe('using allOf / anyOf and setDisableRemoveUnknownKeys(true)', () => {
+  describe('using allOf / anyOf and setAllowUnknownKeys(true)', () => {
     const objectSchema = schema.allOf(
       schema.object({
         one: schema.string('one', 'ONE')
@@ -101,7 +103,7 @@ describe('remove unknown keys', () => {
             four: schema.number()
           }),
           schema.object({
-            five: schema.object({ six: schema.number() }).setDisableRemoveUnknownKeys(true)
+            five: schema.object({ six: schema.number() }).setAllowUnknownKeys(true)
           })
         )
       })

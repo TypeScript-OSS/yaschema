@@ -7,7 +7,6 @@ import type { InternalValidator } from '../types/internal-validation';
 import { getValidationMode } from './get-validation-mode';
 import { isErrorResult } from './is-error-result';
 import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode';
-import { resolveLazyPath } from './path-utils';
 
 const booleanRegex = /^true|false$/;
 
@@ -29,25 +28,22 @@ export const supportVariableSerializationFormsForBooleanValues =
 
     switch (validatorOptions.transformation) {
       case 'serialize': {
-        const resolvedPath = resolveLazyPath(path);
-        if (!validatorOptions.inoutModifiedPaths.has(resolvedPath)) {
-          const validation = normalizedValidator(value, validatorOptions, resolvedPath);
-          if (isErrorResult(validation)) {
-            return validation;
-          }
+        const validation = normalizedValidator(value, validatorOptions, path);
+        if (isErrorResult(validation)) {
+          return validation;
+        }
 
-          for (const form of schema.allowedSerializationForms ?? []) {
-            switch (form) {
-              case 'boolean':
+        for (const form of schema.allowedSerializationForms ?? []) {
+          switch (form) {
+            case 'boolean':
+              return validation;
+            case 'string': {
+              value = String(value);
+
+              validatorOptions.modifyWorkingValueAtPath(path, value);
+
+              if (isErrorResult(validation)) {
                 return validation;
-              case 'string': {
-                value = String(value);
-
-                validatorOptions.modifyWorkingValueAtPath(resolvedPath, value);
-
-                if (isErrorResult(validation)) {
-                  return validation;
-                }
               }
             }
           }
@@ -55,38 +51,34 @@ export const supportVariableSerializationFormsForBooleanValues =
         break;
       }
       case 'deserialize': {
-        const resolvedPath = resolveLazyPath(path);
-        if (!(resolvedPath in validatorOptions.inoutModifiedPaths)) {
-          for (const form of schema.allowedSerializationForms ?? []) {
-            switch (form) {
-              case 'boolean': {
-                if (typeof value === 'boolean') {
-                  return normalizedValidator(value, validatorOptions, resolvedPath);
-                }
-                break;
+        for (const form of schema.allowedSerializationForms ?? []) {
+          switch (form) {
+            case 'boolean': {
+              if (typeof value === 'boolean') {
+                return normalizedValidator(value, validatorOptions, path);
               }
-              case 'string': {
-                if (typeof value === 'string' && booleanRegex.test(value)) {
-                  const booleanValue = value === 'true';
-                  validatorOptions.modifyWorkingValueAtPath(resolvedPath, booleanValue);
-                  value = booleanValue;
+              break;
+            }
+            case 'string': {
+              if (typeof value === 'string' && booleanRegex.test(value)) {
+                const booleanValue = value === 'true';
+                validatorOptions.modifyWorkingValueAtPath(path, booleanValue);
+                value = booleanValue;
 
-                  return normalizedValidator(value, validatorOptions, resolvedPath);
-                }
-                break;
+                return normalizedValidator(value, validatorOptions, path);
               }
+              break;
             }
           }
-
-          const validationMode = getValidationMode(validatorOptions);
-
-          return makeErrorResultForValidationMode(
-            validationMode,
-            () => `Expected ${(schema.allowedSerializationForms ?? []).join(' or ')}, found ${getMeaningfulTypeof(value)}`,
-            resolvedPath
-          );
         }
-        break;
+
+        const validationMode = getValidationMode(validatorOptions);
+
+        return makeErrorResultForValidationMode(
+          validationMode,
+          () => `Expected ${(schema.allowedSerializationForms ?? []).join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+          path
+        );
       }
     }
 

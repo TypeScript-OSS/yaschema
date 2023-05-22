@@ -7,6 +7,15 @@ export type ValidationMode = 'none' | 'soft' | 'hard';
 
 export interface ValidationOptions {
   /**
+   * If `true`, an error is returned if unknown keys are present.
+   *
+   * Individual schemas may override this preference.
+   *
+   * @defaultValue `false`
+   */
+  failOnUnknownKeys?: boolean;
+
+  /**
    * The mode for validation.
    *
    * Individual schemas may lower the validation mode.

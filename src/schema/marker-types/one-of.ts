@@ -2,7 +2,7 @@ import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complex
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type {
   InternalAsyncValidator,
@@ -30,43 +30,7 @@ export interface OneOfSchema<TypeA, TypeB> extends Schema<TypeA | TypeB> {
  * The base form takes 2 schemas, but `oneOf3`, `oneOf4`, and `oneOf5` take more.  If you need even more than that, use something like
  * `oneOf(oneOf5(…), oneOf5(…))`
  */
-export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): OneOfSchema<TypeA, TypeB> => {
-  const needsDeepSerDes = schemaA.usesCustomSerDes || schemaB.usesCustomSerDes;
-  const isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
-    schemaA.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || schemaB.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
-
-  const internalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateOneOf(value, {
-      schemas: [schemaA, schemaB],
-      needsDeepSerDes,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-      path,
-      validatorOptions
-    });
-  const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    validateOneOfAsync(value, {
-      schemas: [schemaA, schemaB],
-      needsDeepSerDes,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-      path,
-      validatorOptions
-    });
-
-  const fullSchema: OneOfSchema<TypeA, TypeB> = makeInternalSchema(
-    {
-      valueType: undefined as any as TypeA | TypeB,
-      schemaType: 'oneOf',
-      clone: () => copyMetaFields({ from: fullSchema, to: oneOf(fullSchema.schemas[0], fullSchema.schemas[1]) }),
-      schemas: [schemaA, schemaB],
-      estimatedValidationTimeComplexity: schemaA.estimatedValidationTimeComplexity + schemaB.estimatedValidationTimeComplexity,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-      usesCustomSerDes: needsDeepSerDes
-    },
-    { internalValidate, internalValidateAsync }
-  );
-
-  return fullSchema;
-};
+export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>) => new OneOfSchemaImpl(schemaA, schemaB);
 
 export const oneOf3 = <TypeA, TypeB, TypeC>(
   schemaA: Schema<TypeA>,
@@ -95,33 +59,29 @@ export const oneOf5 = <TypeA, TypeB, TypeC, TypeD, TypeE>(
 const validateOneOf = <TypeA, TypeB>(
   value: any,
   {
-    schemas,
-    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-    needsDeepSerDes,
+    schema,
     path,
     validatorOptions
   }: {
-    schemas: [Schema<TypeA>, Schema<TypeB>];
-    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
-    needsDeepSerDes: boolean;
+    schema: OneOfSchema<TypeA, TypeB>;
     path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ): InternalValidationResult => {
   const validationMode = getValidationMode(validatorOptions);
-  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
   const validationResults: InternalValidationResult[] = [];
 
   let success = false;
-  for (const schema of schemas) {
-    const result = (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+  for (const subschema of schema.schemas) {
+    const result = (subschema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
     if (!isErrorResult(result)) {
       success = true;
 
-      if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
+      if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
         return noError;
       }
     } else {
@@ -142,21 +102,17 @@ const validateOneOf = <TypeA, TypeB>(
 const validateOneOfAsync = async <TypeA, TypeB>(
   value: any,
   {
-    schemas,
-    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-    needsDeepSerDes,
+    schema,
     path,
     validatorOptions
   }: {
-    schemas: [Schema<TypeA>, Schema<TypeB>];
-    isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
-    needsDeepSerDes: boolean;
+    schema: OneOfSchema<TypeA, TypeB>;
     path: LazyPath;
     validatorOptions: InternalValidationOptions;
   }
 ) => {
   const validationMode = getValidationMode(validatorOptions);
-  if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
     return noError;
   }
 
@@ -165,15 +121,15 @@ const validateOneOfAsync = async <TypeA, TypeB>(
   const validationResults: InternalValidationResult[] = [];
 
   let success = false;
-  for (const schema of schemas) {
+  for (const subschema of schema.schemas) {
     const result =
-      schema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-        ? await (schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
-        : (schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+      subschema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
+        ? await (subschema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
+        : (subschema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
     if (!isErrorResult(result)) {
       success = true;
 
-      if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
+      if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
         return noError;
       }
     } else {
@@ -189,3 +145,61 @@ const validateOneOfAsync = async <TypeA, TypeB>(
         path
       );
 };
+
+class OneOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA | TypeB> implements OneOfSchema<TypeA, TypeB> {
+  // Public Fields
+
+  public readonly schemas: [Schema<TypeA>, Schema<TypeB>];
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'oneOf';
+
+  public override readonly valueType = undefined as any as TypeA | TypeB;
+
+  public override readonly estimatedValidationTimeComplexity: number;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+
+  public override readonly usesCustomSerDes: boolean;
+
+  public override readonly isContainerType = false;
+
+  // Initialization
+
+  constructor(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>) {
+    super();
+
+    this.schemas = [schemaA, schemaB];
+
+    this.estimatedValidationTimeComplexity = schemaA.estimatedValidationTimeComplexity + schemaB.estimatedValidationTimeComplexity;
+    this.usesCustomSerDes = schemaA.usesCustomSerDes || schemaB.usesCustomSerDes;
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
+      schemaA.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || schemaB.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
+  }
+
+  // Public Methods
+
+  public readonly clone = (): OneOfSchema<TypeA, TypeB> =>
+    copyMetaFields({ from: this, to: new OneOfSchemaImpl(this.schemas[0], this.schemas[1]) });
+
+  // Method Overrides
+
+  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) =>
+    validateOneOf(value, {
+      schema: this,
+      path,
+      validatorOptions
+    });
+
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
+    validateOneOfAsync(value, {
+      schema: this,
+      path,
+      validatorOptions
+    });
+
+  protected override overridableGetExtraToStringFields = () => ({
+    schemas: this.schemas
+  });
+}

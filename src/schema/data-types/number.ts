@@ -1,8 +1,7 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
-import type { InternalValidator } from '../internal/types/internal-validation';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
@@ -28,13 +27,72 @@ export interface NumberSchema<ValueT extends number> extends Schema<ValueT> {
 }
 
 /** Requires a real, finite number.  If one or more values are specified, the value must also be equal to one of the specified values */
-export const number = <ValueT extends number>(...allowedValues: ValueT[]): NumberSchema<ValueT> => {
-  const equalsNumbers = allowedValues.filter((v): v is ValueT => typeof v === 'number');
+export const number = <ValueT extends number>(...allowedValues: ValueT[]): NumberSchema<ValueT> => new NumberSchemaImpl(...allowedValues);
 
-  const equalsNumbersSet = new Set(equalsNumbers);
+// Helpers
 
-  const internalValidate: InternalValidator = supportVariableSerializationFormsForNumericValues(
-    () => fullSchema,
+class NumberSchemaImpl<ValueT extends number> extends InternalSchemaMakerImpl<ValueT> implements NumberSchema<ValueT> {
+  // Public Fields
+
+  public readonly allowedValues: ValueT[];
+
+  public allowedSerializationForms?: Array<'number' | 'string'>;
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'number';
+
+  public override readonly valueType = undefined as any as ValueT;
+
+  public override readonly estimatedValidationTimeComplexity = 1;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+
+  public override get usesCustomSerDes() {
+    return this.usesCustomSerDes_;
+  }
+
+  public override readonly isContainerType = false;
+
+  // Private Fields
+
+  private readonly equalsNumbersSet_: Set<number>;
+
+  private usesCustomSerDes_ = false;
+
+  // Initialization
+
+  constructor(...allowedValues: ValueT[]) {
+    super();
+
+    this.allowedValues = allowedValues;
+    this.equalsNumbersSet_ = new Set(allowedValues);
+  }
+
+  // Public Methods
+
+  public readonly clone = (): NumberSchema<ValueT> =>
+    copyMetaFields({
+      from: this,
+      to: new NumberSchemaImpl(...this.allowedValues).setAllowedSerializationForms(this.allowedSerializationForms)
+    });
+
+  public readonly setAllowedSerializationForms = (allowed?: Array<'number' | 'string'>): this => {
+    if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'number')) {
+      this.allowedSerializationForms = undefined;
+      this.usesCustomSerDes_ = false;
+    } else {
+      this.allowedSerializationForms = allowed;
+      this.usesCustomSerDes_ = true;
+    }
+
+    return this;
+  };
+
+  // Method Overrides
+
+  protected override overridableInternalValidate = supportVariableSerializationFormsForNumericValues(
+    () => this,
     (value, validatorOptions, path) => {
       const validationMode = getValidationMode(validatorOptions);
 
@@ -52,8 +110,8 @@ export const number = <ValueT extends number>(...allowedValues: ValueT[]): Numbe
         return makeErrorResultForValidationMode(validationMode, () => 'Found non-finite value', path);
       }
 
-      if (equalsNumbers.length > 0) {
-        const result = validateValue(value, { allowed: equalsNumbersSet, path, validationMode });
+      if (this.equalsNumbersSet_.size > 0) {
+        const result = validateValue(value, { allowed: this.equalsNumbersSet_, path, validationMode });
         if (isErrorResult(result)) {
           return result;
         }
@@ -63,33 +121,10 @@ export const number = <ValueT extends number>(...allowedValues: ValueT[]): Numbe
     }
   );
 
-  const fullSchema: NumberSchema<ValueT> = makeInternalSchema(
-    {
-      valueType: undefined as any as ValueT,
-      schemaType: 'number',
-      clone: () =>
-        copyMetaFields({
-          from: fullSchema,
-          to: number(...fullSchema.allowedValues).setAllowedSerializationForms(fullSchema.allowedSerializationForms)
-        }),
-      allowedValues,
-      estimatedValidationTimeComplexity: allowedValues.length + 1,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: false,
-      usesCustomSerDes: false,
-      setAllowedSerializationForms: (allowed?: Array<'number' | 'string'>) => {
-        if (allowed === undefined || allowed.length === 0 || (allowed.length === 1 && allowed[0] === 'number')) {
-          fullSchema.allowedSerializationForms = undefined;
-          fullSchema.usesCustomSerDes = false;
-        } else {
-          fullSchema.allowedSerializationForms = allowed;
-          fullSchema.usesCustomSerDes = true;
-        }
+  protected override overridableInternalValidateAsync = undefined;
 
-        return fullSchema;
-      }
-    },
-    { internalValidate }
-  );
-
-  return fullSchema;
-};
+  protected override overridableGetExtraToStringFields = () => ({
+    allowedValues: this.allowedValues,
+    allowedSerializationForms: this.allowedSerializationForms
+  });
+}

@@ -2,7 +2,7 @@ import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complex
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
 import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
@@ -10,7 +10,7 @@ import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { appendPathComponent, resolveLazyPath } from '../internal/utils/path-utils';
+import { appendPathComponent } from '../internal/utils/path-utils';
 
 const ESTIMATED_AVG_RECORD_SIZE = 25;
 
@@ -26,27 +26,75 @@ export interface RecordSchema<KeyT extends string, ValueT> extends Schema<Partia
 /** Requires a non-null, non-array object.  Schemas are specified for keys as a whole and for values as a whole.  Empty objects are allowed
  * by default and values for keys not matching the specified key schema are always allowed, since they either just extra data or they're
  * tested by another schema, ex. using an `allOf` schema. */
-export const record = <KeyT extends string, ValueT>(
-  keys: RegExp | Schema<KeyT>,
-  valueSchema: Schema<ValueT>
-): RecordSchema<KeyT, ValueT> => {
-  const estimatedValidationTimeComplexityPerItem =
-    (keys instanceof RegExp ? 1 : keys.estimatedValidationTimeComplexity) + valueSchema.estimatedValidationTimeComplexity;
-  const needsDeepSerDes = (!(keys instanceof RegExp) && keys.usesCustomSerDes) || valueSchema.usesCustomSerDes;
-  const isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
-    (!(keys instanceof RegExp) && keys.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) ||
-    valueSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
+export const record = <KeyT extends string, ValueT>(keys: RegExp | Schema<KeyT>, valueSchema: Schema<ValueT>): RecordSchema<KeyT, ValueT> =>
+  new RecordSchemaImpl<KeyT, ValueT>(keys, valueSchema);
 
-  const internalValidate: InternalValidator = (value, validatorOptions, path) => {
+// Helpers
+
+class RecordSchemaImpl<KeyT extends string, ValueT>
+  extends InternalSchemaMakerImpl<Partial<Record<KeyT, ValueT>>>
+  implements RecordSchema<KeyT, ValueT>
+{
+  // Public Fields
+
+  public readonly keys: RegExp | Schema<KeyT>;
+
+  public readonly valueSchema: Schema<ValueT>;
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'record';
+
+  public override readonly valueType = undefined as any as Partial<Record<KeyT, ValueT>>;
+
+  public override readonly estimatedValidationTimeComplexity: number;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+
+  public override readonly usesCustomSerDes: boolean;
+
+  public override readonly isContainerType = true;
+
+  // Private Fields
+
+  private readonly estimatedValidationTimeComplexityPerItem_: number;
+
+  // Initialization
+
+  constructor(keys: RegExp | Schema<KeyT>, valueSchema: Schema<ValueT>) {
+    super();
+
+    this.keys = keys;
+    this.valueSchema = valueSchema;
+
+    const areKeysRegExps = keys instanceof RegExp;
+
+    this.estimatedValidationTimeComplexityPerItem_ =
+      (areKeysRegExps ? 1 : keys.estimatedValidationTimeComplexity) + valueSchema.estimatedValidationTimeComplexity;
+    this.estimatedValidationTimeComplexity = this.estimatedValidationTimeComplexityPerItem_ * ESTIMATED_AVG_RECORD_SIZE;
+
+    this.usesCustomSerDes = (!areKeysRegExps && keys.usesCustomSerDes) || valueSchema.usesCustomSerDes;
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
+      (!areKeysRegExps && keys.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) ||
+      valueSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
+  }
+
+  // Public Methods
+
+  public readonly clone = (): RecordSchema<KeyT, ValueT> => copyMetaFields({ from: this, to: record(this.keys, this.valueSchema) });
+
+  // Method Overrides
+
+  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
     const validationMode = getValidationMode(validatorOptions);
     const shouldStopOnFirstError =
-      validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
+      validationMode === 'hard' || (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
     if (value === null || Array.isArray(value) || typeof value !== 'object') {
       return makeErrorResultForValidationMode(validationMode, () => `Expected object, found ${getMeaningfulTypeof(value)}`, path);
     }
 
-    if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+    if (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
       return noError;
     }
 
@@ -62,21 +110,15 @@ export const record = <KeyT extends string, ValueT>(
     }
 
     let unknownKeysSet: Set<string> | undefined;
-    if (validatorOptions.shouldRemoveUnknownKeys) {
-      const resolvedPath = resolveLazyPath(path);
-      const unknownKeys = validatorOptions.inoutUnknownKeysByPath[resolvedPath];
-      if (unknownKeys === undefined) {
-        // If this path hasn't been examined before
-
-        unknownKeysSet = new Set(valueKeys);
-        validatorOptions.inoutUnknownKeysByPath[resolvedPath] = unknownKeysSet;
-      } else if (unknownKeys instanceof Set) {
-        unknownKeysSet = unknownKeys;
-      }
+    if (validatorOptions.shouldProcessUnknownKeys) {
+      unknownKeysSet = validatorOptions.registerPotentiallyUnknownKeysForPath(path, () => new Set(valueKeys));
     }
 
+    const keys = this.keys;
+    const areKeysRegExps = keys instanceof RegExp;
+
     for (const valueKey of valueKeys) {
-      if (keys instanceof RegExp) {
+      if (areKeysRegExps) {
         if (!keys.test(valueKey)) {
           // Skipping value validation for key not defined in this record type -- because we allow arbitrary extra keys
           continue;
@@ -97,7 +139,7 @@ export const record = <KeyT extends string, ValueT>(
         }
       }
 
-      const result = (valueSchema as any as InternalSchemaFunctions).internalValidate(
+      const result = (this.valueSchema as any as InternalSchemaFunctions).internalValidate(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         value[valueKey],
         validatorOptions,
@@ -114,21 +156,18 @@ export const record = <KeyT extends string, ValueT>(
 
     return errorResult ?? noError;
   };
-  const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
+
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
     const validationMode = getValidationMode(validatorOptions);
     const shouldStopOnFirstError =
-      validationMode === 'hard' || (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
+      validationMode === 'hard' || (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
 
     if (value === null || Array.isArray(value) || typeof value !== 'object') {
       return makeErrorResultForValidationMode(validationMode, () => `Expected object, found ${getMeaningfulTypeof(value)}`, path);
     }
 
-    if (!needsDeepSerDes && !isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+    if (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
       return noError;
-    }
-
-    if (validatorOptions.shouldRemoveUnknownKeys) {
-      validatorOptions.inoutUnknownKeysByPath[resolveLazyPath(path)] = 'allow-all';
     }
 
     let errorResult: InternalValidationResult | undefined;
@@ -143,10 +182,18 @@ export const record = <KeyT extends string, ValueT>(
       // Ignoring just in case
     }
 
+    let unknownKeysSet: Set<string> | undefined;
+    if (validatorOptions.shouldProcessUnknownKeys) {
+      unknownKeysSet = validatorOptions.registerPotentiallyUnknownKeysForPath(path, () => new Set(valueKeys));
+    }
+
     const numValueKeys = valueKeys.length;
 
     const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
-    const chunkSize = Math.max(1, Math.floor(asyncTimeComplexityThreshold / estimatedValidationTimeComplexityPerItem));
+    const chunkSize = Math.max(1, Math.floor(asyncTimeComplexityThreshold / this.estimatedValidationTimeComplexityPerItem_));
+
+    const keys = this.keys;
+    const areKeysRegExps = keys instanceof RegExp;
 
     const processChunk = async (chunkStartIndex: number) => {
       if (validatorOptions.shouldRelax()) {
@@ -156,10 +203,12 @@ export const record = <KeyT extends string, ValueT>(
       for (let index = chunkStartIndex; index < numValueKeys && index < chunkStartIndex + chunkSize; index += 1) {
         const valueKey = valueKeys[index];
 
-        if (keys instanceof RegExp) {
+        if (areKeysRegExps) {
           if (!keys.test(valueKey)) {
             // Skipping value validation for key not defined in this record type -- because we allow arbitrary extra keys
             continue;
+          } else {
+            unknownKeysSet?.delete(valueKey);
           }
         } else {
           const result =
@@ -173,18 +222,20 @@ export const record = <KeyT extends string, ValueT>(
           if (isErrorResult(result)) {
             // Skipping value validation for key not defined in this record type -- because we allow arbitrary extra keys
             continue;
+          } else {
+            unknownKeysSet?.delete(valueKey);
           }
         }
 
         const result =
-          valueSchema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-            ? await (valueSchema as any as InternalSchemaFunctions).internalValidateAsync(
+          this.valueSchema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
+            ? await (this.valueSchema as any as InternalSchemaFunctions).internalValidateAsync(
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 value[valueKey],
                 validatorOptions,
                 appendPathComponent(path, valueKey)
               )
-            : (valueSchema as any as InternalSchemaFunctions).internalValidate(
+            : (this.valueSchema as any as InternalSchemaFunctions).internalValidate(
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 value[valueKey],
                 validatorOptions,
@@ -212,19 +263,8 @@ export const record = <KeyT extends string, ValueT>(
     return errorResult ?? noError;
   };
 
-  const fullSchema: RecordSchema<KeyT, ValueT> = makeInternalSchema(
-    {
-      valueType: undefined as any as Partial<Record<KeyT, ValueT>>,
-      schemaType: 'record',
-      clone: () => copyMetaFields({ from: fullSchema, to: record(fullSchema.keys, fullSchema.valueSchema) }),
-      keys,
-      valueSchema,
-      estimatedValidationTimeComplexity: estimatedValidationTimeComplexityPerItem * ESTIMATED_AVG_RECORD_SIZE,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-      usesCustomSerDes: needsDeepSerDes
-    },
-    { internalValidate, internalValidateAsync }
-  );
-
-  return fullSchema;
-};
+  protected override overridableGetExtraToStringFields = () => ({
+    keys: this.keys,
+    valueSchema: this.valueSchema
+  });
+}

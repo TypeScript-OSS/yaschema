@@ -16,8 +16,8 @@ export interface SchemaFunctions<ValueT> {
   setDescription: (description?: string) => this;
   /** Sets (replaces) the example metadata for this schema and returns the same schema */
   setExample: (example?: string) => this;
-  /** Sets (replaces) the `disableRemoveUnknownKeys` option */
-  setDisableRemoveUnknownKeys: (disable: boolean) => this;
+  /** Sets (replaces) the `allowUnknownKeys` option */
+  setAllowUnknownKeys: (allow: boolean) => this;
   /**
    * Sets (replaces) the preferred validation mode for this schema and returns the same schema.
    *
