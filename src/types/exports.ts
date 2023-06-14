@@ -11,7 +11,6 @@ export * from './schema-type';
 export * from './ser-des';
 export * from './serializer';
 export * from './single-or-array';
-export * from './transformation-options';
 export * from './validation-error-level';
 export * from './validation-options';
 export * from './validator';

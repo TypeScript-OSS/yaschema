@@ -1,6 +1,6 @@
 {
   "name": "yaschema",
-  "version": "2.2.0",
+  "version": "3.0.0-alpha.0",
   "description": "Yet another schema",
   "keywords": [
     "schema",
@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.mjs.json",
     "build:dev": "trash dev-build && yarn build && mkdir dev-build && cp -r lib dev-build && cp package.json dev-build && (cd dev-build && echo 'package' `pwd`)",
-    "clean": "trash coverage dev-build docs lib",
+    "clean": "trash coverage dev-build docs lib temp",
     "generate:docs": "npx typedoc src/index.ts --skipErrorChecking",
     "lint": "eslint 'src/**/*.ts?(x)' --max-warnings 0",
     "prepublishOnly": "yarn clean && yarn test && yarn lint && yarn test:audit && yarn clean && yarn build && yarn generate:docs",

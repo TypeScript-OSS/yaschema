@@ -48,11 +48,6 @@ describe('hard validation mode', () => {
       { validation: 'hard' }
     );
     expect(serialization.error).toBeDefined();
-    expect(serialization.serialized).toMatchObject({
-      date1: 'hello',
-      date2: new Date('2022-01-01T00:00:00.000Z'),
-      value: new BigNumber(3.14)
-    });
   });
 });
 

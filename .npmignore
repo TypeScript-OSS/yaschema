@@ -5,6 +5,7 @@
 .nvmrc
 build/docs
 docs
+temp
 
 # not safe to publish patches and doesn't work
 patches/*

@@ -1,8 +1,7 @@
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getLogger } from '../../config/logging';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
-import { makeInternalSchema } from '../internal/internal-schema-maker';
+import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
@@ -27,86 +26,156 @@ export interface UpgradedSchema<OldT, NewT> extends Schema<OldT | NewT> {
  *
  * @see `setLogger`
  */
-export const upgraded = <OldT, NewT>(
-  uniqueName: string,
-  args: { old: Schema<OldT>; new: Schema<NewT> },
-  { deadline }: { deadline?: string } = {}
-): UpgradedSchema<OldT, NewT> => {
-  const internalValidate: InternalValidator = (value, validatorOptions, path) => {
-    const newResult = (args.new as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+export const upgraded = <OldT, NewT>(uniqueName: string, args: { old: Schema<OldT>; new: Schema<NewT> }, options?: { deadline?: string }) =>
+  new UpgradedSchemaImpl(uniqueName, args, options);
+
+// Helpers
+
+class UpgradedSchemaImpl<OldT, NewT> extends InternalSchemaMakerImpl<OldT | NewT> implements UpgradedSchema<OldT, NewT> {
+  // Public Fields
+
+  public readonly oldSchema: Schema<OldT>;
+
+  public readonly newSchema: Schema<NewT>;
+
+  public readonly deadline?: string;
+
+  public readonly uniqueName: string;
+
+  // PureSchema Field Overrides
+
+  public override readonly schemaType = 'upgraded';
+
+  public override readonly valueType = undefined as any as OldT | NewT;
+
+  public override readonly estimatedValidationTimeComplexity: number;
+
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+
+  public override readonly usesCustomSerDes: boolean;
+
+  public override readonly isContainerType = false;
+
+  // Initialization
+
+  constructor(
+    uniqueName: string,
+    { old: oldSchema, new: newSchema }: { old: Schema<OldT>; new: Schema<NewT> },
+    { deadline }: { deadline?: string } = {}
+  ) {
+    super();
+
+    this.uniqueName = uniqueName;
+    this.oldSchema = oldSchema;
+    this.newSchema = newSchema;
+    this.deadline = deadline;
+
+    this.estimatedValidationTimeComplexity = oldSchema.estimatedValidationTimeComplexity + newSchema.estimatedValidationTimeComplexity;
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
+      oldSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || newSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
+    this.usesCustomSerDes = oldSchema.usesCustomSerDes || newSchema.usesCustomSerDes;
+  }
+
+  // Public Methods
+
+  public readonly clone = (): UpgradedSchema<OldT, NewT> =>
+    copyMetaFields({
+      from: this,
+      to: new UpgradedSchemaImpl(this.uniqueName, { old: this.oldSchema, new: this.newSchema }, { deadline: this.deadline })
+    });
+
+  // Method Overrides
+
+  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
+    const newResult = (this.newSchema as any as InternalSchemaFunctions).internalValidate(
+      value,
+      internalState,
+      path,
+      container,
+      validationMode
+    );
     if (!isErrorResult(newResult)) {
-      return noError;
+      return newResult;
     }
 
-    const oldResult = (args.old as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+    const oldResult = (this.oldSchema as any as InternalSchemaFunctions).internalValidate(
+      value,
+      internalState,
+      path,
+      container,
+      validationMode
+    );
     if (!isErrorResult(oldResult)) {
-      if (value !== undefined && !alreadyLogUpgradedWarnings.has(uniqueName)) {
-        alreadyLogUpgradedWarnings.add(uniqueName);
+      if (value !== undefined && !alreadyLogUpgradedWarnings.has(this.uniqueName)) {
+        alreadyLogUpgradedWarnings.add(this.uniqueName);
         getLogger().warn?.(
-          `[DEPRECATION] The schema for ${uniqueName} has been upgraded and legacy support will be removed ${
-            deadline ? `after ${deadline}` : 'soon'
+          `[DEPRECATION] The schema for ${this.uniqueName} has been upgraded and legacy support will be removed ${
+            this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
           }.`,
           'debug'
         );
       }
 
-      return noError;
-    } else {
       return oldResult;
+    } else {
+      return newResult;
     }
   };
-  const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
+
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
+    value,
+    internalState,
+    path,
+    container,
+    validationMode
+  ) => {
     const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
 
     const newResult =
-      args.new.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-        ? await (args.new as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
-        : (args.new as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+      this.newSchema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
+        ? await (this.newSchema as any as InternalSchemaFunctions).internalValidateAsync(
+            value,
+            internalState,
+            path,
+            container,
+            validationMode
+          )
+        : (this.newSchema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
     if (!isErrorResult(newResult)) {
-      return noError;
+      return newResult;
     }
 
     const oldResult =
-      args.old.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-        ? await (args.old as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
-        : (args.old as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+      this.oldSchema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
+        ? await (this.oldSchema as any as InternalSchemaFunctions).internalValidateAsync(
+            value,
+            internalState,
+            path,
+            container,
+            validationMode
+          )
+        : (this.oldSchema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
     if (!isErrorResult(oldResult)) {
-      if (value !== undefined && !alreadyLogUpgradedWarnings.has(uniqueName)) {
-        alreadyLogUpgradedWarnings.add(uniqueName);
+      if (value !== undefined && !alreadyLogUpgradedWarnings.has(this.uniqueName)) {
+        alreadyLogUpgradedWarnings.add(this.uniqueName);
         getLogger().warn?.(
-          `[DEPRECATION] The schema for ${uniqueName} has been upgraded and legacy support will be removed ${
-            deadline ? `after ${deadline}` : 'soon'
+          `[DEPRECATION] The schema for ${this.uniqueName} has been upgraded and legacy support will be removed ${
+            this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
           }.`,
           'debug'
         );
       }
 
-      return noError;
-    } else {
       return oldResult;
+    } else {
+      return newResult;
     }
   };
 
-  const fullSchema: UpgradedSchema<OldT, NewT> = makeInternalSchema(
-    {
-      valueType: undefined as any as OldT | NewT,
-      schemaType: 'upgraded',
-      clone: () =>
-        copyMetaFields({
-          from: fullSchema,
-          to: upgraded(fullSchema.uniqueName, { old: fullSchema.oldSchema, new: fullSchema.newSchema }, { deadline: fullSchema.deadline })
-        }),
-      oldSchema: args.old,
-      newSchema: args.new,
-      deadline,
-      uniqueName,
-      estimatedValidationTimeComplexity: args.old.estimatedValidationTimeComplexity + args.new.estimatedValidationTimeComplexity,
-      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval:
-        args.old.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || args.new.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
-      usesCustomSerDes: args.old.usesCustomSerDes || args.new.usesCustomSerDes
-    },
-    { internalValidate, internalValidateAsync }
-  );
-
-  return fullSchema;
-};
+  protected override overridableGetExtraToStringFields = () => ({
+    oldSchema: this.oldSchema,
+    newSchema: this.newSchema,
+    deadline: this.deadline,
+    uniqueName: this.uniqueName
+  });
+}

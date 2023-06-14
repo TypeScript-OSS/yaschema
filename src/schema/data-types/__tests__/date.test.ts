@@ -44,12 +44,12 @@ describe('date schema', () => {
   });
 
   describe('with range restrictions', () => {
-    const dateSchema = schema.date([
+    const dateSchema = schema.date(
       { min: new Date('1990-01-01'), max: new Date('1993-01-01') },
       { min: new Date('1995-01-01'), minExclusive: true, max: new Date('1995-02-01'), maxExclusive: true },
       { min: new Date('2025-01-01') },
       { max: new Date('1940-01-01') }
-    ]);
+    );
 
     setupBasicTypeOperationsShouldWorkTests({
       schema: dateSchema,

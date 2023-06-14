@@ -1,56 +1,28 @@
-import _ from 'lodash';
-
 import type { Deserializer } from '../../../types/deserializer';
-import type { InternalValidationOptions, InternalValidator } from '../types/internal-validation';
-import { atPath } from '../utils/path-utils';
-import { processRemoveUnknownKeys } from '../utils/process-remove-unknown-keys';
-import { sleep } from '../utils/sleep';
+import type { InternalValidator } from '../types/internal-validation';
+import { isErrorResult } from '../utils/is-error-result';
+import { atPath, resolveLazyPath } from '../utils/path-utils';
+import { InternalState } from './internal-state';
 
 /** Makes the public synchronous deserializer interface */
 export const makeExternalDeserializer =
   <T>(validator: InternalValidator): Deserializer<T> =>
-  (value, { okToMutateInputValue = false, removeUnknownKeys = false, validation = 'hard' } = {}) => {
-    const modifiedPaths: Record<string, any> = {};
-    const unknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>> = {};
-    const internalOptions: InternalValidationOptions = {
+  (value, { validation = 'hard' } = {}) => {
+    const internalState = new InternalState({
       transformation: 'deserialize',
-      operationValidation: validation,
-      schemaValidationPreferences: [],
-      shouldRemoveUnknownKeys: removeUnknownKeys,
-      inoutModifiedPaths: modifiedPaths,
-      inoutUnknownKeysByPath: unknownKeysByPath,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      workingValue: okToMutateInputValue ? value : _.cloneDeep(value),
-      shouldRelax: () => false,
-      relax: () => sleep(0)
-    };
-    const output = validator(internalOptions.workingValue, internalOptions, '');
+      operationValidation: validation
+    });
 
-    // For deserialize, we update the object after validation
-    for (const path of Object.keys(modifiedPaths)) {
-      if (path === '') {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        internalOptions.workingValue = modifiedPaths[path];
-      } else {
-        _.set(internalOptions.workingValue, path, modifiedPaths[path]);
-      }
-    }
+    const output = validator(value, internalState, () => {}, {}, validation);
 
-    if (removeUnknownKeys && (output.error === undefined || output.errorLevel !== 'error')) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      processRemoveUnknownKeys({ workingValue: internalOptions.workingValue, unknownKeysByPath });
-    }
-
-    if (output.error !== undefined) {
+    if (isErrorResult(output)) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: output.errorPath,
+        errorPath: resolveLazyPath(output.errorPath).string,
         errorLevel: output.errorLevel,
-        deserialized: internalOptions.workingValue as T
+        deserialized: output.invalidValue() as T
       };
     } else {
-      return {
-        deserialized: internalOptions.workingValue as T
-      };
+      return { deserialized: output.value as T };
     }
   };

@@ -1,6 +1,7 @@
 # Custom
 bin
 lib
+temp
 coverage
 dev-build
 

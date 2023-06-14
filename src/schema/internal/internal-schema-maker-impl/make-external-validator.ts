@@ -1,33 +1,23 @@
-import _ from 'lodash';
-
 import type { Validator } from '../../../types/validator';
-import type { InternalValidationOptions, InternalValidator } from '../types/internal-validation';
-import { atPath } from '../utils/path-utils';
-import { sleep } from '../utils/sleep';
+import type { InternalValidator } from '../types/internal-validation';
+import { atPath, resolveLazyPath } from '../utils/path-utils';
+import { InternalState } from './internal-state';
 
 /** Makes the public synchronous validator interface */
 export const makeExternalValidator =
   (validator: InternalValidator): Validator =>
   (value) => {
-    const modifiedPaths: Record<string, any> = {};
-    const unknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>> = {};
-    const internalOptions: InternalValidationOptions = {
+    const internalState = new InternalState({
       transformation: 'none',
-      operationValidation: 'hard',
-      schemaValidationPreferences: [],
-      shouldRemoveUnknownKeys: false,
-      inoutModifiedPaths: modifiedPaths,
-      inoutUnknownKeysByPath: unknownKeysByPath,
-      workingValue: undefined,
-      shouldRelax: () => false,
-      relax: () => sleep(0)
-    };
-    const output = validator(value, internalOptions, '');
+      operationValidation: 'hard'
+    });
+
+    const output = validator(value, internalState, () => {}, {}, 'hard');
 
     if (output.error !== undefined) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: output.errorPath,
+        errorPath: resolveLazyPath(output.errorPath).string,
         errorLevel: output.errorLevel
       };
     } else {

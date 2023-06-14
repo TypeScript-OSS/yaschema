@@ -1,5 +1,4 @@
 import type { JsonValue } from './json-value';
-import type { TransformationOptions } from './transformation-options';
 import type { ValidationErrorLevel } from './validation-error-level';
 import type { ValidationOptions } from './validation-options';
 
@@ -9,7 +8,7 @@ export type SerializationResult =
   | { error: string; errorPath: string; errorLevel: ValidationErrorLevel; serialized?: JsonValue };
 
 /** Synchronously serializes the specified value into JSON */
-export type Serializer<T> = (value: T, options?: TransformationOptions & ValidationOptions) => SerializationResult;
+export type Serializer<T> = (value: T, options?: ValidationOptions) => SerializationResult;
 
 /** Asynchronously serializes the specified value into JSON */
-export type AsyncSerializer<T> = (value: T, options?: TransformationOptions & ValidationOptions) => Promise<SerializationResult>;
+export type AsyncSerializer<T> = (value: T, options?: ValidationOptions) => Promise<SerializationResult>;

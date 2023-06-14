@@ -11,7 +11,7 @@ export const setupBasicTypeDeserializationShouldNotWorkTests = ({
   describe('deserialization', () => {
     for (const value of serializedValues) {
       describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should not work`, () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const validation = schema.deserialize(value as any);
           expect(validation.error).toBeDefined();
@@ -19,7 +19,7 @@ export const setupBasicTypeDeserializationShouldNotWorkTests = ({
       });
 
       setupAsyncTests(() => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should not work`, async () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, async () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const validation = await schema.deserializeAsync(value as any);
           expect(validation.error).toBeDefined();
@@ -44,7 +44,7 @@ export const setupBasicTypeDeserializationShouldWorkTests = ({
       const thisIndex = index;
 
       describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should work`, () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const validation = schema.deserialize(value as any);
           expect(validation.deserialized).toEqual(deserializedValues !== undefined ? deserializedValues[thisIndex] : value);
@@ -53,7 +53,7 @@ export const setupBasicTypeDeserializationShouldWorkTests = ({
       });
 
       setupAsyncTests(() => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should work`, async () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, async () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const validation = await schema.deserializeAsync(value as any);
           expect(validation.deserialized).toEqual(deserializedValues !== undefined ? deserializedValues[thisIndex] : value);
@@ -76,14 +76,14 @@ export const setupBasicTypeSerializationShouldNotWorkTests = ({
   describe('serialization', () => {
     for (const value of deserializedValues) {
       describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should not work`, () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, () => {
           const validation = schema.serialize(value as any);
           expect(validation.error).toBeDefined();
         });
       });
 
       setupAsyncTests(() => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should not work`, async () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, async () => {
           const validation = await schema.serializeAsync(value as any);
           expect(validation.error).toBeDefined();
         });
@@ -95,11 +95,11 @@ export const setupBasicTypeSerializationShouldNotWorkTests = ({
 export const setupBasicTypeSerializationShouldWorkTests = ({
   schema,
   deserializedValues,
-  serializedVersions
+  serializedValues
 }: {
   schema: Schema;
   deserializedValues: any[];
-  serializedVersions?: any[];
+  serializedValues?: any[];
 }) => {
   describe('serialization', () => {
     let index = 0;
@@ -107,17 +107,17 @@ export const setupBasicTypeSerializationShouldWorkTests = ({
       const thisIndex = index;
 
       describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should work`, () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, () => {
           const validation = schema.serialize(value as any);
-          expect(validation.serialized).toEqual(serializedVersions !== undefined ? serializedVersions[thisIndex] : value);
+          expect(validation.serialized).toEqual(serializedValues !== undefined ? serializedValues[thisIndex] : value);
           expect(validation.error).toBeUndefined();
         });
       });
 
       setupAsyncTests(() => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should work`, async () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, async () => {
           const validation = await schema.serializeAsync(value as any);
-          expect(validation.serialized).toEqual(serializedVersions !== undefined ? serializedVersions[thisIndex] : value);
+          expect(validation.serialized).toEqual(serializedValues !== undefined ? serializedValues[thisIndex] : value);
           expect(validation.error).toBeUndefined();
         });
       });
@@ -137,14 +137,14 @@ export const setupBasicTypeValidationShouldNotWorkTests = ({
   describe('validation', () => {
     for (const value of deserializedValues) {
       describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should not work`, () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, () => {
           const validation = schema.validate(value as any);
           expect(validation.error).toBeDefined();
         });
       });
 
       setupAsyncTests(() => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should not work`, async () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, async () => {
           const validation = await schema.validateAsync(value as any);
           expect(validation.error).toBeDefined();
         });
@@ -157,14 +157,14 @@ export const setupBasicTypeValidationShouldWorkTests = ({ schema, deserializedVa
   describe('validation', () => {
     for (const value of deserializedValues) {
       describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should work`, () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, () => {
           const validation = schema.validate(value as any);
           expect(validation.error).toBeUndefined();
         });
       });
 
       setupAsyncTests(() => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 64)} should work`, async () => {
+        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, async () => {
           const validation = await schema.validateAsync(value as any);
           expect(validation.error).toBeUndefined();
         });
@@ -182,6 +182,11 @@ export const setupBasicTypeOperationsShouldNotWorkTests = ({
   deserializedValues: any[];
   serializedValues?: any[];
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  deserializedValues = deserializedValues.map((v) => Object.freeze(v) as any);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  serializedValues = serializedValues?.map((v) => Object.freeze(v) as any);
+
   setupBasicTypeSerializationShouldNotWorkTests({ schema, deserializedValues });
   setupBasicTypeValidationShouldNotWorkTests({ schema, deserializedValues });
   if (serializedValues !== undefined) {
@@ -200,7 +205,12 @@ export const setupBasicTypeOperationsShouldWorkTests = ({
   deserializedValues: any[];
   serializedValues?: any[];
 }) => {
-  setupBasicTypeSerializationShouldWorkTests({ schema, deserializedValues, serializedVersions: serializedValues });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  deserializedValues = deserializedValues.map((v) => Object.freeze(v) as any);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  serializedValues = serializedValues?.map((v) => Object.freeze(v) as any);
+
+  setupBasicTypeSerializationShouldWorkTests({ schema, deserializedValues, serializedValues: serializedValues });
   setupBasicTypeValidationShouldWorkTests({ schema, deserializedValues });
   if (serializedValues !== undefined) {
     setupBasicTypeDeserializationShouldWorkTests({ schema, serializedValues, deserializedValues });

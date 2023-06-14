@@ -1,40 +1,23 @@
-import _ from 'lodash';
-
-import { getAsyncMaxWorkIntervalMSec } from '../../../config/async-max-work-interval-msec';
 import type { AsyncValidator } from '../../../types/validator';
-import type { InternalAsyncValidator, InternalValidationOptions } from '../types/internal-validation';
-import { atPath } from '../utils/path-utils';
-import { sleep } from '../utils/sleep';
+import type { InternalAsyncValidator } from '../types/internal-validation';
+import { atPath, resolveLazyPath } from '../utils/path-utils';
+import { InternalState } from './internal-state';
 
 /** Makes the public async validator interface */
 export const makeExternalAsyncValidator =
   (validator: InternalAsyncValidator): AsyncValidator =>
   async (value) => {
-    const asyncMaxWorkIntervalMSec = getAsyncMaxWorkIntervalMSec();
-    let lastYieldTimeMSec = performance.now();
-
-    const modifiedPaths: Record<string, any> = {};
-    const unknownKeysByPath: Partial<Record<string, Set<string> | 'allow-all'>> = {};
-    const internalOptions: InternalValidationOptions = {
+    const internalState = new InternalState({
       transformation: 'none',
-      operationValidation: 'hard',
-      schemaValidationPreferences: [],
-      shouldRemoveUnknownKeys: false,
-      inoutModifiedPaths: modifiedPaths,
-      inoutUnknownKeysByPath: unknownKeysByPath,
-      workingValue: undefined,
-      shouldRelax: () => performance.now() - lastYieldTimeMSec > asyncMaxWorkIntervalMSec,
-      relax: () => {
-        lastYieldTimeMSec = performance.now();
-        return sleep(0);
-      }
-    };
-    const output = await validator(value, internalOptions, '');
+      operationValidation: 'hard'
+    });
+
+    const output = await validator(value, internalState, () => {}, {}, 'hard');
 
     if (output.error !== undefined) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: output.errorPath,
+        errorPath: resolveLazyPath(output.errorPath).string,
         errorLevel: output.errorLevel
       };
     } else {

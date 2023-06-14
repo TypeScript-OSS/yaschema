@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 
 import { schema } from '../..';
 import { makeSerDes } from '../../types/ser-des';
-import type { CustomValidationResult } from '../data-types/custom';
+import type { CustomValidationResult } from '../data-types/makers/custom';
 
 const bigNumberSerDes = makeSerDes({
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

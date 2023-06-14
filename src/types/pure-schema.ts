@@ -1,4 +1,4 @@
-import type { SchemaPreferredValidationMode, SchemaPreferredValidationModeDepth } from './schema-preferred-validation';
+import type { SchemaPreferredValidationMode } from './schema-preferred-validation';
 import type { SchemaType } from './schema-type';
 
 /** Optional schema meta commonly available on all schemas  */
@@ -8,12 +8,6 @@ export interface CommonSchemaMeta {
 
   /** An example, which can be used by code generation tools to generate documentation */
   example?: string;
-
-  /**
-   * If `true`, extra keys aren't removed even if `removeUnknownKeys` is `true` for the operation.  This effects the directly described
-   * value but not sub-values.
-   */
-  disableRemoveUnknownKeys: boolean;
 
   /**
    * The preferred validation mode for this schema.
@@ -27,16 +21,6 @@ export interface CommonSchemaMeta {
    * - `"inherit"` - use the closet applicable mode from an ancestor schema level.
    */
   preferredValidationMode: SchemaPreferredValidationMode;
-
-  /**
-   * The depth to apply schema-level validation preferences over.
-   *
-   * - `"shallow"` - The mode change only affects the validation of the value directly described by this schema.  For container types, this
-   * includes the first level of fields but not deeper.
-   * - `"deep"` - The mode change affects all values directly and indirectly described by this schema, unless the validation mode is
-   * re-specified at a deeper level.
-   */
-  preferredValidationModeDepth: SchemaPreferredValidationModeDepth;
 }
 
 /** A schema without any of the automatically added functions */
@@ -57,4 +41,8 @@ export interface PureSchema<ValueT> extends CommonSchemaMeta {
 
   /** If `true`, this schema or any sub-elements have a custom serializer-deserializer */
   usesCustomSerDes: boolean;
+
+  /** If `true`, `"shallow"` ancestor validation mode preferences won't be used when this schemas validation mode preference is
+   * `"inherit"`, like other built-in container types */
+  isContainerType: boolean;
 }

@@ -32,10 +32,8 @@
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading">Properties</h3>
 <div class="tsd-index-list"><a href="CommonSchemaMeta.html#description" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF984D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-1024-path"></rect><path d="M9.354 16V7.24H12.174C12.99 7.24 13.638 7.476 14.118 7.948C14.606 8.412 14.85 9.036 14.85 9.82C14.85 10.604 14.606 11.232 14.118 11.704C13.638 12.168 12.99 12.4 12.174 12.4H10.434V16H9.354ZM10.434 11.428H12.174C12.646 11.428 13.022 11.284 13.302 10.996C13.59 10.7 13.734 10.308 13.734 9.82C13.734 9.324 13.59 8.932 13.302 8.644C13.022 8.356 12.646 8.212 12.174 8.212H10.434V11.428Z" fill="var(--color-text)" id="icon-1024-text"></path></svg><span>description?</span></a>
-<a href="CommonSchemaMeta.html#disableRemoveUnknownKeys" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>disable<wbr/>Remove<wbr/>Unknown<wbr/>Keys</span></a>
 <a href="CommonSchemaMeta.html#example" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>example?</span></a>
 <a href="CommonSchemaMeta.html#preferredValidationMode" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>preferred<wbr/>Validation<wbr/>Mode</span></a>
-<a href="CommonSchemaMeta.html#preferredValidationModeDepth" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>preferred<wbr/>Validation<wbr/>Mode<wbr/>Depth</span></a>
 </div></section></div></details></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Properties</h2>
@@ -43,12 +41,6 @@
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagOptional">Optional</code> <span>description</span><a href="#description" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" id="icon-anchor-a"></path><path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" id="icon-anchor-b"></path><path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" id="icon-anchor-c"></path></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">description</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>A description, which can be used by code generation tools to generate documentation</p>
-</div></section>
-<section class="tsd-panel tsd-member"><a id="disableRemoveUnknownKeys" class="tsd-anchor"></a>
-<h3 class="tsd-anchor-link"><span>disable<wbr/>Remove<wbr/>Unknown<wbr/>Keys</span><a href="#disableRemoveUnknownKeys" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">disable<wbr/>Remove<wbr/>Unknown<wbr/>Keys</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-<div class="tsd-comment tsd-typography"><p>If <code>true</code>, extra keys aren&#39;t removed even if <code>removeUnknownKeys</code> is <code>true</code> for the operation.  This effects the directly described
-value but not sub-values.</p>
 </div></section>
 <section class="tsd-panel tsd-member"><a id="example" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagOptional">Optional</code> <span>example</span><a href="#example" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
@@ -66,17 +58,6 @@ further re-specified, and the specified validation mode, will be used, where the
 <li><code>&quot;initial&quot;</code> - use the initially specified validation mode for the current operation (ex. the <code>validation</code> field of the <code>options</code>
 parameter to <code>deserialize</code>).</li>
 <li><code>&quot;inherit&quot;</code> - use the closet applicable mode from an ancestor schema level.</li>
-</ul>
-</div></section>
-<section class="tsd-panel tsd-member"><a id="preferredValidationModeDepth" class="tsd-anchor"></a>
-<h3 class="tsd-anchor-link"><span>preferred<wbr/>Validation<wbr/>Mode<wbr/>Depth</span><a href="#preferredValidationModeDepth" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">preferred<wbr/>Validation<wbr/>Mode<wbr/>Depth</span><span class="tsd-signature-symbol">:</span> <a href="../types/SchemaPreferredValidationModeDepth.html" class="tsd-signature-type tsd-kind-type-alias">SchemaPreferredValidationModeDepth</a></div>
-<div class="tsd-comment tsd-typography"><p>The depth to apply schema-level validation preferences over.</p>
-<ul>
-<li><code>&quot;shallow&quot;</code> - The mode change only affects the validation of the value directly described by this schema.  For container types, this
-includes the first level of fields but not deeper.</li>
-<li><code>&quot;deep&quot;</code> - The mode change affects all values directly and indirectly described by this schema, unless the validation mode is
-re-specified at a deeper level.</li>
 </ul>
 </div></section></section></div>
 <div class="col-sidebar">
@@ -98,10 +79,8 @@ re-specified at a deeper level.</li>
 <div class="tsd-accordion-details">
 <ul>
 <li><a href="#description" class=""><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>description</span></a></li>
-<li><a href="#disableRemoveUnknownKeys" class=""><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>disable<wbr/>Remove<wbr/>Unknown<wbr/>Keys</span></a></li>
 <li><a href="#example" class=""><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>example</span></a></li>
-<li><a href="#preferredValidationMode" class=""><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>preferred<wbr/>Validation<wbr/>Mode</span></a></li>
-<li><a href="#preferredValidationModeDepth" class=""><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>preferred<wbr/>Validation<wbr/>Mode<wbr/>Depth</span></a></li></ul></div></details></div>
+<li><a href="#preferredValidationMode" class=""><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>preferred<wbr/>Validation<wbr/>Mode</span></a></li></ul></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../modules.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-namespace)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6" id="icon-4-path"></rect><path d="M9.33 16V7.24H10.77L13.446 14.74C13.43 14.54 13.41 14.296 13.386 14.008C13.37 13.712 13.354 13.404 13.338 13.084C13.33 12.756 13.326 12.448 13.326 12.16V7.24H14.37V16H12.93L10.266 8.5C10.282 8.692 10.298 8.936 10.314 9.232C10.33 9.52 10.342 9.828 10.35 10.156C10.366 10.476 10.374 10.784 10.374 11.08V16H9.33Z" fill="var(--color-text)" id="icon-4-text"></path></svg><span>yaschema</span></a>
 <ul class="tsd-small-nested-navigation">
@@ -134,10 +113,13 @@ re-specified at a deeper level.</li>
 <li><a href="schema.UpgradedSchema.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-256-path"></use><use href="#icon-256-text"></use></svg><span>Upgraded<wbr/>Schema</span></a></li>
 <li><a href="../types/schema.CustomValidation.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-type-alias)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6" id="icon-4194304-path"></rect><path d="M11.31 16V8.224H8.91V7.24H14.79V8.224H12.39V16H11.31Z" fill="var(--color-text)" id="icon-4194304-text"></path></svg><span>Custom<wbr/>Validation</span></a></li>
 <li><a href="../types/schema.CustomValidationResult.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Custom<wbr/>Validation<wbr/>Result</span></a></li>
+<li><a href="../types/schema.InferRecordOfSchemasFromRecordOfValues.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Infer<wbr/>Record<wbr/>Of<wbr/>Schemas<wbr/>From<wbr/>Record<wbr/>Of<wbr/>Values</span></a></li>
+<li><a href="../types/schema.TreatUndefinedAsOptional.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Treat<wbr/>Undefined<wbr/>As<wbr/>Optional</span></a></li>
 <li><a href="../functions/schema.allOf.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-function)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6" id="icon-64-path"></rect><path d="M9.39 16V7.24H14.55V8.224H10.446V11.128H14.238V12.112H10.47V16H9.39Z" fill="var(--color-text)" id="icon-64-text"></path></svg><span>all<wbr/>Of</span></a></li>
 <li><a href="../functions/schema.allOf3.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-64-path"></use><use href="#icon-64-text"></use></svg><span>all<wbr/>Of3</span></a></li>
 <li><a href="../functions/schema.allOf4.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-64-path"></use><use href="#icon-64-text"></use></svg><span>all<wbr/>Of4</span></a></li>
 <li><a href="../functions/schema.allOf5.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-64-path"></use><use href="#icon-64-text"></use></svg><span>all<wbr/>Of5</span></a></li>
+<li><a href="../functions/schema.allowEmptyString.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-64-path"></use><use href="#icon-64-text"></use></svg><span>allow<wbr/>Empty<wbr/>String</span></a></li>
 <li><a href="../functions/schema.allowNull.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-64-path"></use><use href="#icon-64-text"></use></svg><span>allow<wbr/>Null</span></a></li>
 <li><a href="../functions/schema.any.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-64-path"></use><use href="#icon-64-text"></use></svg><span>any</span></a></li>
 <li><a href="../functions/schema.array.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-64-path"></use><use href="#icon-64-text"></use></svg><span>array</span></a></li>
@@ -169,7 +151,6 @@ re-specified at a deeper level.</li>
 <li><a href="Range.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-256-path"></use><use href="#icon-256-text"></use></svg><span>Range</span></a></li>
 <li><a href="SchemaFunctions.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-256-path"></use><use href="#icon-256-text"></use></svg><span>Schema<wbr/>Functions</span></a></li>
 <li><a href="SerDes.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-256-path"></use><use href="#icon-256-text"></use></svg><span>Ser<wbr/>Des</span></a></li>
-<li><a href="TransformationOptions.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-256-path"></use><use href="#icon-256-text"></use></svg><span>Transformation<wbr/>Options</span></a></li>
 <li><a href="ValidationOptions.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-256-path"></use><use href="#icon-256-text"></use></svg><span>Validation<wbr/>Options</span></a></li>
 <li><a href="../types/AsyncDeserializer.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Async<wbr/>Deserializer</span></a></li>
 <li><a href="../types/AsyncSerializer.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Async<wbr/>Serializer</span></a></li>
@@ -185,7 +166,6 @@ re-specified at a deeper level.</li>
 <li><a href="../types/NumberSubtypeArray.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Number<wbr/>Subtype<wbr/>Array</span></a></li>
 <li><a href="../types/Schema-1.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Schema</span></a></li>
 <li><a href="../types/SchemaPreferredValidationMode.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Schema<wbr/>Preferred<wbr/>Validation<wbr/>Mode</span></a></li>
-<li><a href="../types/SchemaPreferredValidationModeDepth.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Schema<wbr/>Preferred<wbr/>Validation<wbr/>Mode<wbr/>Depth</span></a></li>
 <li><a href="../types/SchemaType.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Schema<wbr/>Type</span></a></li>
 <li><a href="../types/SerializationResult.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Serialization<wbr/>Result</span></a></li>
 <li><a href="../types/Serializer.html"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-4194304-path"></use><use href="#icon-4194304-text"></use></svg><span>Serializer</span></a></li>

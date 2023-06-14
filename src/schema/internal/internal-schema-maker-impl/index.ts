@@ -1,13 +1,15 @@
-import type { CommonSchemaMeta, PureSchema } from '../../../types/pure-schema';
+import type { AsyncDeserializer, Deserializer } from '../../../types/deserializer';
+import type { PureSchema } from '../../../types/pure-schema';
 import type { Schema } from '../../../types/schema';
-import type { SchemaPreferredValidationMode, SchemaPreferredValidationModeDepth } from '../../../types/schema-preferred-validation';
-import { allowNull } from '../../marker-types/allow-null';
-import { not } from '../../marker-types/not';
-import { optional } from '../../marker-types/optional';
-import type { InternalSchema, InternalSchemaMakerArgs } from '../internal-schema-maker';
-import { setInternalSchemaMaker } from '../internal-schema-maker';
+import type { SchemaFunctions } from '../../../types/schema-functions';
+import type { SchemaPreferredValidationMode } from '../../../types/schema-preferred-validation';
+import type { SchemaType } from '../../../types/schema-type';
+import type { AsyncSerializer, Serializer } from '../../../types/serializer';
+import type { AsyncValidator, Validator } from '../../../types/validator';
+import { dynamicAllowNull, dynamicNot, dynamicOptional } from '../circular-support/funcs';
+import type { InternalSchemaFunctions } from '../types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../types/internal-validation';
-import { isContainerType } from '../utils/is-container-type';
+import { pickNextTopValidationMode } from '../utils/pick-next-top-validation-mode';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer';
 import { makeExternalAsyncSerializer } from './make-external-async-serializer';
 import { makeExternalAsyncValidator } from './make-external-async-validator';
@@ -15,107 +17,167 @@ import { makeExternalDeserializer } from './make-external-deserializer';
 import { makeExternalSerializer } from './make-external-serializer';
 import { makeExternalValidator } from './make-external-validator';
 
-// Registers the internal schema maker function, which takes a pure schema and core validation functions, and generates the public interface
-// and special internal access
-setInternalSchemaMaker(
-  <ValueT, IncompletePureSchemaT extends Omit<PureSchema<ValueT>, keyof CommonSchemaMeta>>(
-    pureSchema: Omit<IncompletePureSchemaT, keyof CommonSchemaMeta>,
-    args: InternalSchemaMakerArgs
-  ): InternalSchema<ValueT, IncompletePureSchemaT & CommonSchemaMeta> => {
-    const internalValidate: InternalValidator = (value, validatorOptions, path) => {
-      if (validatorOptions.shouldRemoveUnknownKeys && fullSchema.disableRemoveUnknownKeys) {
-        validatorOptions.inoutUnknownKeysByPath[path] = 'allow-all';
-      }
+export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<ValueT>, SchemaFunctions<ValueT>, InternalSchemaFunctions {
+  /** A marker that can be used for testing if this is a YaSchema schema */
+  public readonly isYaSchema = true as const;
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const isAContainer = isContainerType(pureSchema as any);
-      const shouldPushValidationPreferences = isAContainer || fullSchema.preferredValidationMode !== 'inherit';
-      if (shouldPushValidationPreferences) {
-        validatorOptions.schemaValidationPreferences.push({
-          mode: fullSchema.preferredValidationMode,
-          depth: fullSchema.preferredValidationModeDepth,
-          isContainerType: isAContainer
-        });
-      }
-      try {
-        return args.internalValidate(value, validatorOptions, path);
-      } finally {
-        if (shouldPushValidationPreferences) {
-          validatorOptions.schemaValidationPreferences.pop();
-        }
-      }
-    };
-    const internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
-      if (validatorOptions.shouldRelax()) {
-        await validatorOptions.relax();
-      }
+  // CommonSchemaMeta Fields
 
-      if (validatorOptions.shouldRemoveUnknownKeys && fullSchema.disableRemoveUnknownKeys) {
-        validatorOptions.inoutUnknownKeysByPath[path] = 'allow-all';
-      }
+  /** A description, which can be used by code generation tools to generate documentation */
+  public description?: string;
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const isAContainer = isContainerType(pureSchema as any);
-      const shouldPushValidationPreferences = isAContainer || fullSchema.preferredValidationMode !== 'inherit';
-      if (shouldPushValidationPreferences) {
-        validatorOptions.schemaValidationPreferences.push({
-          mode: fullSchema.preferredValidationMode,
-          depth: fullSchema.preferredValidationModeDepth,
-          isContainerType: isAContainer
-        });
-      }
-      try {
-        return await (args.internalValidateAsync ?? internalValidate)(value, validatorOptions, path);
-      } finally {
-        if (shouldPushValidationPreferences) {
-          validatorOptions.schemaValidationPreferences.pop();
-        }
-      }
-    };
+  /** An example, which can be used by code generation tools to generate documentation */
+  public example?: string;
 
-    const fullSchema: InternalSchema<ValueT, IncompletePureSchemaT & CommonSchemaMeta> = {
-      ...pureSchema,
-      description: undefined,
-      example: undefined,
-      disableRemoveUnknownKeys: false,
-      preferredValidationMode: 'inherit',
-      preferredValidationModeDepth: 'shallow',
-      // InternalSchemaFunctions
-      internalValidate,
-      internalValidateAsync,
-      // Marker
-      isYaSchema: true,
-      // SchemaFunctions
-      allowNull: () => allowNull(fullSchema),
-      not: <ExcludeT>(notSchema: Schema<Exclude<ValueT, ExcludeT>>, options: { expectedTypeName?: string } = {}) =>
-        not(fullSchema, notSchema, options),
-      optional: () => optional(fullSchema),
-      setDescription: (description?: string) => {
-        fullSchema.description = description;
-        return fullSchema;
+  /**
+   * The preferred validation mode for this schema.
+   *
+   * The lesser level of the preferred validation mode, which will be applied recursively depending on the `depth` parameter / unless
+   * further re-specified, and the specified validation mode, will be used, where the order is `none < soft < hard`.
+   *
+   * Special Values:
+   * - `"initial"` - use the initially specified validation mode for the current operation (ex. the `validation` field of the `options`
+   * parameter to `deserialize`).
+   * - `"inherit"` - use the closet applicable mode from an ancestor schema level.
+   */
+  public preferredValidationMode: SchemaPreferredValidationMode = 'inherit';
+
+  // Abstract PureSchema Fields
+
+  /** The type of schema */
+  public abstract readonly schemaType: SchemaType;
+
+  /** The actual value of this field is always `undefined`, but this should be used for determining the value type represented by this
+   * schema, ex. `typeof someSchema.valueType` */
+  public abstract readonly valueType: ValueT;
+
+  /** An estimate of the time complexity for validating this element, which should be on the same order of the number of items to be
+   * validated */
+  public abstract readonly estimatedValidationTimeComplexity: number;
+
+  /** If `true`, this schema or any sub-elements have the potential to represent an object value that might need unknown-key removal */
+  public abstract readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+
+  /** If `true`, this schema or any sub-elements have a custom serializer-deserializer */
+  public abstract readonly usesCustomSerDes: boolean;
+
+  /** If `true`, `"shallow"` ancestor validation mode preferences won't be used when this schemas validation mode preference is
+   * `"inherit"`, like other built-in container types */
+  public abstract readonly isContainerType: boolean;
+
+  // Abstract Methods
+
+  /** Synchronously validates and potentially transforms the specified value */
+  protected abstract overridableInternalValidate: InternalValidator;
+
+  /** Asynchronously validates and potentially transforms the specified value.  If `undefined`, `internalValidate` is used */
+  protected abstract overridableInternalValidateAsync?: InternalAsyncValidator;
+
+  /** The fields from PureSchema are already included in `toString`, this method allows subclasses to add additional fields to the
+   * `toString` output, which is just a JSON stringified object */
+  protected abstract overridableGetExtraToStringFields?: () => Record<string, any>;
+
+  // InternalSchemaFunctions
+
+  /** Synchronously validates and potentially transforms the specified value */
+  public readonly internalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
+    const nextValidationMode = pickNextTopValidationMode(this.preferredValidationMode, internalState.operationValidation, validationMode);
+
+    return this.overridableInternalValidate(value, internalState, path, container, nextValidationMode);
+  };
+
+  /** Asynchronously validates and potentially transforms the specified value.  If not provided, internalValidate is used */
+  public readonly internalValidateAsync: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
+    if (internalState.shouldRelax()) {
+      await internalState.relax();
+    }
+
+    const nextValidationMode = pickNextTopValidationMode(this.preferredValidationMode, internalState.operationValidation, validationMode);
+
+    return (this.overridableInternalValidateAsync ?? this.overridableInternalValidate)(
+      value,
+      internalState,
+      path,
+      container,
+      nextValidationMode
+    );
+  };
+
+  // SchemaFunctions
+
+  /** Returns a new schema that requires that either this schema is satisfied or that the value is `null`. */
+  public readonly allowNull = (): Schema<ValueT | null> => dynamicAllowNull(this);
+
+  /** Returns a new schema that requires that this schema is satisfied but that the specified schema cannot be satisfied. */
+  public readonly not = <ExcludeT>(
+    notSchema: Schema<ExcludeT>,
+    options?: { expectedTypeName?: string }
+  ): Schema<Exclude<ValueT, ExcludeT>> => dynamicNot(this, notSchema, options);
+
+  /** Returns a new schema that requires that either this schema is satisfied or that the value is `undefined`. */
+  public readonly optional = (): Schema<ValueT | undefined> => dynamicOptional(this);
+
+  /** Sets (replaces) the description metadata for this schema and returns the same schema */
+  public readonly setDescription = (description?: string): this => {
+    this.description = description;
+    return this;
+  };
+
+  /** Sets (replaces) the example metadata for this schema and returns the same schema */
+  public readonly setExample = (example?: string): this => {
+    this.example = example;
+    return this;
+  };
+
+  /**
+   * Sets (replaces) the preferred validation mode for this schema and returns the same schema.
+   *
+   * The lesser level of the preferred validation mode, which will be applied recursively depending on the `depth` parameter / unless
+   * further re-specified, and the specified validation mode, will be used, where the order is `none < soft < hard`.
+   *
+   * @param validationMode - The preferred validation mode for this schema
+   * Special Values:
+   * - `"initial"` - use the initially specified validation mode for the current operation (ex. the `validation` field of the `options`
+   * parameter to `deserialize`).
+   * - `"inherit"` - (default) use the closet applicable mode from an ancestor schema level.
+   */
+  public readonly setPreferredValidationMode = (validationMode: SchemaPreferredValidationMode): this => {
+    this.preferredValidationMode = validationMode;
+    return this;
+  };
+
+  /** Makes a string representation of this schema, mostly for debugging */
+  public readonly toString = (): string =>
+    JSON.stringify(
+      {
+        schemaType: this.schemaType,
+        valueType: this.valueType,
+        estimatedValidationTimeComplexity: this.estimatedValidationTimeComplexity,
+        isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
+        usesCustomSerDes: this.usesCustomSerDes,
+        isContainerType: this.isContainerType,
+        description: this.description,
+        example: this.example,
+        preferredValidationMode: this.preferredValidationMode,
+        ...this.overridableGetExtraToStringFields?.()
       },
-      setExample: (example?: string) => {
-        fullSchema.example = example;
-        return fullSchema;
-      },
-      setDisableRemoveUnknownKeys: (disable: boolean) => {
-        fullSchema.disableRemoveUnknownKeys = disable;
-        return fullSchema;
-      },
-      setPreferredValidationMode: (validationMode: SchemaPreferredValidationMode, depth: SchemaPreferredValidationModeDepth) => {
-        fullSchema.preferredValidationMode = validationMode;
-        fullSchema.preferredValidationModeDepth = depth;
-        return fullSchema;
-      },
-      toString: () => JSON.stringify(pureSchema, undefined, 2),
-      deserialize: makeExternalDeserializer<ValueT>(internalValidate),
-      deserializeAsync: makeExternalAsyncDeserializer<ValueT>(internalValidateAsync),
-      serialize: makeExternalSerializer<ValueT>(internalValidate),
-      serializeAsync: makeExternalAsyncSerializer<ValueT>(internalValidateAsync),
-      validate: makeExternalValidator(internalValidate),
-      validateAsync: makeExternalAsyncValidator(internalValidateAsync)
-    } as any as InternalSchema<ValueT, IncompletePureSchemaT & CommonSchemaMeta>;
+      undefined,
+      2
+    );
 
-    return fullSchema;
-  }
-);
+  /** Synchronously deserialize (and validate) a value */
+  public readonly deserialize: Deserializer<ValueT> = makeExternalDeserializer<ValueT>(this.internalValidate);
+
+  /** Asynchronously deserialize (and validate) a value */
+  public readonly deserializeAsync: AsyncDeserializer<ValueT> = makeExternalAsyncDeserializer<ValueT>(this.internalValidateAsync);
+
+  /** Synchronously serialize (and validate) a value */
+  public readonly serialize: Serializer<ValueT> = makeExternalSerializer<ValueT>(this.internalValidate);
+  /** Asynchronously serialize (and validate) a value */
+  public readonly serializeAsync: AsyncSerializer<ValueT> = makeExternalAsyncSerializer<ValueT>(this.internalValidateAsync);
+
+  /** Synchronously validate a value */
+  public readonly validate: Validator = makeExternalValidator(this.internalValidate);
+  /** Asynchronously validate a value */
+  public readonly validateAsync: AsyncValidator = makeExternalAsyncValidator(this.internalValidateAsync);
+}

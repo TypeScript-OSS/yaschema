@@ -1,14 +1,15 @@
 import type { ValidationMode } from '../../../types/validation-options';
-import type { InternalValidationResult } from '../types/internal-validation';
+import type { InternalValidationErrorResult } from '../types/internal-validation';
+import type { LazyPath } from '../types/lazy-path';
 
-export const makeErrorResultForValidationMode = (
+export const makeErrorResultForValidationMode = <ValueT>(
+  value: () => ValueT,
   validationMode: ValidationMode,
   error: () => string,
-  path: string
-): InternalValidationResult => {
-  if (validationMode === 'hard') {
-    return { error, errorLevel: 'error', errorPath: path };
-  } else {
-    return { error, errorLevel: 'warning', errorPath: path };
-  }
-};
+  path: LazyPath
+): InternalValidationErrorResult => ({
+  invalidValue: value,
+  error,
+  errorLevel: validationMode === 'hard' ? 'error' : 'warning',
+  errorPath: path
+});

@@ -1,7 +1,10 @@
 import { schema } from '../../..';
 import {
+  setupBasicTypeDeserializationShouldWorkTests,
   setupBasicTypeOperationsShouldNotWorkTests,
-  setupBasicTypeOperationsShouldWorkTests
+  setupBasicTypeOperationsShouldWorkTests,
+  setupBasicTypeSerializationShouldWorkTests,
+  setupBasicTypeValidationShouldWorkTests
 } from '../../__test_dependency__/schema-value-testing';
 
 describe('record schema', () => {
@@ -16,7 +19,7 @@ describe('record schema', () => {
 
     setupBasicTypeOperationsShouldWorkTests({
       schema: recordSchema,
-      deserializedValues: [{}, { hello: 3 }, { world: 3.14 }, { hello: 3, world: 3.14 }, { hello: 3, foo: 'hello' }, { foo: 'hello' }]
+      deserializedValues: [{}, { hello: 3 }, { world: 3.14 }, { hello: 3, world: 3.14 }]
     });
     setupBasicTypeOperationsShouldNotWorkTests({
       schema: recordSchema,
@@ -33,6 +36,21 @@ describe('record schema', () => {
     });
     describe('if both allowNull and optional are used', () => {
       setupBasicTypeOperationsShouldWorkTests({ schema: recordSchema.allowNull().optional(), deserializedValues: [null, undefined] });
+    });
+
+    setupBasicTypeSerializationShouldWorkTests({
+      schema: recordSchema,
+      deserializedValues: [{ hello: 3, foo: 'hello' }, { foo: 'hello' }],
+      serializedValues: [{ hello: 3 }, {}]
+    });
+    setupBasicTypeDeserializationShouldWorkTests({
+      schema: recordSchema,
+      serializedValues: [{ hello: 3, foo: 'hello' }, { foo: 'hello' }],
+      deserializedValues: [{ hello: 3 }, {}]
+    });
+    setupBasicTypeValidationShouldWorkTests({
+      schema: recordSchema,
+      deserializedValues: [{ hello: 3, foo: 'hello' }, { foo: 'hello' }]
     });
   });
 });
