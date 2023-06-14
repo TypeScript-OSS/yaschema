@@ -3,8 +3,8 @@ import type { Schema } from '../../types/schema';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
 
@@ -77,12 +77,17 @@ class NotSchemaImpl<ValueT, ExcludedT> extends InternalSchemaMakerImpl<Exclude<V
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
-    const result = (this.notSchema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
+    const result = (this.notSchema as any as InternalSchemaFunctions).internalValidate(
+      value,
+      internalState,
+      path,
+      container,
+      validationMode
+    );
     if (!isErrorResult(result)) {
-      const validationMode = getValidationMode(validatorOptions);
-
       return makeErrorResultForValidationMode(
+        cloner(value),
         validationMode,
         () =>
           this.expectedTypeName !== undefined
@@ -92,15 +97,26 @@ class NotSchemaImpl<ValueT, ExcludedT> extends InternalSchemaMakerImpl<Exclude<V
       );
     }
 
-    return (this.schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+    return (this.schema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
   };
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
-    const result = await (this.notSchema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
+    value,
+    internalState,
+    path,
+    container,
+    validationMode
+  ) => {
+    const result = await (this.notSchema as any as InternalSchemaFunctions).internalValidateAsync(
+      value,
+      internalState,
+      path,
+      container,
+      validationMode
+    );
     if (!isErrorResult(result)) {
-      const validationMode = getValidationMode(validatorOptions);
-
       return makeErrorResultForValidationMode(
+        cloner(value),
         validationMode,
         () =>
           this.expectedTypeName !== undefined
@@ -110,7 +126,7 @@ class NotSchemaImpl<ValueT, ExcludedT> extends InternalSchemaMakerImpl<Exclude<V
       );
     }
 
-    return (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
+    return (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, internalState, path, container, validationMode);
   };
 
   protected override overridableGetExtraToStringFields = () => ({

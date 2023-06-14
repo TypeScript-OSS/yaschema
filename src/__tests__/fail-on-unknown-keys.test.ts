@@ -1,9 +1,8 @@
 import { schema } from '..';
-import { expectMatchingObjects } from '../__test_dependency__/expect-matching-objects';
 
 // TODO: make async tests also
 
-describe('remove unknown keys', () => {
+describe('fail on unknown keys', () => {
   describe('simple objects', () => {
     const objectSchema = schema.object({
       one: schema.string('one', 'ONE'),
@@ -17,28 +16,25 @@ describe('remove unknown keys', () => {
     it('valid object should serialize without error', () => {
       const deserialization = objectSchema.deserialize(
         { one: 'one', two: 2, three: { four: 4, five: { six: 6 } } },
-        { removeUnknownKeys: true }
+        { failOnUnknownKeys: true }
       );
       expect(deserialization.error).toBeUndefined();
-      expect(deserialization.deserialized).toMatchObject({ one: 'one', two: 2, three: { four: 4, five: { six: 6 } } });
     });
 
     it('invalid object should fail with error', () => {
       const deserialization = objectSchema.deserialize(
         { one: 'TWO', two: 2, three: { four: 4, five: { six: 6 } } },
-        { removeUnknownKeys: true }
+        { failOnUnknownKeys: true }
       );
       expect(deserialization.error).toBeDefined();
-      expect(deserialization.errorLevel).toBe('error');
     });
 
-    it('valid object with extra keys should have the extra keys removed', () => {
+    it('valid object with extra keys should fail', () => {
       const deserialization = objectSchema.deserialize(
         { one: 'one', two: 2, three: { four: 4, five: { six: 6, seven: '7' } }, eight: 8 },
-        { removeUnknownKeys: true }
+        { failOnUnknownKeys: true }
       );
-      expect(deserialization.error).toBeUndefined();
-      expectMatchingObjects(deserialization.deserialized, { one: 'one', two: 2, three: { four: 4, five: { six: 6 } } });
+      expect(deserialization.error).toBeDefined();
     });
   });
 
@@ -63,28 +59,25 @@ describe('remove unknown keys', () => {
     it('valid object should serialize without error', () => {
       const deserialization = objectSchema.deserialize(
         { one: 'one', two: 2, three: { four: 4, five: { six: 6 } } },
-        { removeUnknownKeys: true }
+        { failOnUnknownKeys: true }
       );
       expect(deserialization.error).toBeUndefined();
-      expect(deserialization.deserialized).toMatchObject({ one: 'one', two: 2, three: { four: 4, five: { six: 6 } } });
     });
 
     it('invalid object should fail with error', () => {
       const deserialization = objectSchema.deserialize(
         { one: 'TWO', two: 2, three: { four: 4, five: { six: 6 } } },
-        { removeUnknownKeys: true }
+        { failOnUnknownKeys: true }
       );
       expect(deserialization.error).toBeDefined();
-      expect(deserialization.errorLevel).toBe('error');
     });
 
-    it('valid object with extra keys should have the extra keys removed', () => {
+    it('valid object with extra keys should fail', () => {
       const deserialization = objectSchema.deserialize(
         { one: 'one', two: 2, three: { four: 4, five: { six: 6, seven: '7' } }, eight: 8 },
-        { removeUnknownKeys: true }
+        { failOnUnknownKeys: true }
       );
-      expect(deserialization.error).toBeUndefined();
-      expectMatchingObjects(deserialization.deserialized, { one: 'one', two: 2, three: { four: 4, five: { six: 6 } } });
+      expect(deserialization.error).toBeDefined();
     });
   });
 
@@ -108,29 +101,40 @@ describe('remove unknown keys', () => {
 
     it('valid object with extra keys should have the extra keys removed, except where remove unknown keys is disabled', () => {
       const deserialization = objectSchema.deserialize(
-        { one: 'one', two: 2, three: { four: 4, five: { six: 6, seven: '7' } }, eight: 8 },
-        { removeUnknownKeys: true }
+        { one: 'one', two: 2, three: { four: 4, five: { six: 6, seven: '7' } } },
+        { failOnUnknownKeys: true }
       );
       expect(deserialization.error).toBeUndefined();
-      expectMatchingObjects(deserialization.deserialized, { one: 'one', two: 2, three: { four: 4, five: { six: 6, seven: '7' } } });
     });
   });
 
   describe('records', () => {
-    it('with regex keys', () => {
+    it('with regex keys and only known keys', () => {
       const recordSchema = schema.record(/^hello.*$/, schema.number());
 
-      const deserialization = recordSchema.deserialize({ hello: 1, helloTest: 2, goodbye: 2 }, { removeUnknownKeys: true });
+      const deserialization = recordSchema.deserialize({ hello: 1, helloTest: 2 }, { failOnUnknownKeys: true });
       expect(deserialization.error).toBeUndefined();
-      expectMatchingObjects(deserialization.deserialized, { hello: 1, helloTest: 2 });
     });
 
-    it('with schema keys', () => {
+    it('with regex keys and unknown keys', () => {
+      const recordSchema = schema.record(/^hello.*$/, schema.number());
+
+      const deserialization = recordSchema.deserialize({ hello: 1, helloTest: 2, goodbye: 2 }, { failOnUnknownKeys: true });
+      expect(deserialization.error).toBeDefined();
+    });
+
+    it('with schema keys and only known keys', () => {
       const recordSchema = schema.record(schema.string('hello', 'world'), schema.number());
 
-      const deserialization = recordSchema.deserialize({ hello: 1, helloTest: 2, world: 3, goodbye: 2 }, { removeUnknownKeys: true });
+      const deserialization = recordSchema.deserialize({ hello: 1, world: 3 }, { failOnUnknownKeys: true });
       expect(deserialization.error).toBeUndefined();
-      expectMatchingObjects(deserialization.deserialized, { hello: 1, world: 3 });
+    });
+
+    it('with schema keys and unknown keys', () => {
+      const recordSchema = schema.record(schema.string('hello', 'world'), schema.number());
+
+      const deserialization = recordSchema.deserialize({ hello: 1, helloTest: 2, world: 3, goodbye: 2 }, { failOnUnknownKeys: true });
+      expect(deserialization.error).toBeDefined();
     });
   });
 });

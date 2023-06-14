@@ -2,14 +2,15 @@ import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
 import type { ValidationMode } from '../../types/validation-options';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
+import type { GenericContainer } from '../internal/types/generic-container';
 import type { InternalValidationResult } from '../internal/types/internal-validation';
 import type { LazyPath } from '../internal/types/lazy-path';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../internal/utils/make-no-error';
 import { supportVariableSerializationFormsForNumericValues } from '../internal/utils/support-variable-serialization-forms-for-numeric-values';
 import { validateValue } from '../internal/utils/validate-value';
 import { validateValueInRange } from '../internal/utils/validate-value-in-range';
@@ -52,17 +53,21 @@ const isValueDivisibleBy = (value: number, divisor: number) => value % divisor =
 
 const validateValueIsDivisibleBy = (
   value: number,
-  { allowed, path, validationMode }: { allowed: number[]; path: LazyPath; validationMode: ValidationMode }
+  { allowed }: { allowed: number[] },
+  path: LazyPath,
+  _container: GenericContainer,
+  validationMode: ValidationMode
 ): InternalValidationResult => {
   if (allowed.find((divisor) => isValueDivisibleBy(value, divisor)) === undefined) {
     return makeErrorResultForValidationMode(
+      () => value,
       validationMode,
       () => `Expected a value divisible by ${allowed.join(' or ')}, found ${getMeaningfulTypeof(value)}`,
       path
     );
   }
 
-  return noError;
+  return makeNoError(value);
 };
 
 class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> implements RestrictedNumberSchema {
@@ -140,21 +145,34 @@ class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> impleme
 
   protected override overridableInternalValidate = supportVariableSerializationFormsForNumericValues(
     () => this,
-    (value, validatorOptions, path) => {
-      const validationMode = getValidationMode(validatorOptions);
-
+    (value, _validatorOptions, path, container, validationMode) => {
       if (typeof value !== 'number') {
-        return makeErrorResultForValidationMode(validationMode, () => `Expected number, found ${getMeaningfulTypeof(value)}`, path);
+        return makeErrorResultForValidationMode(
+          cloner(value),
+          validationMode,
+          () => `Expected number, found ${getMeaningfulTypeof(value)}`,
+          path
+        );
       }
 
       if (validationMode === 'none') {
-        return noError;
+        return makeNoError(value);
       }
 
       if (Number.isNaN(value)) {
-        return makeErrorResultForValidationMode(validationMode, () => 'Found NaN', path);
+        return makeErrorResultForValidationMode(
+          () => value,
+          validationMode,
+          () => 'Found NaN',
+          path
+        );
       } else if (!Number.isFinite(value)) {
-        return makeErrorResultForValidationMode(validationMode, () => 'Found non-finite value', path);
+        return makeErrorResultForValidationMode(
+          () => value,
+          validationMode,
+          () => 'Found non-finite value',
+          path
+        );
       }
 
       if (this.allowedNumbersSet_.size > 0) {
@@ -177,10 +195,10 @@ class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> impleme
       }
 
       if (this.divisibleBy.length > 0) {
-        return validateValueIsDivisibleBy(value, { allowed: this.divisibleBy, path, validationMode });
+        return validateValueIsDivisibleBy(value, { allowed: this.divisibleBy }, path, container, validationMode);
       }
 
-      return noError;
+      return makeNoError(value);
     }
   );
 

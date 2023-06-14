@@ -1,11 +1,11 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalValidationResult } from '../internal/types/internal-validation';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeClonedValueNoError } from '../internal/utils/make-no-error';
 import { supportVariableSerializationFormsForBooleanValues } from '../internal/utils/support-variable-serialization-forms-for-boolean-values';
 
 /** Requires a non-null, non-undefined value. */
@@ -43,25 +43,21 @@ class AnySchemaImpl extends InternalSchemaMakerImpl<any> implements AnySchema {
 
   protected override overridableInternalValidate = supportVariableSerializationFormsForBooleanValues(
     () => this,
-    (value, validatorOptions, path): InternalValidationResult => {
-      if (validatorOptions.shouldProcessUnknownKeys) {
-        validatorOptions.setAllowAllKeysForPath(path);
-      }
-
-      const validationMode = getValidationMode(validatorOptions);
+    (value, _validatorOptions, path, _container, validationMode): InternalValidationResult => {
       if (validationMode === 'none') {
-        return noError;
+        return makeClonedValueNoError(value);
       }
 
       if (value === null || value === undefined) {
         return makeErrorResultForValidationMode(
+          cloner(value),
           validationMode,
           () => `Expected any non-null/undefined value, found ${getMeaningfulTypeof(value)}`,
           path
         );
       }
 
-      return noError;
+      return makeClonedValueNoError(value);
     }
   );
 

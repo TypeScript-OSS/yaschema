@@ -3,14 +3,13 @@ import _ from 'lodash';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Range } from '../../types/range';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalTransformationType, InternalValidationOptions, InternalValidator } from '../internal/types/internal-validation';
-import type { LazyPath } from '../internal/types/lazy-path';
+import type { InternalTransformationType, InternalValidator } from '../internal/types/internal-validation';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../internal/utils/make-no-error';
 import { validateValueInRange } from '../internal/utils/validate-value-in-range';
 
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
@@ -63,8 +62,8 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) =>
-    this.internalValidatorsByTransformationType_[validatorOptions.transformation](value, validatorOptions, path);
+  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) =>
+    this.internalValidatorsByTransformationType_[internalState.transformation](value, internalState, path, container, validationMode);
 
   protected override overridableInternalValidateAsync = undefined;
 
@@ -74,37 +73,42 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
   // Private Methods
 
-  private readonly internalValidateNoTransform_: InternalValidator = (value, validatorOptions, path) => {
-    const validationMode = getValidationMode(validatorOptions);
-
+  private readonly internalValidateNoTransform_: InternalValidator = (value, internalState, path, container, validationMode) => {
     if (!(value instanceof Date)) {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected Date, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
-    return this.validateDeserializedForm_(value, validatorOptions, path);
+    return this.validateDeserializedForm_(_.cloneDeep(value), internalState, path, container, validationMode);
   };
 
-  private readonly internalValidateSerialize_: InternalValidator = (value, validatorOptions, path) => {
-    const validationMode = getValidationMode(validatorOptions);
-
+  private readonly internalValidateSerialize_: InternalValidator = (value, internalState, path, container, validationMode) => {
     if (!(value instanceof Date)) {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected Date, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
-    const validation = this.validateDeserializedForm_(value, validatorOptions, path);
+    const dateValue = value;
 
-    value = (value as Date).toISOString();
+    const validation = this.validateDeserializedForm_(dateValue, internalState, path, container, validationMode);
 
-    validatorOptions.modifyWorkingValueAtPath(path, value);
+    const isoStringValue = dateValue.toISOString();
 
-    return validation;
+    return isErrorResult(validation) ? { ...validation, invalidValue: () => isoStringValue } : makeNoError(isoStringValue);
   };
 
-  private readonly internalValidateDeserialize_: InternalValidator = (value, validatorOptions, path) => {
-    const validationMode = getValidationMode(validatorOptions);
-
+  private readonly internalValidateDeserialize_: InternalValidator = (value, internalState, path, container, validationMode) => {
     if (typeof value !== 'string' || !dateRegex.test(value)) {
       return makeErrorResultForValidationMode(
+        cloner(value),
         validationMode,
         () => `Expected ISO Date or Date/Time string, found ${getMeaningfulTypeof(value)}`,
         path
@@ -115,22 +119,17 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
       const date = new Date(value);
       if (isNaN(date.getTime())) {
         return makeErrorResultForValidationMode(
+          cloner(value),
           validationMode,
           () => `Expected ISO Date or Date/Time string, found ${getMeaningfulTypeof(value)}`,
           path
         );
       }
-      validatorOptions.modifyWorkingValueAtPath(path, date);
-      value = date;
+
+      return this.validateDeserializedForm_(date, internalState, path, container, validationMode);
     } catch (e) {
-      return makeErrorResultForValidationMode(validationMode, () => 'Failed to convert string to Date', path);
+      return makeErrorResultForValidationMode(cloner(value), validationMode, () => 'Failed to convert string to Date', path);
     }
-
-    if (!(value instanceof Date)) {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected Date, found ${getMeaningfulTypeof(value)}`, path);
-    }
-
-    return this.validateDeserializedForm_(value, validatorOptions, path);
   };
 
   private readonly internalValidatorsByTransformationType_: Record<InternalTransformationType, InternalValidator> = {
@@ -139,14 +138,9 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
     serialize: this.internalValidateSerialize_
   };
 
-  private readonly validateDeserializedForm_: InternalValidator = (
-    value: any,
-    validatorOptions: InternalValidationOptions,
-    path: LazyPath
-  ) => {
-    const validationMode = getValidationMode(validatorOptions);
+  private readonly validateDeserializedForm_: InternalValidator = (value, _validatorOptions, path, _container, validationMode) => {
     if (validationMode === 'none') {
-      return noError;
+      return makeNoError(value);
     }
 
     if (this.allowedRanges.length > 0) {
@@ -156,6 +150,6 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
       }
     }
 
-    return noError;
+    return makeNoError(value);
   };
 }

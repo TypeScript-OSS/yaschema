@@ -1,11 +1,11 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalValidationResult } from '../internal/types/internal-validation';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../internal/utils/make-no-error';
 import { supportVariableSerializationFormsForBooleanValues } from '../internal/utils/support-variable-serialization-forms-for-boolean-values';
 import { validateValue } from '../internal/utils/validate-value';
 
@@ -93,21 +93,25 @@ class BooleanSchemaImpl<ValueT extends boolean> extends InternalSchemaMakerImpl<
 
   protected override overridableInternalValidate = supportVariableSerializationFormsForBooleanValues(
     () => this,
-    (value, validatorOptions, path): InternalValidationResult => {
-      const validationMode = getValidationMode(validatorOptions);
+    (value, _validatorOptions, path, _container, validationMode): InternalValidationResult => {
       if (typeof value !== 'boolean') {
-        return makeErrorResultForValidationMode(validationMode, () => `Expected boolean, found ${getMeaningfulTypeof(value)}`, path);
+        return makeErrorResultForValidationMode(
+          cloner(value),
+          validationMode,
+          () => `Expected boolean, found ${getMeaningfulTypeof(value)}`,
+          path
+        );
       }
 
       if (validationMode === 'none') {
-        return noError;
+        return makeNoError(value);
       }
 
       if (this.allowedValues.length > 0) {
         return validateValue(value, { allowed: this.equalsSet_, path, validationMode });
       }
 
-      return noError;
+      return makeNoError(value);
     }
   );
 

@@ -55,11 +55,16 @@ class RootSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT> implements 
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) =>
-    (this.schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) =>
+    (this.schema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
+    value,
+    internalState,
+    path,
+    container,
+    validationMode
+  ) => (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, internalState, path, container, validationMode);
 
   protected override overridableGetExtraToStringFields = () => ({
     schema: this.schema

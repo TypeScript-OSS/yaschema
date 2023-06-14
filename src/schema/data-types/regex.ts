@@ -1,11 +1,11 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalValidator } from '../internal/types/internal-validation';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../internal/utils/make-no-error';
 
 /** Requires a string matching the specified regular expression. */
 export interface RegexSchema extends Schema<string> {
@@ -53,26 +53,30 @@ class RegexSchemaImpl extends InternalSchemaMakerImpl<string> implements RegexSc
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
-    const validationMode = getValidationMode(validatorOptions);
-
+  protected override overridableInternalValidate: InternalValidator = (value, _validatorOptions, path, _container, validationMode) => {
     if (typeof value !== 'string') {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected string, found ${getMeaningfulTypeof(value)}`, path);
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected string, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
     if (validationMode === 'none') {
-      return noError;
+      return makeNoError(value);
     }
 
     if (!this.regex.test(value)) {
       return makeErrorResultForValidationMode(
+        () => value,
         validationMode,
         () => `Expected string matching ${String(this.regex)}, found non-matching string`,
         path
       );
     }
 
-    return noError;
+    return makeNoError(value);
   };
 
   protected override overridableInternalValidateAsync = undefined;

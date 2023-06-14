@@ -182,6 +182,11 @@ export const setupBasicTypeOperationsShouldNotWorkTests = ({
   deserializedValues: any[];
   serializedValues?: any[];
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  deserializedValues = deserializedValues.map((v) => Object.freeze(v) as any);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  serializedValues = serializedValues?.map((v) => Object.freeze(v) as any);
+
   setupBasicTypeSerializationShouldNotWorkTests({ schema, deserializedValues });
   setupBasicTypeValidationShouldNotWorkTests({ schema, deserializedValues });
   if (serializedValues !== undefined) {
@@ -200,6 +205,11 @@ export const setupBasicTypeOperationsShouldWorkTests = ({
   deserializedValues: any[];
   serializedValues?: any[];
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  deserializedValues = deserializedValues.map((v) => Object.freeze(v) as any);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  serializedValues = serializedValues?.map((v) => Object.freeze(v) as any);
+
   setupBasicTypeSerializationShouldWorkTests({ schema, deserializedValues, serializedVersions: serializedValues });
   setupBasicTypeValidationShouldWorkTests({ schema, deserializedValues });
   if (serializedValues !== undefined) {

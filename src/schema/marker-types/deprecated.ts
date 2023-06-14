@@ -1,11 +1,11 @@
 import { getLogger } from '../../config/logging';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
 import { isErrorResult } from '../internal/utils/is-error-result';
+import { makeNoError } from '../internal/utils/make-no-error';
 
 const alreadyLogDeprecationWarnings = new Set<string>();
 
@@ -74,12 +74,12 @@ class DeprecatedSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT | unde
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
+  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
     if (value === undefined) {
-      return noError;
+      return makeNoError(value);
     }
 
-    const result = (this.schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+    const result = (this.schema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
     if (isErrorResult(result)) {
       return result;
     }
@@ -87,20 +87,34 @@ class DeprecatedSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT | unde
     if (value !== undefined && !alreadyLogDeprecationWarnings.has(this.uniqueName)) {
       alreadyLogDeprecationWarnings.add(this.uniqueName);
       getLogger().warn?.(
-        `[DEPRECATION] ${this.uniqueName} is deprecated and will be removed ${this.deadline ? `after ${this.deadline}` : 'soon'}.`,
+        `[DEPRECATION] ${this.uniqueName} is deprecated and will be removed ${
+          this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
+        }.`,
         'debug'
       );
     }
 
-    return noError;
+    return result;
   };
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
+    value,
+    internalState,
+    path,
+    container,
+    validationMode
+  ) => {
     if (value === undefined) {
-      return noError;
+      return makeNoError(value);
     }
 
-    const result = await (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
+    const result = await (this.schema as any as InternalSchemaFunctions).internalValidateAsync(
+      value,
+      internalState,
+      path,
+      container,
+      validationMode
+    );
     if (isErrorResult(result)) {
       return result;
     }
@@ -108,12 +122,14 @@ class DeprecatedSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT | unde
     if (value !== undefined && !alreadyLogDeprecationWarnings.has(this.uniqueName)) {
       alreadyLogDeprecationWarnings.add(this.uniqueName);
       getLogger().warn?.(
-        `[DEPRECATION] ${this.uniqueName} is deprecated and will be removed ${this.deadline ? `after ${this.deadline}` : 'soon'}.`,
+        `[DEPRECATION] ${this.uniqueName} is deprecated and will be removed ${
+          this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
+        }.`,
         'debug'
       );
     }
 
-    return noError;
+    return result;
   };
 
   protected override overridableGetExtraToStringFields = () => ({

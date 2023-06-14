@@ -1,11 +1,11 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../internal/utils/make-no-error';
 import { supportVariableSerializationFormsForNumericValues } from '../internal/utils/support-variable-serialization-forms-for-numeric-values';
 import { validateValue } from '../internal/utils/validate-value';
 
@@ -93,21 +93,34 @@ class NumberSchemaImpl<ValueT extends number> extends InternalSchemaMakerImpl<Va
 
   protected override overridableInternalValidate = supportVariableSerializationFormsForNumericValues(
     () => this,
-    (value, validatorOptions, path) => {
-      const validationMode = getValidationMode(validatorOptions);
-
+    (value, _validatorOptions, path, _container, validationMode) => {
       if (typeof value !== 'number') {
-        return makeErrorResultForValidationMode(validationMode, () => `Expected number, found ${getMeaningfulTypeof(value)}`, path);
+        return makeErrorResultForValidationMode(
+          cloner(value),
+          validationMode,
+          () => `Expected number, found ${getMeaningfulTypeof(value)}`,
+          path
+        );
       }
 
-      if (getValidationMode(validatorOptions) === 'none') {
-        return noError;
+      if (validationMode === 'none') {
+        return makeNoError(value);
       }
 
       if (Number.isNaN(value)) {
-        return makeErrorResultForValidationMode(validationMode, () => 'Found NaN', path);
+        return makeErrorResultForValidationMode(
+          () => value,
+          validationMode,
+          () => 'Found NaN',
+          path
+        );
       } else if (!Number.isFinite(value)) {
-        return makeErrorResultForValidationMode(validationMode, () => 'Found non-finite value', path);
+        return makeErrorResultForValidationMode(
+          () => value,
+          validationMode,
+          () => 'Found non-finite value',
+          path
+        );
       }
 
       if (this.equalsNumbersSet_.size > 0) {
@@ -117,7 +130,7 @@ class NumberSchemaImpl<ValueT extends number> extends InternalSchemaMakerImpl<Va
         }
       }
 
-      return noError;
+      return makeNoError(value);
     }
   );
 

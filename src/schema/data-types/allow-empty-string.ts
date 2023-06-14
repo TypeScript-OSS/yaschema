@@ -1,20 +1,20 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalValidator } from '../internal/types/internal-validation';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../internal/utils/make-no-error';
 import { validateValue } from '../internal/utils/validate-value';
 
 /** Requires a string, optionally matching one of the specified values. */
 export interface AllowEmptyStringSchema<ValueT extends string> extends Schema<ValueT | ''> {
-  schemaType: 'allowEmptyString';
-  clone: () => AllowEmptyStringSchema<ValueT>;
+  readonly schemaType: 'allowEmptyString';
+  readonly clone: () => AllowEmptyStringSchema<ValueT>;
 
   /** Note that this doesn't include `''` */
-  allowedValues: ValueT[];
+  readonly allowedValues: ValueT[];
 }
 
 /**
@@ -68,22 +68,25 @@ class AllowEmptyStringSchemaImpl<ValueT extends string>
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
-    const validationMode = getValidationMode(validatorOptions);
-
+  protected override overridableInternalValidate: InternalValidator = (value, _validatorOptions, path, _container, validationMode) => {
     if (typeof value !== 'string') {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected string, found ${getMeaningfulTypeof(value)}`, path);
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected string, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
-    if (validationMode === 'none' || value === '') {
-      return noError;
+    if (value === '') {
+      return makeNoError('');
     }
 
     if (this.allowedValues.length > 0) {
       return validateValue(value, { allowed: this.equalsSet_, path, validationMode });
     }
 
-    return noError;
+    return makeNoError(value);
   };
 
   protected override overridableInternalValidateAsync = undefined;

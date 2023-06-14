@@ -1,9 +1,9 @@
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
+import { makeNoError } from '../internal/utils/make-no-error';
 
 /** Requires that either the specified schema is satisfied or that the value is `undefined`. */
 export interface OptionalSchema<DefinedValueT> extends Schema<DefinedValueT | undefined> {
@@ -58,20 +58,26 @@ class OptionalSchemaImpl<DefinedValueT>
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
+  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
     if (value === undefined) {
-      return noError;
+      return makeNoError(value);
     }
 
-    return (this.schema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+    return (this.schema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
   };
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
+    value,
+    internalState,
+    path,
+    container,
+    validationMode
+  ) => {
     if (value === undefined) {
-      return noError;
+      return makeNoError(value);
     }
 
-    return (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path);
+    return (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, internalState, path, container, validationMode);
   };
 
   protected override overridableGetExtraToStringFields = () => ({

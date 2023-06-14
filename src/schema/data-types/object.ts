@@ -1,16 +1,19 @@
+import _ from 'lodash';
+
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
+import { SPECIAL_ALLOW_ALL_KEYS_VALUE, SPECIAL_KNOWN_KEYS_FIELD } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidationResult, InternalValidator } from '../internal/types/internal-validation';
+import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../internal/types/internal-validation';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
+import { isErrorResult } from '../internal/utils/is-error-result';
 import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeClonedValueNoError, makeNoError } from '../internal/utils/make-no-error';
 import { appendPathComponent } from '../internal/utils/path-utils';
-import { updateUnknownKeysForPath } from '../internal/utils/update-unknown-keys-for-path';
 import { optional } from '../marker-types/optional';
 
 /** Infers a record where the values of the original type are inferred to be the values of `Schemas` */
@@ -35,10 +38,17 @@ type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysD
 
 /** Requires an object, where each key has it's own schema. */
 export interface ObjectSchema<ObjectT extends Record<string, any>> extends Schema<TreatUndefinedAsOptional<ObjectT>> {
-  schemaType: 'object';
-  clone: () => ObjectSchema<ObjectT>;
+  readonly schemaType: 'object';
+  readonly clone: () => ObjectSchema<ObjectT>;
 
-  map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
+  readonly map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
+
+  /**
+   * If `true`, extra keys don't cause errors and won't be removed, even if `failOnUnknownKeys` and/or `removeUnknownKeys` is `true` for the
+   * operation.  This effects the directly described value but not sub-values.
+   */
+  allowUnknownKeys: boolean;
+  readonly setAllowUnknownKeys: (allow: boolean) => this;
 }
 
 /** Requires an object.  Separate schemas a specified per key. */
@@ -100,6 +110,8 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
 {
   // Public Fields
 
+  public allowUnknownKeys = false;
+
   public readonly map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
 
   // PureSchema Field Overrides
@@ -120,6 +132,8 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
 
   private readonly mapKeys_: string[];
 
+  private readonly mapKeysSet_: Set<string>;
+
   // Initialization
 
   constructor(map: InferRecordOfSchemasFromRecordOfValues<ObjectT>) {
@@ -128,6 +142,7 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
     this.map = map;
 
     this.mapKeys_ = Object.keys(map);
+    this.mapKeysSet_ = new Set(this.mapKeys_);
 
     const mapValues = Object.values(map) as Schema[];
 
@@ -144,26 +159,77 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
 
   public readonly clone = (): ObjectSchema<ObjectT> => copyMetaFields({ from: this, to: object(this.map) });
 
+  public readonly setAllowUnknownKeys = (allow: boolean) => {
+    this.allowUnknownKeys = allow;
+
+    return this;
+  };
+
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
-    const validationMode = getValidationMode(validatorOptions);
+  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
     const shouldStopOnFirstError =
-      validationMode === 'hard' || (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
+      validationMode === 'hard' ||
+      (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
 
     if (value === null || Array.isArray(value) || typeof value !== 'object') {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected object, found ${getMeaningfulTypeof(value)}`, path);
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected object, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
     if (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
-      return noError;
+      return makeClonedValueNoError(value);
     }
 
-    if (validatorOptions.shouldProcessUnknownKeys) {
-      updateUnknownKeysForPath({ validatorOptions, path, value: value as Record<string, any>, mapKeys: this.mapKeys_ });
-    }
+    let errorResult: InternalValidationErrorResult | undefined;
 
-    let errorResult: InternalValidationResult | undefined;
+    const shouldIncludeUnknownKeys = this.allowUnknownKeys || !internalState.shouldRemoveUnknownKeys;
+    let allKeys: string[] | undefined;
+    if (shouldIncludeUnknownKeys) {
+      allKeys = allKeys ?? Object.keys(value as object);
+      for (const key of allKeys) {
+        if (!this.mapKeysSet_.has(key)) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          container[key] = container[key] ?? _.cloneDeep(value[key]);
+        }
+      }
+    }
+    if (internalState.shouldFailOnUnknownKeys) {
+      let knownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
+      if (knownKeys === undefined) {
+        knownKeys = new Set<string>(this.allowUnknownKeys ? [SPECIAL_ALLOW_ALL_KEYS_VALUE] : this.mapKeys_);
+        container[SPECIAL_KNOWN_KEYS_FIELD] = knownKeys;
+
+        internalState.unknownKeysCheckers.push(() => {
+          delete container[SPECIAL_KNOWN_KEYS_FIELD];
+
+          if (!knownKeys.has(SPECIAL_ALLOW_ALL_KEYS_VALUE)) {
+            allKeys = allKeys ?? Object.keys(value as object);
+            for (const key of allKeys) {
+              if (!knownKeys.has(key)) {
+                return appendPathComponent(path, key);
+              }
+            }
+          }
+
+          return undefined;
+        });
+      } else {
+        if (!knownKeys.has(SPECIAL_ALLOW_ALL_KEYS_VALUE)) {
+          if (this.allowUnknownKeys) {
+            knownKeys.add(SPECIAL_ALLOW_ALL_KEYS_VALUE);
+          } else {
+            for (const key of this.mapKeys_) {
+              knownKeys.add(key);
+            }
+          }
+        }
+      }
+    }
 
     for (const key of this.mapKeys_) {
       let valueForKey = undefined;
@@ -176,47 +242,104 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
 
       const result = (this.map[key] as any as InternalSchemaFunctions).internalValidate(
         valueForKey,
-        validatorOptions,
-        appendPathComponent(path, key)
+        internalState,
+        appendPathComponent(path, key),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        container[key] ?? {},
+        validationMode
       );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      container[key] = isErrorResult(result) ? container[key] ?? result.invalidValue() : result.value;
       if (isMoreSevereResult(result, errorResult)) {
-        errorResult = result;
+        errorResult = result as InternalValidationErrorResult;
 
         if (shouldStopOnFirstError) {
-          return errorResult;
+          return { ...errorResult, invalidValue: () => container };
         }
       }
     }
 
-    return errorResult ?? noError;
+    return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
   };
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
-    const validationMode = getValidationMode(validatorOptions);
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
+    value,
+    internalState,
+    path,
+    container,
+    validationMode
+  ) => {
     const shouldStopOnFirstError =
-      validationMode === 'hard' || (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
+      validationMode === 'hard' ||
+      (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
 
     if (value === null || Array.isArray(value) || typeof value !== 'object') {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected object, found ${getMeaningfulTypeof(value)}`, path);
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected object, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
     if (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
-      return noError;
+      return makeClonedValueNoError(value);
     }
 
-    if (validatorOptions.shouldProcessUnknownKeys) {
-      updateUnknownKeysForPath({ validatorOptions, path, value: value as Record<string, any>, mapKeys: this.mapKeys_ });
-    }
-
-    let errorResult: InternalValidationResult | undefined;
+    let errorResult: InternalValidationErrorResult | undefined;
 
     const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
-    const numKeys = this.mapKeys_.length;
+    const keys = this.mapKeys_;
+    const numKeys = keys.length;
+
+    const shouldIncludeUnknownKeys = this.allowUnknownKeys || !internalState.shouldRemoveUnknownKeys;
+    let allKeys: string[] | undefined;
+    if (shouldIncludeUnknownKeys) {
+      allKeys = allKeys ?? Object.keys(value as object);
+      for (const key of allKeys) {
+        if (!this.mapKeysSet_.has(key)) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          container[key] = container[key] ?? _.cloneDeep(value[key]);
+        }
+      }
+    }
+    if (internalState.shouldFailOnUnknownKeys) {
+      let knownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
+      if (knownKeys === undefined) {
+        knownKeys = new Set<string>(this.allowUnknownKeys ? [SPECIAL_ALLOW_ALL_KEYS_VALUE] : this.mapKeys_);
+        container[SPECIAL_KNOWN_KEYS_FIELD] = knownKeys;
+
+        internalState.unknownKeysCheckers.push(() => {
+          delete container[SPECIAL_KNOWN_KEYS_FIELD];
+
+          if (!knownKeys.has(SPECIAL_ALLOW_ALL_KEYS_VALUE)) {
+            allKeys = allKeys ?? Object.keys(value as object);
+            for (const key of allKeys) {
+              if (!knownKeys.has(key)) {
+                return appendPathComponent(path, key);
+              }
+            }
+          }
+
+          return undefined;
+        });
+      } else {
+        if (!knownKeys.has(SPECIAL_ALLOW_ALL_KEYS_VALUE)) {
+          if (this.allowUnknownKeys) {
+            knownKeys.add(SPECIAL_ALLOW_ALL_KEYS_VALUE);
+          } else {
+            for (const key of this.mapKeys_) {
+              knownKeys.add(key);
+            }
+          }
+        }
+      }
+    }
 
     let chunkStartIndex = 0;
     const processChunk = async () => {
-      if (validatorOptions.shouldRelax()) {
-        await validatorOptions.relax();
+      if (internalState.shouldRelax()) {
+        await internalState.relax();
       }
 
       let estimatedValidationTimeComplexityForKeys = 0;
@@ -245,16 +368,24 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
           schemaForKey.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
             ? await (schemaForKey as any as InternalSchemaFunctions).internalValidateAsync(
                 valueForKey,
-                validatorOptions,
-                appendPathComponent(path, key)
+                internalState,
+                appendPathComponent(path, key),
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                container[key] ?? {},
+                validationMode
               )
             : (schemaForKey as any as InternalSchemaFunctions).internalValidate(
                 valueForKey,
-                validatorOptions,
-                appendPathComponent(path, key)
+                internalState,
+                appendPathComponent(path, key),
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                container[key] ?? {},
+                validationMode
               );
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        container[key] = isErrorResult(result) ? container[key] ?? result.invalidValue() : result.value;
         if (isMoreSevereResult(result, errorResult)) {
-          errorResult = result;
+          errorResult = result as InternalValidationErrorResult;
 
           if (shouldStopOnFirstError) {
             return errorResult;
@@ -270,11 +401,11 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
     while (chunkStartIndex < numKeys) {
       const chunkRes = await processChunk();
       if (chunkRes !== undefined) {
-        return chunkRes;
+        return { ...chunkRes, invalidValue: () => container };
       }
     }
 
-    return errorResult ?? noError;
+    return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
   };
 
   protected override overridableGetExtraToStringFields = () => ({

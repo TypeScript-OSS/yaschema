@@ -1,20 +1,23 @@
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
+import type { ValidationMode } from '../../types/validation-options';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
+import type { InternalState } from '../internal/internal-schema-maker-impl/internal-state';
+import type { GenericContainer } from '../internal/types/generic-container';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type {
   InternalAsyncValidator,
-  InternalValidationOptions,
+  InternalValidationErrorResult,
   InternalValidationResult,
   InternalValidator
 } from '../internal/types/internal-validation';
 import type { LazyPath } from '../internal/types/lazy-path';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { isErrorResult } from '../internal/utils/is-error-result';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeClonedValueNoError, makeNoError } from '../internal/utils/make-no-error';
 
 /** Requires at least one of the schemas be satisfied. */
 export interface OneOfSchema<TypeA, TypeB> extends Schema<TypeA | TypeB> {
@@ -58,42 +61,49 @@ export const oneOf5 = <TypeA, TypeB, TypeC, TypeD, TypeE>(
 /** Requires one of the specified schemas to be satisfied */
 const validateOneOf = <TypeA, TypeB>(
   value: any,
-  {
-    schema,
-    path,
-    validatorOptions
-  }: {
-    schema: OneOfSchema<TypeA, TypeB>;
-    path: LazyPath;
-    validatorOptions: InternalValidationOptions;
-  }
+  schema: OneOfSchema<TypeA, TypeB>,
+  internalState: InternalState,
+  path: LazyPath,
+  container: GenericContainer,
+  validationMode: ValidationMode
 ): InternalValidationResult => {
-  const validationMode = getValidationMode(validatorOptions);
   if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
-    return noError;
+    return makeClonedValueNoError(value);
   }
 
-  const validationResults: InternalValidationResult[] = [];
+  const validationErrors: InternalValidationErrorResult[] = [];
 
   let success = false;
+  let outValue: any = undefined;
+  let outInvalidValue: (() => any) | undefined = undefined;
   for (const subschema of schema.schemas) {
-    const result = (subschema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+    const result = (subschema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (!isErrorResult(result)) {
       success = true;
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      outValue = result.value;
+      outInvalidValue = undefined;
+
       if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
-        return noError;
+        return makeClonedValueNoError(outValue);
       }
     } else {
-      validationResults.push(result);
+      if (outValue === undefined) {
+        outInvalidValue = result.invalidValue;
+      }
+
+      validationErrors.push(result);
     }
   }
 
   return success
-    ? noError
+    ? makeNoError(outValue)
     : makeErrorResultForValidationMode(
+        outInvalidValue ?? cloner(value),
         validationMode,
-        () => `Expected one of: ${validationResults.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+        () => `Expected one of: ${validationErrors.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
         path
       );
 };
@@ -101,47 +111,53 @@ const validateOneOf = <TypeA, TypeB>(
 /** Requires one of the specified schemas to be satisfied */
 const validateOneOfAsync = async <TypeA, TypeB>(
   value: any,
-  {
-    schema,
-    path,
-    validatorOptions
-  }: {
-    schema: OneOfSchema<TypeA, TypeB>;
-    path: LazyPath;
-    validatorOptions: InternalValidationOptions;
-  }
+  schema: OneOfSchema<TypeA, TypeB>,
+  internalState: InternalState,
+  path: LazyPath,
+  container: GenericContainer,
+  validationMode: ValidationMode
 ) => {
-  const validationMode = getValidationMode(validatorOptions);
   if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
-    return noError;
+    return makeClonedValueNoError(value);
   }
 
   const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
 
-  const validationResults: InternalValidationResult[] = [];
+  const validationErrors: InternalValidationErrorResult[] = [];
 
   let success = false;
+  let outValue: any = undefined;
+  let outInvalidValue: (() => any) | undefined = undefined;
   for (const subschema of schema.schemas) {
     const result =
       subschema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-        ? await (subschema as any as InternalSchemaFunctions).internalValidateAsync(value, validatorOptions, path)
-        : (subschema as any as InternalSchemaFunctions).internalValidate(value, validatorOptions, path);
+        ? await (subschema as any as InternalSchemaFunctions).internalValidateAsync(value, internalState, path, container, validationMode)
+        : (subschema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
     if (!isErrorResult(result)) {
       success = true;
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      outValue = result.value;
+      outInvalidValue = undefined;
+
       if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
-        return noError;
+        return makeClonedValueNoError(value);
       }
     } else {
-      validationResults.push(result);
+      if (outValue === undefined) {
+        outInvalidValue = result.invalidValue;
+      }
+
+      validationErrors.push(result);
     }
   }
 
   return success
-    ? noError
+    ? makeNoError(outValue)
     : makeErrorResultForValidationMode(
+        outInvalidValue ?? cloner(value),
         validationMode,
-        () => `Expected one of: ${validationResults.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+        () => `Expected one of: ${validationErrors.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
         path
       );
 };
@@ -185,19 +201,16 @@ class OneOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA | Type
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) =>
-    validateOneOf(value, {
-      schema: this,
-      path,
-      validatorOptions
-    });
+  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) =>
+    validateOneOf(value, this, internalState, path, container, validationMode);
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) =>
-    validateOneOfAsync(value, {
-      schema: this,
-      path,
-      validatorOptions
-    });
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
+    value,
+    internalState,
+    path,
+    container,
+    validationMode
+  ) => validateOneOfAsync(value, this, internalState, path, container, validationMode);
 
   protected override overridableGetExtraToStringFields = () => ({
     schemas: this.schemas

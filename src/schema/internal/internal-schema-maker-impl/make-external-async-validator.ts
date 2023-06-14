@@ -1,6 +1,6 @@
 import type { AsyncValidator } from '../../../types/validator';
 import type { InternalAsyncValidator } from '../types/internal-validation';
-import { isMoreSevereResult } from '../utils/is-more-severe-result';
+import { checkForUnknownKeys } from '../utils/check-for-unknown-keys';
 import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { InternalState } from './internal-state';
 
@@ -8,23 +8,18 @@ import { InternalState } from './internal-state';
 export const makeExternalAsyncValidator =
   (validator: InternalAsyncValidator): AsyncValidator =>
   async (value, { failOnUnknownKeys = false } = {}) => {
-    const internalState = new InternalState(value, {
+    const internalState = new InternalState({
       transformation: 'none',
       operationValidation: 'hard',
-      okToMutateInputValue: true, // Irrelevant since transformation is 'none'
       failOnUnknownKeys,
-      removeUnknownKeys: false
+      removeUnknownKeys: true
     });
 
-    let output = await validator(value, internalState, () => {});
-
-    if (output.error === undefined || output.errorLevel !== 'error') {
-      internalState.applyWorkingValueModifications();
-      const unknownKeysError = internalState.processUnknownKeysIfNeeded();
-      if (isMoreSevereResult(unknownKeysError, output)) {
-        output = unknownKeysError;
-      }
-    }
+    const output = checkForUnknownKeys(await validator(value, internalState, () => {}, {}, 'hard'), {
+      internalState,
+      failOnUnknownKeys,
+      validation: 'hard'
+    });
 
     if (output.error !== undefined) {
       return {

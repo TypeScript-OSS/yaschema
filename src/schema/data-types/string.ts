@@ -1,11 +1,11 @@
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { noError } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalValidator } from '../internal/types/internal-validation';
+import { cloner } from '../internal/utils/cloner';
 import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { getValidationMode } from '../internal/utils/get-validation-mode';
 import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../internal/utils/make-no-error';
 import { validateValue } from '../internal/utils/validate-value';
 import type { AllowEmptyStringSchema } from './allow-empty-string';
 import { allowEmptyString } from './allow-empty-string';
@@ -68,15 +68,18 @@ class StringSchemaImpl<ValueT extends string> extends InternalSchemaMakerImpl<Va
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, validatorOptions, path) => {
-    const validationMode = getValidationMode(validatorOptions);
-
+  protected override overridableInternalValidate: InternalValidator = (value, _validatorOptions, path, _container, validationMode) => {
     if (typeof value !== 'string') {
-      return makeErrorResultForValidationMode(validationMode, () => `Expected string, found ${getMeaningfulTypeof(value)}`, path);
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected string, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
     }
 
     if (validationMode === 'none') {
-      return noError;
+      return makeNoError(value);
     }
 
     if (this.allowedValues.length > 0) {
@@ -84,10 +87,15 @@ class StringSchemaImpl<ValueT extends string> extends InternalSchemaMakerImpl<Va
     }
 
     if (value.length === 0) {
-      return makeErrorResultForValidationMode(validationMode, () => 'Expected non-empty string, found empty string', path);
+      return makeErrorResultForValidationMode(
+        () => value,
+        validationMode,
+        () => 'Expected non-empty string, found empty string',
+        path
+      );
     }
 
-    return noError;
+    return makeNoError(value);
   };
 
   protected override overridableInternalValidateAsync = undefined;

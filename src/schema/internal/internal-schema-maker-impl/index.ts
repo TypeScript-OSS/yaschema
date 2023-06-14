@@ -2,13 +2,14 @@ import type { AsyncDeserializer, Deserializer } from '../../../types/deserialize
 import type { PureSchema } from '../../../types/pure-schema';
 import type { Schema } from '../../../types/schema';
 import type { SchemaFunctions } from '../../../types/schema-functions';
-import type { SchemaPreferredValidationMode, SchemaPreferredValidationModeDepth } from '../../../types/schema-preferred-validation';
+import type { SchemaPreferredValidationMode } from '../../../types/schema-preferred-validation';
 import type { SchemaType } from '../../../types/schema-type';
 import type { AsyncSerializer, Serializer } from '../../../types/serializer';
 import type { AsyncValidator, Validator } from '../../../types/validator';
 import { dynamicAllowNull, dynamicNot, dynamicOptional } from '../circular-support/funcs';
 import type { InternalSchemaFunctions } from '../types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../types/internal-validation';
+import { pickNextTopValidationMode } from '../utils/pick-next-top-validation-mode';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer';
 import { makeExternalAsyncSerializer } from './make-external-async-serializer';
 import { makeExternalAsyncValidator } from './make-external-async-validator';
@@ -29,12 +30,6 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
   public example?: string;
 
   /**
-   * If `true`, extra keys don't cause errors and won't be removed, even if `failOnUnknownKeys` and/or `removeUnknownKeys` is `true` for the
-   * operation.  This effects the directly described value but not sub-values.
-   */
-  public allowUnknownKeys = false;
-
-  /**
    * The preferred validation mode for this schema.
    *
    * The lesser level of the preferred validation mode, which will be applied recursively depending on the `depth` parameter / unless
@@ -46,16 +41,6 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
    * - `"inherit"` - use the closet applicable mode from an ancestor schema level.
    */
   public preferredValidationMode: SchemaPreferredValidationMode = 'inherit';
-
-  /**
-   * The depth to apply schema-level validation preferences over.
-   *
-   * - `"shallow"` - The mode change only affects the validation of the value directly described by this schema.  For container types, this
-   * includes the first level of fields but not deeper.
-   * - `"deep"` - The mode change affects all values directly and indirectly described by this schema, unless the validation mode is
-   * re-specified at a deeper level.
-   */
-  public preferredValidationModeDepth: SchemaPreferredValidationModeDepth = 'shallow';
 
   // Abstract PureSchema Fields
 
@@ -95,53 +80,27 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
   // InternalSchemaFunctions
 
   /** Synchronously validates and potentially transforms the specified value */
-  public readonly internalValidate: InternalValidator = (value, validatorOptions, path) => {
-    if (validatorOptions.shouldProcessUnknownKeys && this.allowUnknownKeys) {
-      validatorOptions.setAllowAllKeysForPath(path);
-    }
+  public readonly internalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
+    const nextValidationMode = pickNextTopValidationMode(this.preferredValidationMode, internalState.operationValidation, validationMode);
 
-    const shouldPushValidationPreferences = this.isContainerType || this.preferredValidationMode !== 'inherit';
-    if (shouldPushValidationPreferences) {
-      validatorOptions.schemaValidationPreferences.push({
-        mode: this.preferredValidationMode,
-        depth: this.preferredValidationModeDepth,
-        isContainerType: this.isContainerType
-      });
-    }
-    try {
-      return this.overridableInternalValidate(value, validatorOptions, path);
-    } finally {
-      if (shouldPushValidationPreferences) {
-        validatorOptions.schemaValidationPreferences.pop();
-      }
-    }
+    return this.overridableInternalValidate(value, internalState, path, container, nextValidationMode);
   };
 
   /** Asynchronously validates and potentially transforms the specified value.  If not provided, internalValidate is used */
-  public readonly internalValidateAsync: InternalAsyncValidator = async (value, validatorOptions, path) => {
-    if (validatorOptions.shouldRelax()) {
-      await validatorOptions.relax();
+  public readonly internalValidateAsync: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
+    if (internalState.shouldRelax()) {
+      await internalState.relax();
     }
 
-    if (validatorOptions.shouldProcessUnknownKeys && this.allowUnknownKeys) {
-      validatorOptions.setAllowAllKeysForPath(path);
-    }
+    const nextValidationMode = pickNextTopValidationMode(this.preferredValidationMode, internalState.operationValidation, validationMode);
 
-    const shouldPushValidationPreferences = this.isContainerType || this.preferredValidationMode !== 'inherit';
-    if (shouldPushValidationPreferences) {
-      validatorOptions.schemaValidationPreferences.push({
-        mode: this.preferredValidationMode,
-        depth: this.preferredValidationModeDepth,
-        isContainerType: this.isContainerType
-      });
-    }
-    try {
-      return await (this.overridableInternalValidateAsync ?? this.overridableInternalValidate)(value, validatorOptions, path);
-    } finally {
-      if (shouldPushValidationPreferences) {
-        validatorOptions.schemaValidationPreferences.pop();
-      }
-    }
+    return (this.overridableInternalValidateAsync ?? this.overridableInternalValidate)(
+      value,
+      internalState,
+      path,
+      container,
+      nextValidationMode
+    );
   };
 
   // SchemaFunctions
@@ -170,12 +129,6 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
     return this;
   };
 
-  /** Sets (replaces) the `allowUnknownKeys` option */
-  public readonly setAllowUnknownKeys = (allow: boolean): this => {
-    this.allowUnknownKeys = allow;
-    return this;
-  };
-
   /**
    * Sets (replaces) the preferred validation mode for this schema and returns the same schema.
    *
@@ -187,22 +140,9 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
    * - `"initial"` - use the initially specified validation mode for the current operation (ex. the `validation` field of the `options`
    * parameter to `deserialize`).
    * - `"inherit"` - (default) use the closet applicable mode from an ancestor schema level.
-   * @param depth - The depth to apply schema-level validation preferences over
-   * - `"shallow"` - (default) The mode change only affects the validation of the value directly described by this schema.  For container
-   * types, this includes the first level of fields but not deeper.
-   * - `"deep"` - The mode change affects all values directly and indirectly described by this schema, unless the validation mode is
-   * re-specified at a deeper level.
    */
-  public readonly setPreferredValidationMode = (
-    validationMode?: SchemaPreferredValidationMode,
-    depth?: SchemaPreferredValidationModeDepth
-  ): this => {
-    if (validationMode !== undefined) {
-      this.preferredValidationMode = validationMode;
-    }
-    if (depth !== undefined) {
-      this.preferredValidationModeDepth = depth;
-    }
+  public readonly setPreferredValidationMode = (validationMode: SchemaPreferredValidationMode): this => {
+    this.preferredValidationMode = validationMode;
     return this;
   };
 
@@ -218,9 +158,7 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
         isContainerType: this.isContainerType,
         description: this.description,
         example: this.example,
-        allowUnknownKeys: this.allowUnknownKeys,
         preferredValidationMode: this.preferredValidationMode,
-        preferredValidationModeDepth: this.preferredValidationModeDepth,
         ...this.overridableGetExtraToStringFields?.()
       },
       undefined,

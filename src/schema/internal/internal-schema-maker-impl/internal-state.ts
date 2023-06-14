@@ -1,172 +1,66 @@
-import _ from 'lodash';
-
 import { getAsyncMaxWorkIntervalMSec } from '../../../config/async-max-work-interval-msec';
-import type { SchemaPreferredValidationMode, SchemaPreferredValidationModeDepth } from '../../../types/schema-preferred-validation';
 import type { ValidationMode } from '../../../types/validation-options';
-import { noError } from '../consts';
-import type { InternalTransformationType, InternalValidationResult, MutableInternalValidationOptions } from '../types/internal-validation';
-import type { ResolvedLazyPath } from '../types/lazy-path';
-import type { UnknownKeysByPath, UnknownKeysMeta } from '../types/unknown-keys-by-path';
-import { unknownKeysSpecialMetaKey } from '../types/unknown-keys-by-path';
-import { checkUnknownKeys } from '../utils/check-unknown-keys';
-import { appendPathComponent, resolveLazyPath } from '../utils/path-utils';
-import { processRemoveUnknownKeys } from '../utils/process-remove-unknown-keys';
+import type { InternalTransformationType } from '../types/internal-validation';
+import type { LazyPath } from '../types/lazy-path';
 import { sleep } from '../utils/sleep';
 
-export class InternalState implements MutableInternalValidationOptions {
-  // Public Fields
-
-  public readonly modifiedPaths: Array<[ResolvedLazyPath, any]> = [];
-  public readonly unknownKeysByPath: UnknownKeysByPath = {};
-
-  // MutableInternalValidationOptions Fields
-
+export class InternalState {
   public readonly transformation: InternalTransformationType;
+
+  /** The operation-level validation mode */
   public readonly operationValidation: ValidationMode;
-  public readonly schemaValidationPreferences: {
-    mode: SchemaPreferredValidationMode;
-    depth: SchemaPreferredValidationModeDepth;
-    isContainerType: boolean;
-  }[] = [];
-  public readonly shouldProcessUnknownKeys: boolean;
+
+  /** If `true`, unknown keys will cause errors unless schemas have `disableFailOnUnknownKeys` set to `true` */
   public readonly shouldFailOnUnknownKeys: boolean;
+
+  /** If `true`, unknown keys will be removed unless schemas have `disableRemoveUnknownKeys` set to `true` */
   public readonly shouldRemoveUnknownKeys: boolean;
-  public get workingValue(): any {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return this.workingValue_;
-  }
+  public readonly unknownKeysCheckers: Array<() => LazyPath | undefined> = [];
 
   // Private Fields
 
   private readonly asyncMaxWorkIntervalMSec = getAsyncMaxWorkIntervalMSec();
   private lastYieldTimeMSec = performance.now();
-  private readonly okToMutateInputValue: boolean;
-  private wasWorkingValueCloned = false;
-  private workingValue_: any;
 
   // Initialization
 
-  constructor(
-    value: any,
-    {
-      transformation,
-      operationValidation,
-      okToMutateInputValue,
-      failOnUnknownKeys,
-      removeUnknownKeys
-    }: {
-      transformation: InternalTransformationType;
-      operationValidation: ValidationMode;
-      okToMutateInputValue: boolean;
-      failOnUnknownKeys: boolean;
-      removeUnknownKeys: boolean;
-    }
-  ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    this.workingValue_ = value;
+  constructor({
+    transformation,
+    operationValidation,
+    failOnUnknownKeys,
+    removeUnknownKeys
+  }: {
+    transformation: InternalTransformationType;
+    operationValidation: ValidationMode;
+    failOnUnknownKeys: boolean;
+    removeUnknownKeys: boolean;
+  }) {
     this.transformation = transformation;
     this.operationValidation = operationValidation;
-    this.okToMutateInputValue = okToMutateInputValue;
-    this.shouldProcessUnknownKeys = failOnUnknownKeys || removeUnknownKeys;
     this.shouldFailOnUnknownKeys = failOnUnknownKeys;
     this.shouldRemoveUnknownKeys = removeUnknownKeys;
   }
 
   // MutableInternalValidationOptions Methods
 
-  public readonly setAllowAllKeysForPath: MutableInternalValidationOptions['setAllowAllKeysForPath'] = (path) => {
-    const resolvedMetaPath = resolveLazyPath(appendPathComponent(path, unknownKeysSpecialMetaKey));
-    _.update(this.unknownKeysByPath, resolvedMetaPath.parts, (old: UnknownKeysMeta | undefined) => ({ ...old, allowAll: true }));
-  };
-
-  public readonly registerPotentiallyUnknownKeysForPath: MutableInternalValidationOptions['registerPotentiallyUnknownKeysForPath'] = (
-    path,
-    keys
-  ) => {
-    const resolvedMetaPath = resolveLazyPath(appendPathComponent(path, unknownKeysSpecialMetaKey));
-    let unknownKeysSet: Set<string> | undefined;
-    _.update(this.unknownKeysByPath, resolvedMetaPath.parts, (old: UnknownKeysMeta | undefined) => {
-      old = old ?? {};
-      if (old.unknownKeys === undefined) {
-        unknownKeysSet = keys();
-        old.unknownKeys = unknownKeysSet;
-        old.path = path;
-      } else {
-        unknownKeysSet = old.unknownKeys;
+  public readonly checkForUnknownKeys = () => {
+    for (const checker of this.unknownKeysCheckers) {
+      const checked = checker();
+      if (checked !== undefined) {
+        return checked;
       }
-
-      return old;
-    });
-    return unknownKeysSet;
-  };
-
-  public readonly modifyWorkingValueAtPath: MutableInternalValidationOptions['modifyWorkingValueAtPath'] = (path, newValue) => {
-    const resolvedPath = resolveLazyPath(path);
-
-    // If the root is replaced there's no need to clone and any previously set values don't matter
-    if (resolvedPath.parts.length === 0) {
-      this.wasWorkingValueCloned = true;
-      this.modifiedPaths.length = 0;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    this.modifiedPaths.push([resolvedPath, newValue]);
+    return undefined;
   };
 
-  public readonly shouldRelax: MutableInternalValidationOptions['shouldRelax'] = () =>
-    performance.now() - this.lastYieldTimeMSec > this.asyncMaxWorkIntervalMSec;
+  /** In async mode, returns true whenever enough time has elapsed that we should yield ("relax") to other work being done */
+  public readonly shouldRelax = () => performance.now() - this.lastYieldTimeMSec > this.asyncMaxWorkIntervalMSec;
 
-  public readonly relax: MutableInternalValidationOptions['relax'] = () => {
+  // This was originally called yield, but that seemed to be breaking expos minifier
+  /** Waits to let other work be done */
+  public readonly relax = () => {
     this.lastYieldTimeMSec = performance.now();
     return sleep(0);
-  };
-
-  // Public Methods
-
-  public readonly applyWorkingValueModifications = () => {
-    if (this.modifiedPaths.length === 0) {
-      return;
-    }
-
-    this.cloneWorkingValueIfNeeded();
-
-    // For deserialize, we update the object after validation
-    for (const [resolvedPath, newValue] of this.modifiedPaths) {
-      if (resolvedPath.parts.length === 0) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        this.workingValue_ = newValue;
-      } else {
-        _.set(this.workingValue_, resolvedPath.parts, newValue);
-      }
-    }
-  };
-
-  public readonly processUnknownKeysIfNeeded = (): InternalValidationResult => {
-    if (!this.shouldFailOnUnknownKeys && !this.shouldRemoveUnknownKeys) {
-      return noError;
-    }
-
-    const checked = checkUnknownKeys(this);
-    if (checked.error?.error === undefined || checked.error.errorLevel !== 'error') {
-      if (checked.needsRemovalProcessing) {
-        this.cloneWorkingValueIfNeeded();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        processRemoveUnknownKeys(this);
-      }
-    }
-
-    return checked.error ?? noError;
-  };
-
-  // Private Methods
-
-  private readonly cloneWorkingValueIfNeeded = () => {
-    if (this.okToMutateInputValue || this.wasWorkingValueCloned) {
-      return; // Nothing to do
-    }
-
-    this.wasWorkingValueCloned = true;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    this.workingValue_ = _.cloneDeep(this.workingValue_);
   };
 }
