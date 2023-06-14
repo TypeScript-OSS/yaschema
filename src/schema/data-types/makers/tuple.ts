@@ -1,52 +1,26 @@
-import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import type { ValidationMode } from '../../types/validation-options';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalState } from '../internal/internal-schema-maker-impl/internal-state';
-import type { GenericContainer } from '../internal/types/generic-container';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import type { Schema } from '../../../types/schema';
+import type { ValidationMode } from '../../../types/validation-options';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
+import type { GenericContainer } from '../../internal/types/generic-container';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type {
   InternalAsyncValidator,
   InternalValidationErrorResult,
   InternalValidationResult,
   InternalValidator
-} from '../internal/types/internal-validation';
-import type { LazyPath } from '../internal/types/lazy-path';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../internal/utils/make-no-error';
-import { appendPathIndex } from '../internal/utils/path-utils';
-
-/** Requires a value where items must positionally match the specified schemas */
-export interface TupleSchema<TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>
-  extends Schema<
-    TypeA extends void
-      ? []
-      : TypeB extends void
-      ? [TypeA]
-      : TypeC extends void
-      ? [TypeA, TypeB]
-      : TypeD extends void
-      ? [TypeA, TypeB, TypeC]
-      : TypeE extends void
-      ? [TypeA, TypeB, TypeC, TypeD]
-      : [TypeA, TypeB, TypeC, TypeD, TypeE]
-  > {
-  schemaType: 'tuple';
-  clone: () => TupleSchema<TypeA, TypeB, TypeC, TypeD, TypeE>;
-
-  items:
-    | []
-    | [Schema<TypeA>]
-    | [Schema<TypeA>, Schema<TypeB>]
-    | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>]
-    | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>]
-    | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>, Schema<TypeE>];
-}
+} from '../../internal/types/internal-validation';
+import type { LazyPath } from '../../internal/types/lazy-path';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
+import { appendPathIndex } from '../../internal/utils/path-utils';
+import type { TupleSchema } from '../types/TupleSchema';
 
 /** Requires a value where items must positionally match the specified schemas */
 export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>(args: {

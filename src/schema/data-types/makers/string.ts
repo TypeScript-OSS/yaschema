@@ -1,23 +1,13 @@
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalValidator } from '../internal/types/internal-validation';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeNoError } from '../internal/utils/make-no-error';
-import { validateValue } from '../internal/utils/validate-value';
-import type { AllowEmptyStringSchema } from './allow-empty-string';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalValidator } from '../../internal/types/internal-validation';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import { validateValue } from '../../internal/utils/validate-value';
+import type { StringSchema } from '../types/StringSchema';
 import { allowEmptyString } from './allow-empty-string';
-
-/** Requires a non-empty string, optionally matching one of the specified values. */
-export interface StringSchema<ValueT extends string> extends Schema<ValueT> {
-  schemaType: 'string';
-  clone: () => StringSchema<ValueT>;
-
-  allowedValues: ValueT[];
-  allowEmptyString: () => AllowEmptyStringSchema<ValueT>;
-}
 
 /**
  * Requires a non-empty string.  If one or more values are specified, the string must match ones of the specified values.

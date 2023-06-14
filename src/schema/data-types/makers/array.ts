@@ -1,42 +1,28 @@
-import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import type { ValidationMode } from '../../types/validation-options';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalState } from '../internal/internal-schema-maker-impl/internal-state';
-import type { GenericContainer } from '../internal/types/generic-container';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import type { Schema } from '../../../types/schema';
+import type { ValidationMode } from '../../../types/validation-options';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
+import type { GenericContainer } from '../../internal/types/generic-container';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type {
   InternalAsyncValidator,
   InternalValidationErrorResult,
   InternalValidationResult,
   InternalValidator
-} from '../internal/types/internal-validation';
-import type { LazyPath } from '../internal/types/lazy-path';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../internal/utils/make-no-error';
-import { appendPathIndex } from '../internal/utils/path-utils';
+} from '../../internal/types/internal-validation';
+import type { LazyPath } from '../../internal/types/lazy-path';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
+import { appendPathIndex } from '../../internal/utils/path-utils';
+import type { ArraySchema } from '../types/ArraySchema';
 
 const ESTIMATED_AVG_ARRAY_LENGTH = 100;
-
-/** Requires an array. */
-export interface ArraySchema<ItemT = any> extends Schema<ItemT[]> {
-  schemaType: 'array';
-  clone: () => ArraySchema<ItemT>;
-
-  items?: Schema<ItemT>;
-  minLength: number;
-  maxLength: number;
-  /**
-   * If specified, only the first maxEntriesToValidate entries are validated -- applies to item validation but not pattern validation.
-   * This is ignored if the items require custom serialization or deserialization
-   */
-  maxEntriesToValidate?: number;
-}
 
 /**
  * Requires an array.  Element validation is optional.

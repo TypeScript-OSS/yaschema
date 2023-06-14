@@ -1,51 +1,20 @@
 import _ from 'lodash';
 
-import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../internal/types/internal-validation';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../internal/utils/make-no-error';
-import { appendPathComponent } from '../internal/utils/path-utils';
-import { optional } from '../marker-types/optional';
-
-/** Infers a record where the values of the original type are inferred to be the values of `Schemas` */
-type InferRecordOfSchemasFromRecordOfValues<ObjectT extends Record<string, any>> = {
-  [KeyT in keyof ObjectT]: Schema<ObjectT[KeyT]>;
-};
-
-/** Picks the fields of an object type that are never undefined */
-type PickAlwaysDefinedValues<Base> = Pick<
-  Base,
-  {
-    [Key in keyof Base]: Base[Key] extends Exclude<Base[Key], undefined> ? Key : never;
-  }[keyof Base]
->;
-
-/** Picks the fields of an object type that might be undefined */
-type PickPossiblyUndefinedValues<Base> = Omit<Base, keyof PickAlwaysDefinedValues<Base>>;
-
-/** Converts types like `{ x: string, y: string | undefined }` to types like `{ x: string, y?: string }` */
-type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysDefinedValues<ObjectT> &
-  Partial<PickPossiblyUndefinedValues<ObjectT>>;
-
-/** Requires an object, where each key has it's own schema. */
-export interface ObjectSchema<ObjectT extends Record<string, any>> extends Schema<TreatUndefinedAsOptional<ObjectT>> {
-  readonly schemaType: 'object';
-  readonly clone: () => ObjectSchema<ObjectT>;
-
-  readonly map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
-
-  /** If `true`, extra keys won't be removed.  This effects the directly described value but not sub-values. */
-  allowUnknownKeys: boolean;
-  readonly setAllowUnknownKeys: (allow: boolean) => this;
-}
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import type { Schema } from '../../../types/schema';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
+import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../../internal/types/internal-validation';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
+import { appendPathComponent } from '../../internal/utils/path-utils';
+import { optional } from '../../marker-types/optional';
+import type { InferRecordOfSchemasFromRecordOfValues, ObjectSchema, TreatUndefinedAsOptional } from '../types/ObjectSchema';
 
 /** Requires an object.  Separate schemas a specified per key. */
 export const object = <ObjectT extends Record<string, any>>(map: InferRecordOfSchemasFromRecordOfValues<ObjectT>): ObjectSchema<ObjectT> =>

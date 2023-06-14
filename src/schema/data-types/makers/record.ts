@@ -1,33 +1,21 @@
 import _ from 'lodash';
 
-import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../internal/types/internal-validation';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../internal/utils/make-no-error';
-import { appendPathComponent } from '../internal/utils/path-utils';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import type { Schema } from '../../../types/schema';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
+import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../../internal/types/internal-validation';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
+import { appendPathComponent } from '../../internal/utils/path-utils';
+import type { RecordSchema } from '../types/RecordSchema';
 
 const ESTIMATED_AVG_RECORD_SIZE = 25;
-
-/** Requires a non-null, non-array object where all keys share a schema and all values share a schema */
-export interface RecordSchema<KeyT extends string, ValueT> extends Schema<Partial<Record<KeyT, ValueT>>> {
-  readonly schemaType: 'record';
-  readonly clone: () => RecordSchema<KeyT, ValueT>;
-
-  readonly keys: RegExp | Schema<KeyT>;
-  readonly valueSchema: Schema<ValueT>;
-
-  /** If `true`, extra keys won't be removed.  This effects the directly described value but not sub-values. */
-  allowUnknownKeys: boolean;
-  readonly setAllowUnknownKeys: (allow: boolean) => this;
-}
 
 /** Requires a non-null, non-array object.  Schemas are specified for keys as a whole and for values as a whole.  Empty objects are allowed
  * by default and values for keys not matching the specified key schema are always allowed, since they either just extra data or they're

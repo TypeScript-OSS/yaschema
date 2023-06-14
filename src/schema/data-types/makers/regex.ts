@@ -1,19 +1,11 @@
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalValidator } from '../internal/types/internal-validation';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeNoError } from '../internal/utils/make-no-error';
-
-/** Requires a string matching the specified regular expression. */
-export interface RegexSchema extends Schema<string> {
-  schemaType: 'regex';
-  clone: () => RegexSchema;
-
-  regex: RegExp;
-}
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalValidator } from '../../internal/types/internal-validation';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import type { RegexSchema } from '../types/RegexSchema';
 
 /** Requires a string matching the specified regular expression. */
 export const regex = (pattern: RegExp): RegexSchema => new RegexSchemaImpl(pattern);

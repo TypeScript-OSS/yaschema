@@ -1,24 +1,20 @@
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Range } from '../../types/range';
-import type { Schema } from '../../types/schema';
-import type { ValidationMode } from '../../types/validation-options';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { GenericContainer } from '../internal/types/generic-container';
-import type { InternalValidationResult } from '../internal/types/internal-validation';
-import type { LazyPath } from '../internal/types/lazy-path';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeNoError } from '../internal/utils/make-no-error';
-import { supportVariableSerializationFormsForNumericValues } from '../internal/utils/support-variable-serialization-forms-for-numeric-values';
-import { validateValue } from '../internal/utils/validate-value';
-import { validateValueInRange } from '../internal/utils/validate-value-in-range';
-
-export interface RestrictedNumberOptions {
-  /** If one or more values are specified, the value must be divisible by one of the specified options */
-  divisibleBy?: number[];
-}
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import type { Range } from '../../../types/range';
+import type { Schema } from '../../../types/schema';
+import type { ValidationMode } from '../../../types/validation-options';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { GenericContainer } from '../../internal/types/generic-container';
+import type { InternalValidationResult } from '../../internal/types/internal-validation';
+import type { LazyPath } from '../../internal/types/lazy-path';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import { supportVariableSerializationFormsForNumericValues } from '../../internal/utils/support-variable-serialization-forms-for-numeric-values';
+import { validateValue } from '../../internal/utils/validate-value';
+import { validateValueInRange } from '../../internal/utils/validate-value-in-range';
+import type { RestrictedNumberOptions } from '../types/RestrictedNumberOptions';
 
 /** Requires a real, finite number, optionally matching one of the specified values or in one of the specified ranges and optionally being
  * divisible by one of the specified divisors. */

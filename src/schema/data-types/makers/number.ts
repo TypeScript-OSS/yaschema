@@ -1,30 +1,13 @@
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeNoError } from '../internal/utils/make-no-error';
-import { supportVariableSerializationFormsForNumericValues } from '../internal/utils/support-variable-serialization-forms-for-numeric-values';
-import { validateValue } from '../internal/utils/validate-value';
-
-/** Requires a real, finite number, optionally matching one of the specified values. */
-export interface NumberSchema<ValueT extends number> extends Schema<ValueT> {
-  schemaType: 'number';
-  clone: () => NumberSchema<ValueT>;
-
-  allowedValues: ValueT[];
-
-  /**
-   * For serialization, the first type will be used. `['number']` is assumed if nothing is specified.
-   *
-   * For deserialization, forms are tried in order.
-   */
-  allowedSerializationForms?: Array<'number' | 'string'>;
-  /** Sets (replaces) the allowed serialization forms metadata for this schema and returns the same schema */
-  setAllowedSerializationForms: (allowed?: Array<'number' | 'string'>) => this;
-}
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import { supportVariableSerializationFormsForNumericValues } from '../../internal/utils/support-variable-serialization-forms-for-numeric-values';
+import { validateValue } from '../../internal/utils/validate-value';
+import type { NumberSchema } from '../types/NumberSchema';
 
 /** Requires a real, finite number.  If one or more values are specified, the value must also be equal to one of the specified values */
 export const number = <ValueT extends number>(...allowedValues: ValueT[]): NumberSchema<ValueT> => new NumberSchemaImpl(...allowedValues);

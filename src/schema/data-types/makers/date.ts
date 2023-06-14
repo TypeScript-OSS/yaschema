@@ -1,25 +1,16 @@
 import _ from 'lodash';
 
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Range } from '../../types/range';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalTransformationType, InternalValidator } from '../internal/types/internal-validation';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeNoError } from '../internal/utils/make-no-error';
-import { validateValueInRange } from '../internal/utils/validate-value-in-range';
-
-/** Requires a `Date`, which will be serialized as an ISO Date/Time string */
-export interface DateSchema extends Schema<Date> {
-  schemaType: 'date';
-  clone: () => DateSchema;
-
-  /** If one or more values are specified, the value must be equal to one of the specified values or in one of the specified ranges */
-  allowedRanges?: Array<Range<Date>>;
-}
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import type { Range } from '../../../types/range';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalTransformationType, InternalValidator } from '../../internal/types/internal-validation';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import { validateValueInRange } from '../../internal/utils/validate-value-in-range';
+import type { DateSchema } from '../types/DateSchema';
 
 /** ISO DateTime string */
 const dateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(.\d{1,9})?)?(Z|[+-]\d{2}(:\d{2})?)?)?$/;

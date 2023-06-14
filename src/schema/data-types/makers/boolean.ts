@@ -1,30 +1,13 @@
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalValidationResult } from '../internal/types/internal-validation';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeNoError } from '../internal/utils/make-no-error';
-import { supportVariableSerializationFormsForBooleanValues } from '../internal/utils/support-variable-serialization-forms-for-boolean-values';
-import { validateValue } from '../internal/utils/validate-value';
-
-/** Requires a boolean, optionally matching one of the specified values. */
-export interface BooleanSchema<ValueT extends boolean> extends Schema<ValueT> {
-  schemaType: 'boolean';
-  clone: () => BooleanSchema<ValueT>;
-
-  allowedValues: ValueT[];
-
-  /**
-   * For serialization, the first type will be used. `['boolean']` is assumed if nothing is specified.
-   *
-   * For deserialization, forms are tried in order.
-   */
-  allowedSerializationForms?: Array<'boolean' | 'string'>;
-  /** Sets (replaces) the allowed serialization forms metadata for this schema and returns the same schema */
-  setAllowedSerializationForms: (allowed?: Array<'boolean' | 'string'>) => this;
-}
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalValidationResult } from '../../internal/types/internal-validation';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import { supportVariableSerializationFormsForBooleanValues } from '../../internal/utils/support-variable-serialization-forms-for-boolean-values';
+import { validateValue } from '../../internal/utils/validate-value';
+import type { BooleanSchema } from '../types/BooleanSchema';
 
 /** Requires a boolean.  If one or more values are specified, the boolean must also match one of the specified values. */
 export const boolean = <ValueT extends boolean>(...allowedValues: ValueT[]): BooleanSchema<ValueT> =>
