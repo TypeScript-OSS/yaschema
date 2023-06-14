@@ -7,16 +7,6 @@ export type ValidationMode = 'none' | 'soft' | 'hard';
 
 export interface ValidationOptions {
   /**
-   * If `true`, an error is returned if unknown keys are present.  If `true`, `removeUnknownKeys` is also implied, for serialization /
-   * deserialization operations.
-   *
-   * Individual schemas may override this preference.
-   *
-   * @defaultValue `false`
-   */
-  failOnUnknownKeys?: boolean;
-
-  /**
    * The mode for validation.
    *
    * Individual schemas may lower the validation mode.

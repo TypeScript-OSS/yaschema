@@ -3,7 +3,6 @@ import _ from 'lodash';
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { SPECIAL_KNOWN_KEYS_FIELD } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../internal/types/internal-validation';
@@ -25,10 +24,7 @@ export interface RecordSchema<KeyT extends string, ValueT> extends Schema<Partia
   readonly keys: RegExp | Schema<KeyT>;
   readonly valueSchema: Schema<ValueT>;
 
-  /**
-   * If `true`, extra keys don't cause errors and won't be removed, even if `failOnUnknownKeys` and/or `removeUnknownKeys` is `true` for the
-   * operation.  This effects the directly described value but not sub-values.
-   */
+  /** If `true`, extra keys won't be removed.  This effects the directly described value but not sub-values. */
   allowUnknownKeys: boolean;
   readonly setAllowUnknownKeys: (allow: boolean) => this;
 }
@@ -134,41 +130,15 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
 
     const keys = this.keys;
     const areKeysRegExps = keys instanceof RegExp;
-    const shouldIncludeUnknownKeys = this.allowUnknownKeys || !internalState.shouldRemoveUnknownKeys;
 
-    if (internalState.shouldFailOnUnknownKeys) {
-      if (container[SPECIAL_KNOWN_KEYS_FIELD] === undefined) {
-        container[SPECIAL_KNOWN_KEYS_FIELD] = new Set<string>(valueKeys);
-        internalState.unknownKeysCheckers.push(() => {
-          const unknownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
-          delete container[SPECIAL_KNOWN_KEYS_FIELD];
-
-          const hasUnknownKeys = unknownKeys.size > 0;
-          if (hasUnknownKeys) {
-            return appendPathComponent(path, Array.from(unknownKeys)[0]);
-          } else {
-            return undefined;
-          }
-        });
-      }
-
-      if (this.allowUnknownKeys) {
-        const unknownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
-        unknownKeys.clear();
-      }
-    }
-
-    const unknownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
     for (const valueKey of valueKeys) {
       if (areKeysRegExps) {
         if (!keys.test(valueKey)) {
-          if (shouldIncludeUnknownKeys) {
+          if (this.allowUnknownKeys) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             container[valueKey] = container[valueKey] ?? _.cloneDeep(value[valueKey]);
           }
           continue; // No validation necessary
-        } else if (internalState.shouldFailOnUnknownKeys) {
-          unknownKeys.delete(valueKey);
         }
       } else {
         const result = (keys as any as InternalSchemaFunctions).internalValidate(
@@ -179,13 +149,11 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
           validationMode
         );
         if (isErrorResult(result)) {
-          if (shouldIncludeUnknownKeys) {
+          if (this.allowUnknownKeys) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             container[valueKey] = container[valueKey] ?? value[valueKey];
           }
           continue; // No validation necessary
-        } else if (internalState.shouldFailOnUnknownKeys) {
-          unknownKeys.delete(valueKey);
         }
       }
 
@@ -255,31 +223,7 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
 
     const keys = this.keys;
     const areKeysRegExps = keys instanceof RegExp;
-    const shouldIncludeUnknownKeys = this.allowUnknownKeys || !internalState.shouldRemoveUnknownKeys;
 
-    if (internalState.shouldFailOnUnknownKeys) {
-      if (container[SPECIAL_KNOWN_KEYS_FIELD] === undefined) {
-        container[SPECIAL_KNOWN_KEYS_FIELD] = new Set<string>(valueKeys);
-        internalState.unknownKeysCheckers.push(() => {
-          const unknownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
-          delete container[SPECIAL_KNOWN_KEYS_FIELD];
-
-          const hasUnknownKeys = unknownKeys.size > 0;
-          if (hasUnknownKeys) {
-            return appendPathComponent(path, Array.from(unknownKeys)[0]);
-          } else {
-            return undefined;
-          }
-        });
-      }
-
-      if (this.allowUnknownKeys) {
-        const unknownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
-        unknownKeys.clear();
-      }
-    }
-
-    const unknownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
     const processChunk = async (chunkStartIndex: number) => {
       if (internalState.shouldRelax()) {
         await internalState.relax();
@@ -290,13 +234,11 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
 
         if (areKeysRegExps) {
           if (!keys.test(valueKey)) {
-            if (shouldIncludeUnknownKeys) {
+            if (this.allowUnknownKeys) {
               // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
               container[valueKey] = container[valueKey] ?? _.cloneDeep(value[valueKey]);
             }
             continue; // No validation necessary
-          } else if (internalState.shouldFailOnUnknownKeys) {
-            unknownKeys.delete(valueKey);
           }
         } else {
           const result =
@@ -316,13 +258,11 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
                   validationMode
                 );
           if (isErrorResult(result)) {
-            if (shouldIncludeUnknownKeys) {
+            if (this.allowUnknownKeys) {
               // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
               container[valueKey] = container[valueKey] ?? value[valueKey];
             }
             continue; // No validation necessary
-          } else if (internalState.shouldFailOnUnknownKeys) {
-            unknownKeys.delete(valueKey);
           }
         }
 

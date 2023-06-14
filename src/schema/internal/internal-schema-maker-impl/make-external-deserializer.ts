@@ -1,6 +1,5 @@
 import type { Deserializer } from '../../../types/deserializer';
 import type { InternalValidator } from '../types/internal-validation';
-import { checkForUnknownKeys } from '../utils/check-for-unknown-keys';
 import { isErrorResult } from '../utils/is-error-result';
 import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { InternalState } from './internal-state';
@@ -8,22 +7,13 @@ import { InternalState } from './internal-state';
 /** Makes the public synchronous deserializer interface */
 export const makeExternalDeserializer =
   <T>(validator: InternalValidator): Deserializer<T> =>
-  (value, { failOnUnknownKeys = false, removeUnknownKeys = false, validation = 'hard' } = {}) => {
+  (value, { validation = 'hard' } = {}) => {
     const internalState = new InternalState({
       transformation: 'deserialize',
-      operationValidation: validation,
-      failOnUnknownKeys,
-      removeUnknownKeys: failOnUnknownKeys || removeUnknownKeys
+      operationValidation: validation
     });
 
-    const output = checkForUnknownKeys(
-      validator(value, internalState, () => {}, {}, validation),
-      {
-        internalState,
-        failOnUnknownKeys,
-        validation
-      }
-    );
+    const output = validator(value, internalState, () => {}, {}, validation);
 
     if (isErrorResult(output)) {
       return {

@@ -1,28 +1,18 @@
 import type { Validator } from '../../../types/validator';
 import type { InternalValidator } from '../types/internal-validation';
-import { checkForUnknownKeys } from '../utils/check-for-unknown-keys';
 import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { InternalState } from './internal-state';
 
 /** Makes the public synchronous validator interface */
 export const makeExternalValidator =
   (validator: InternalValidator): Validator =>
-  (value, { failOnUnknownKeys = false } = {}) => {
+  (value) => {
     const internalState = new InternalState({
       transformation: 'none',
-      operationValidation: 'hard',
-      failOnUnknownKeys,
-      removeUnknownKeys: true
+      operationValidation: 'hard'
     });
 
-    const output = checkForUnknownKeys(
-      validator(value, internalState, () => {}, {}, 'hard'),
-      {
-        internalState,
-        failOnUnknownKeys,
-        validation: 'hard'
-      }
-    );
+    const output = validator(value, internalState, () => {}, {}, 'hard');
 
     if (output.error !== undefined) {
       return {

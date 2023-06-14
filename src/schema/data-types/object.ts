@@ -3,7 +3,6 @@ import _ from 'lodash';
 import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
 import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../types/schema';
-import { SPECIAL_ALLOW_ALL_KEYS_VALUE, SPECIAL_KNOWN_KEYS_FIELD } from '../internal/consts';
 import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
 import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../internal/types/internal-validation';
@@ -43,10 +42,7 @@ export interface ObjectSchema<ObjectT extends Record<string, any>> extends Schem
 
   readonly map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
 
-  /**
-   * If `true`, extra keys don't cause errors and won't be removed, even if `failOnUnknownKeys` and/or `removeUnknownKeys` is `true` for the
-   * operation.  This effects the directly described value but not sub-values.
-   */
+  /** If `true`, extra keys won't be removed.  This effects the directly described value but not sub-values. */
   allowUnknownKeys: boolean;
   readonly setAllowUnknownKeys: (allow: boolean) => this;
 }
@@ -187,46 +183,13 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
 
     let errorResult: InternalValidationErrorResult | undefined;
 
-    const shouldIncludeUnknownKeys = this.allowUnknownKeys || !internalState.shouldRemoveUnknownKeys;
     let allKeys: string[] | undefined;
-    if (shouldIncludeUnknownKeys) {
+    if (this.allowUnknownKeys) {
       allKeys = allKeys ?? Object.keys(value as object);
       for (const key of allKeys) {
         if (!this.mapKeysSet_.has(key)) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           container[key] = container[key] ?? _.cloneDeep(value[key]);
-        }
-      }
-    }
-    if (internalState.shouldFailOnUnknownKeys) {
-      let knownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
-      if (knownKeys === undefined) {
-        knownKeys = new Set<string>(this.allowUnknownKeys ? [SPECIAL_ALLOW_ALL_KEYS_VALUE] : this.mapKeys_);
-        container[SPECIAL_KNOWN_KEYS_FIELD] = knownKeys;
-
-        internalState.unknownKeysCheckers.push(() => {
-          delete container[SPECIAL_KNOWN_KEYS_FIELD];
-
-          if (!knownKeys.has(SPECIAL_ALLOW_ALL_KEYS_VALUE)) {
-            allKeys = allKeys ?? Object.keys(value as object);
-            for (const key of allKeys) {
-              if (!knownKeys.has(key)) {
-                return appendPathComponent(path, key);
-              }
-            }
-          }
-
-          return undefined;
-        });
-      } else {
-        if (!knownKeys.has(SPECIAL_ALLOW_ALL_KEYS_VALUE)) {
-          if (this.allowUnknownKeys) {
-            knownKeys.add(SPECIAL_ALLOW_ALL_KEYS_VALUE);
-          } else {
-            for (const key of this.mapKeys_) {
-              knownKeys.add(key);
-            }
-          }
         }
       }
     }
@@ -292,46 +255,13 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
     const keys = this.mapKeys_;
     const numKeys = keys.length;
 
-    const shouldIncludeUnknownKeys = this.allowUnknownKeys || !internalState.shouldRemoveUnknownKeys;
     let allKeys: string[] | undefined;
-    if (shouldIncludeUnknownKeys) {
+    if (this.allowUnknownKeys) {
       allKeys = allKeys ?? Object.keys(value as object);
       for (const key of allKeys) {
         if (!this.mapKeysSet_.has(key)) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           container[key] = container[key] ?? _.cloneDeep(value[key]);
-        }
-      }
-    }
-    if (internalState.shouldFailOnUnknownKeys) {
-      let knownKeys = container[SPECIAL_KNOWN_KEYS_FIELD] as Set<string>;
-      if (knownKeys === undefined) {
-        knownKeys = new Set<string>(this.allowUnknownKeys ? [SPECIAL_ALLOW_ALL_KEYS_VALUE] : this.mapKeys_);
-        container[SPECIAL_KNOWN_KEYS_FIELD] = knownKeys;
-
-        internalState.unknownKeysCheckers.push(() => {
-          delete container[SPECIAL_KNOWN_KEYS_FIELD];
-
-          if (!knownKeys.has(SPECIAL_ALLOW_ALL_KEYS_VALUE)) {
-            allKeys = allKeys ?? Object.keys(value as object);
-            for (const key of allKeys) {
-              if (!knownKeys.has(key)) {
-                return appendPathComponent(path, key);
-              }
-            }
-          }
-
-          return undefined;
-        });
-      } else {
-        if (!knownKeys.has(SPECIAL_ALLOW_ALL_KEYS_VALUE)) {
-          if (this.allowUnknownKeys) {
-            knownKeys.add(SPECIAL_ALLOW_ALL_KEYS_VALUE);
-          } else {
-            for (const key of this.mapKeys_) {
-              knownKeys.add(key);
-            }
-          }
         }
       }
     }

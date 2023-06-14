@@ -1,7 +1,10 @@
 import { schema } from '../../..';
 import {
+  setupBasicTypeDeserializationShouldWorkTests,
   setupBasicTypeOperationsShouldNotWorkTests,
-  setupBasicTypeOperationsShouldWorkTests
+  setupBasicTypeOperationsShouldWorkTests,
+  setupBasicTypeSerializationShouldWorkTests,
+  setupBasicTypeValidationShouldWorkTests
 } from '../../__test_dependency__/schema-value-testing';
 
 describe('omitted object schema', () => {
@@ -15,10 +18,25 @@ describe('omitted object schema', () => {
 
   setupBasicTypeOperationsShouldWorkTests({
     schema: omittedSchema,
-    deserializedValues: [{ one: 'one' }, { one: 'ONE' }, { one: 'ONE', two: "anything really since this isn't in the schema" }]
+    deserializedValues: [{ one: 'one' }, { one: 'ONE' }, { one: 'ONE' }]
   });
   setupBasicTypeOperationsShouldNotWorkTests({
     schema: omittedSchema,
     deserializedValues: [null, undefined, '', [true], { one: 1 }, true, false]
+  });
+
+  setupBasicTypeSerializationShouldWorkTests({
+    schema: omittedSchema,
+    deserializedValues: [{ one: 'ONE', two: "anything really since this isn't in the schema" }],
+    serializedValues: [{ one: 'ONE' }]
+  });
+  setupBasicTypeDeserializationShouldWorkTests({
+    schema: omittedSchema,
+    serializedValues: [{ one: 'ONE', two: "anything really since this isn't in the schema" }],
+    deserializedValues: [{ one: 'ONE' }]
+  });
+  setupBasicTypeValidationShouldWorkTests({
+    schema: omittedSchema,
+    deserializedValues: [{ one: 'ONE', two: "anything really since this isn't in the schema" }]
   });
 });

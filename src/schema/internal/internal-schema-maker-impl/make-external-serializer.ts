@@ -1,29 +1,19 @@
 import type { JsonValue } from '../../../types/json-value';
 import type { Serializer } from '../../../types/serializer';
 import type { InternalValidator } from '../types/internal-validation';
-import { checkForUnknownKeys } from '../utils/check-for-unknown-keys';
 import { isErrorResult } from '../utils/is-error-result';
 import { atPath, resolveLazyPath } from '../utils/path-utils';
 import { InternalState } from './internal-state';
 
 /** Makes the public synchronous serializer interface */
 export const makeExternalSerializer = <ValueT>(validator: InternalValidator): Serializer<ValueT> => {
-  return (value, { failOnUnknownKeys = false, removeUnknownKeys = false, validation = 'hard' } = {}) => {
+  return (value, { validation = 'hard' } = {}) => {
     const internalState = new InternalState({
       transformation: 'serialize',
-      operationValidation: validation,
-      failOnUnknownKeys,
-      removeUnknownKeys: failOnUnknownKeys || removeUnknownKeys
+      operationValidation: validation
     });
 
-    const output = checkForUnknownKeys(
-      validator(value, internalState, () => {}, {}, validation),
-      {
-        internalState,
-        failOnUnknownKeys,
-        validation
-      }
-    );
+    const output = validator(value, internalState, () => {}, {}, validation);
 
     if (isErrorResult(output)) {
       return {
