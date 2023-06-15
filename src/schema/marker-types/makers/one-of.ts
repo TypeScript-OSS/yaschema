@@ -1,31 +1,24 @@
-import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
-import { getMeaningfulTypeof } from '../../type-utils/get-meaningful-typeof';
-import type { Schema } from '../../types/schema';
-import type { ValidationMode } from '../../types/validation-options';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalState } from '../internal/internal-schema-maker-impl/internal-state';
-import type { GenericContainer } from '../internal/types/generic-container';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import type { Schema } from '../../../types/schema';
+import type { ValidationMode } from '../../../types/validation-options';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
+import type { GenericContainer } from '../../internal/types/generic-container';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type {
   InternalAsyncValidator,
   InternalValidationErrorResult,
   InternalValidationResult,
   InternalValidator
-} from '../internal/types/internal-validation';
-import type { LazyPath } from '../internal/types/lazy-path';
-import { cloner } from '../internal/utils/cloner';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { makeErrorResultForValidationMode } from '../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../internal/utils/make-no-error';
-
-/** Requires at least one of the schemas be satisfied. */
-export interface OneOfSchema<TypeA, TypeB> extends Schema<TypeA | TypeB> {
-  schemaType: 'oneOf';
-  clone: () => OneOfSchema<TypeA, TypeB>;
-
-  schemas: [Schema<TypeA>, Schema<TypeB>];
-}
+} from '../../internal/types/internal-validation';
+import type { LazyPath } from '../../internal/types/lazy-path';
+import { cloner } from '../../internal/utils/cloner';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
+import type { OneOfSchema } from '../types/OneOfSchema';
 
 /**
  * Requires at least one of the schemas be satisfied.

@@ -1,17 +1,10 @@
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { makeNoError } from '../internal/utils/make-no-error';
-
-/** Requires that either the specified schema is satisfied or that the value is `undefined`. */
-export interface OptionalSchema<DefinedValueT> extends Schema<DefinedValueT | undefined> {
-  schemaType: 'optional';
-  clone: () => OptionalSchema<DefinedValueT>;
-
-  schema: Schema<DefinedValueT>;
-}
+import type { Schema } from '../../../types/schema';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
+import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import type { OptionalSchema } from '../types/OptionalSchema';
 
 /** Requires that either the specified schema is satisfied or that the value is `undefined`. */
 export const optional = <DefinedValueT>(schema: Schema<DefinedValueT>): OptionalSchema<DefinedValueT> => new OptionalSchemaImpl(schema);

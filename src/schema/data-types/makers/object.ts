@@ -12,8 +12,10 @@ import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result';
 import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
 import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
 import { appendPathComponent } from '../../internal/utils/path-utils';
-import { optional } from '../../marker-types/optional';
-import type { InferRecordOfSchemasFromRecordOfValues, ObjectSchema, TreatUndefinedAsOptional } from '../types/ObjectSchema';
+import { optional } from '../../marker-types/makers/optional';
+import type { InferRecordOfSchemasFromRecordOfValues } from '../internal/types/InferRecordOfSchemasFromRecordOfValues';
+import type { TreatUndefinedAsOptional } from '../internal/types/TreatUndefinedAsOptional';
+import type { ObjectSchema } from '../types/ObjectSchema';
 
 /** Requires an object.  Separate schemas a specified per key. */
 export const object = <ObjectT extends Record<string, any>>(map: InferRecordOfSchemasFromRecordOfValues<ObjectT>): ObjectSchema<ObjectT> =>

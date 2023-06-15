@@ -1,17 +1,10 @@
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { makeNoError } from '../internal/utils/make-no-error';
-
-/** Requires that either the specified schema is satisfied or that the value is `null`. */
-export interface AllowNullSchema<NonNullValueT> extends Schema<NonNullValueT | null> {
-  schemaType: 'allowNull';
-  clone: () => AllowNullSchema<NonNullValueT>;
-
-  schema: Schema<NonNullValueT>;
-}
+import type { Schema } from '../../../types/schema';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
+import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import type { AllowNullSchema } from '../types/AllowNullSchema';
 
 /** Requires that either the specified schema is satisfied or that the value is `null`. */
 export const allowNull = <NonNullValueT>(schema: Schema<NonNullValueT>): AllowNullSchema<NonNullValueT> => new AllowNullSchemaImpl(schema);

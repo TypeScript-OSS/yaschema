@@ -1,14 +1,8 @@
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
-
-/** A special marker schema for named types, useful for code generation tools.  Roots are not cloneable. */
-export interface RootSchema<ValueT> extends Schema<ValueT> {
-  schemaType: 'root';
-  name: string;
-  schema: Schema<ValueT>;
-}
+import type { Schema } from '../../../types/schema';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
+import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import type { RootSchema } from '../types/RootSchema';
 
 /**
  * Requires the specified schema but marks this as a type that can be referenced by name.

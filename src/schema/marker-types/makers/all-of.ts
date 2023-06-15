@@ -1,29 +1,22 @@
-import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
-import type { Schema } from '../../types/schema';
-import type { ValidationMode } from '../../types/validation-options';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalState } from '../internal/internal-schema-maker-impl/internal-state';
-import type { GenericContainer } from '../internal/types/generic-container';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import type { Schema } from '../../../types/schema';
+import type { ValidationMode } from '../../../types/validation-options';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
+import type { GenericContainer } from '../../internal/types/generic-container';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type {
   InternalAsyncValidator,
   InternalValidationErrorResult,
   InternalValidationResult,
   InternalValidator
-} from '../internal/types/internal-validation';
-import type { LazyPath } from '../internal/types/lazy-path';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { isMoreSevereResult } from '../internal/utils/is-more-severe-result';
-import { makeClonedValueNoError, makeNoError } from '../internal/utils/make-no-error';
-
-/** Requires all of the schemas be satisfied. */
-export interface AllOfSchema<TypeA, TypeB> extends Schema<TypeA & TypeB> {
-  schemaType: 'allOf';
-  clone: () => AllOfSchema<TypeA, TypeB>;
-
-  schemas: [Schema<TypeA>, Schema<TypeB>];
-}
+} from '../../internal/types/internal-validation';
+import type { LazyPath } from '../../internal/types/lazy-path';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
+import type { AllOfSchema } from '../types/AllOfSchema';
 
 /**
  * Requires all of the schemas be satisfied.

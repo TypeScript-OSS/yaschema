@@ -1,24 +1,14 @@
-import { getAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
-import { getLogger } from '../../config/logging';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import { getLogger } from '../../../config/logging';
+import type { Schema } from '../../../types/schema';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
+import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import type { UpgradedSchema } from '../types/UpgradedSchema';
 
 const alreadyLogUpgradedWarnings = new Set<string>();
-
-/** Requires either and old schema or a new schema be satisfied. */
-export interface UpgradedSchema<OldT, NewT> extends Schema<OldT | NewT> {
-  schemaType: 'upgraded';
-  clone: () => UpgradedSchema<OldT, NewT>;
-
-  oldSchema: Schema<OldT>;
-  newSchema: Schema<NewT>;
-  deadline?: string;
-  uniqueName: string;
-}
 
 /**
  * Requires either and old schema or a new schema be satisfied.  However, a warning is logged if the new schema isn't satisfied and the old

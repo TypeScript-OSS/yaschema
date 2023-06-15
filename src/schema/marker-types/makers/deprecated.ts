@@ -1,23 +1,14 @@
-import { getLogger } from '../../config/logging';
-import type { Schema } from '../../types/schema';
-import { InternalSchemaMakerImpl } from '../internal/internal-schema-maker-impl';
-import type { InternalSchemaFunctions } from '../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../internal/types/internal-validation';
-import { copyMetaFields } from '../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../internal/utils/is-error-result';
-import { makeNoError } from '../internal/utils/make-no-error';
+import { getLogger } from '../../../config/logging';
+import type { Schema } from '../../../types/schema';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
+import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
+import { isErrorResult } from '../../internal/utils/is-error-result';
+import { makeNoError } from '../../internal/utils/make-no-error';
+import type { DeprecatedSchema } from '../types/DeprecatedSchema';
 
 const alreadyLogDeprecationWarnings = new Set<string>();
-
-/** Requires either `undefined` or the specified schema to be satisfied. */
-export interface DeprecatedSchema<ValueT> extends Schema<ValueT | undefined> {
-  schemaType: 'deprecated';
-  clone: () => DeprecatedSchema<ValueT>;
-
-  schema: Schema<ValueT>;
-  deadline?: string;
-  uniqueName: string;
-}
 
 /**
  * Requires either `undefined` or the specified schema to be satisfied.  However, if the specified schema is satisfied, a warning is logged
