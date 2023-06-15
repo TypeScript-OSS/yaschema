@@ -25,7 +25,7 @@ export interface DeprecatedSchema<ValueT> extends Schema<ValueT | undefined> {
  *
  * @see `setLogger`
  */
-export const deprecated = <ValueT>(uniqueName: string, schema: Schema<ValueT>, options?: { deadline?: string }) =>
+export const deprecated = <ValueT>(uniqueName: string, schema: Schema<ValueT>, options?: { deadline?: string }): DeprecatedSchema<ValueT> =>
   new DeprecatedSchemaImpl(uniqueName, schema, options);
 
 // Helpers

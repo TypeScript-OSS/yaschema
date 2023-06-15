@@ -15,7 +15,7 @@ export interface RootSchema<ValueT> extends Schema<ValueT> {
  *
  * This is most useful when using automatic code generation tools.
  */
-export const root = <ValueT>(name: string, schema: Schema<ValueT>) => new RootSchemaImpl(name, schema);
+export const root = <ValueT>(name: string, schema: Schema<ValueT>): RootSchema<ValueT> => new RootSchemaImpl(name, schema);
 
 // Helpers
 

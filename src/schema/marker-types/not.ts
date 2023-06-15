@@ -25,8 +25,11 @@ export interface NotSchema<ValueT, ExcludedT> extends Schema<Exclude<ValueT, Exc
  * `ExcludedT` is `'hello'`, the compile-time type of this schemas `valueType` field will be `string` since `Exclude<string, 'hello'>` is
  * still `string`.  However, runtime validation will still be performed as expected, allowing, for example, any string except `'hello'`.
  */
-export const not = <ValueT, ExcludedT>(schema: Schema<ValueT>, notSchema: Schema<ExcludedT>, options?: { expectedTypeName?: string }) =>
-  new NotSchemaImpl(schema, notSchema, options);
+export const not = <ValueT, ExcludedT>(
+  schema: Schema<ValueT>,
+  notSchema: Schema<ExcludedT>,
+  options?: { expectedTypeName?: string }
+): NotSchema<ValueT, ExcludedT> => new NotSchemaImpl(schema, notSchema, options);
 
 // Helpers
 

@@ -40,8 +40,10 @@ export interface RestrictedNumberSchema extends Schema<number> {
 /** Requires a real, finite number.  If one or more values and/or ranges are specified, the value must also be equal to one of the specified
  * values or in one of the specified ranges.  If one or more divisors are specified, the value must also be divisible by one of the
  * specified divisors. */
-export const restrictedNumber = (allowedValuesAndRanges: Array<number | Range<number>>, options?: RestrictedNumberOptions) =>
-  new RestrictedNumberSchemaImpl(allowedValuesAndRanges, options);
+export const restrictedNumber = (
+  allowedValuesAndRanges: Array<number | Range<number>>,
+  options?: RestrictedNumberOptions
+): RestrictedNumberSchema => new RestrictedNumberSchemaImpl(allowedValuesAndRanges, options);
 
 // Helpers
 

@@ -31,7 +31,7 @@ export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
     | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>]
     | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>]
     | [Schema<TypeA>, Schema<TypeB>, Schema<TypeC>, Schema<TypeD>, Schema<TypeE>];
-}) => new TupleSchemaImpl(args);
+}): TupleSchema<TypeA, TypeB, TypeC, TypeD, TypeE> => new TupleSchemaImpl(args);
 
 // Helpers
 

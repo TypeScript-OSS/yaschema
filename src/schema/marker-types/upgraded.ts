@@ -26,8 +26,11 @@ export interface UpgradedSchema<OldT, NewT> extends Schema<OldT | NewT> {
  *
  * @see `setLogger`
  */
-export const upgraded = <OldT, NewT>(uniqueName: string, args: { old: Schema<OldT>; new: Schema<NewT> }, options?: { deadline?: string }) =>
-  new UpgradedSchemaImpl(uniqueName, args, options);
+export const upgraded = <OldT, NewT>(
+  uniqueName: string,
+  args: { old: Schema<OldT>; new: Schema<NewT> },
+  options?: { deadline?: string }
+): UpgradedSchema<OldT, NewT> => new UpgradedSchemaImpl(uniqueName, args, options);
 
 // Helpers
 

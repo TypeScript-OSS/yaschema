@@ -36,7 +36,7 @@ export const array = <ItemT = any>(args?: {
   minLength?: number;
   maxLength?: number;
   maxEntriesToValidate?: number;
-}) => new ArraySchemaImpl(args);
+}): ArraySchema<ItemT> => new ArraySchemaImpl(args);
 
 // Helpers
 

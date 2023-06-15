@@ -33,7 +33,8 @@ export interface OneOfSchema<TypeA, TypeB> extends Schema<TypeA | TypeB> {
  * The base form takes 2 schemas, but `oneOf3`, `oneOf4`, and `oneOf5` take more.  If you need even more than that, use something like
  * `oneOf(oneOf5(…), oneOf5(…))`
  */
-export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>) => new OneOfSchemaImpl(schemaA, schemaB);
+export const oneOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): OneOfSchema<TypeA, TypeB> =>
+  new OneOfSchemaImpl(schemaA, schemaB);
 
 export const oneOf3 = <TypeA, TypeB, TypeC>(
   schemaA: Schema<TypeA>,

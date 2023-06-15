@@ -14,7 +14,7 @@ export interface AllowNullSchema<NonNullValueT> extends Schema<NonNullValueT | n
 }
 
 /** Requires that either the specified schema is satisfied or that the value is `null`. */
-export const allowNull = <NonNullValueT>(schema: Schema<NonNullValueT>) => new AllowNullSchemaImpl(schema);
+export const allowNull = <NonNullValueT>(schema: Schema<NonNullValueT>): AllowNullSchema<NonNullValueT> => new AllowNullSchemaImpl(schema);
 
 // Helpers
 

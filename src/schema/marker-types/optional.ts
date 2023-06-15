@@ -14,7 +14,7 @@ export interface OptionalSchema<DefinedValueT> extends Schema<DefinedValueT | un
 }
 
 /** Requires that either the specified schema is satisfied or that the value is `undefined`. */
-export const optional = <DefinedValueT>(schema: Schema<DefinedValueT>) => new OptionalSchemaImpl(schema);
+export const optional = <DefinedValueT>(schema: Schema<DefinedValueT>): OptionalSchema<DefinedValueT> => new OptionalSchemaImpl(schema);
 
 // Helpers
 

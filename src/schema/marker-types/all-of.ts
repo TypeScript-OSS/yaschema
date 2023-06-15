@@ -31,7 +31,8 @@ export interface AllOfSchema<TypeA, TypeB> extends Schema<TypeA & TypeB> {
  * The base form takes 2 schemas, but `allOf3`, `allOf4`, and `allOf5` take more.  If you need even more than that, use something like
  * `allOf(allOf5(…), allOf5(…))`
  */
-export const allOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>) => new AllOfSchemaImpl(schemaA, schemaB);
+export const allOf = <TypeA, TypeB>(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>): AllOfSchema<TypeA, TypeB> =>
+  new AllOfSchemaImpl(schemaA, schemaB);
 
 export const allOf3 = <TypeA, TypeB, TypeC>(
   schemaA: Schema<TypeA>,
