@@ -1,6 +1,5 @@
-import _ from 'lodash';
-
 import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import { safeClone } from '../../../internal/utils/safeClone';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
@@ -97,8 +96,6 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
 
   private readonly mapKeys_: string[];
 
-  private readonly mapKeysSet_: Set<string>;
-
   // Initialization
 
   constructor(map: InferRecordOfSchemasFromRecordOfValues<ObjectT>) {
@@ -107,7 +104,6 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
     this.map = map;
 
     this.mapKeys_ = Object.keys(map);
-    this.mapKeysSet_ = new Set(this.mapKeys_);
 
     const mapValues = Object.values(map) as Schema[];
 
@@ -153,14 +149,16 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
     let errorResult: InternalValidationErrorResult | undefined;
 
     let allKeys: string[] | undefined;
-    if (this.allowUnknownKeys) {
-      allKeys = allKeys ?? Object.keys(value as object);
-      for (const key of allKeys) {
-        if (!this.mapKeysSet_.has(key)) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          container[key] = container[key] ?? _.cloneDeep(value[key]);
+    if (this.allowUnknownKeys && internalState.transformation !== 'none') {
+      internalState.defer(() => {
+        allKeys = allKeys ?? Object.keys(value as object);
+        for (const key of allKeys) {
+          if (!(key in container)) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            container[key] = safeClone(value[key]);
+          }
         }
-      }
+      });
     }
 
     for (const key of this.mapKeys_) {
@@ -225,14 +223,16 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
     const numKeys = keys.length;
 
     let allKeys: string[] | undefined;
-    if (this.allowUnknownKeys) {
-      allKeys = allKeys ?? Object.keys(value as object);
-      for (const key of allKeys) {
-        if (!this.mapKeysSet_.has(key)) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          container[key] = container[key] ?? _.cloneDeep(value[key]);
+    if (this.allowUnknownKeys && internalState.transformation !== 'none') {
+      internalState.defer(() => {
+        allKeys = allKeys ?? Object.keys(value as object);
+        for (const key of allKeys) {
+          if (!(key in container)) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            container[key] = safeClone(value[key]);
+          }
         }
-      }
+      });
     }
 
     let chunkStartIndex = 0;

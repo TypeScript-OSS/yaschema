@@ -15,6 +15,10 @@ export const makeExternalSerializer = <ValueT>(validator: InternalValidator): Se
 
     const output = validator(value, internalState, () => {}, {}, validation);
 
+    if (!isErrorResult(output) || output.errorLevel !== 'error') {
+      internalState.runDeferred();
+    }
+
     if (isErrorResult(output)) {
       return {
         error: `${output.error()}${atPath(output.errorPath)}`,

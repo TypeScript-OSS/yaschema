@@ -1,3 +1,6 @@
+import { Blob } from 'node-fetch';
+
+import type { JsonObject } from '../../..';
 import { schema } from '../../..';
 import {
   setupBasicTypeOperationsShouldNotWorkTests,
@@ -28,5 +31,15 @@ describe('any schema', () => {
   describe('if not(schema.boolean(false)) is used', () => {
     setupBasicTypeOperationsShouldWorkTests({ schema: anySchema.not(schema.boolean(false)), deserializedValues: [true] });
     setupBasicTypeOperationsShouldNotWorkTests({ schema: anySchema.not(schema.boolean(false)), deserializedValues: [false] });
+  });
+
+  describe('complex objects', () => {
+    it('blob', () => {
+      const complexSchema = schema.object({ blob: schema.any() });
+
+      const serialized = complexSchema.serialize({ blob: new Blob([Buffer.from('hi there', 'utf-8')]) });
+      expect(serialized.error).toBeUndefined();
+      expect((serialized.serialized! as JsonObject).blob).toBeInstanceOf(Blob);
+    });
   });
 });

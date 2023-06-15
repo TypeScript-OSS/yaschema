@@ -1,6 +1,7 @@
 import _ from 'lodash';
 
 import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
+import { safeClone } from '../../../internal/utils/safeClone';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
@@ -119,12 +120,15 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
     const keys = this.keys;
     const areKeysRegExps = keys instanceof RegExp;
 
+    // If there are unknown keys, we'll deferred their processing until later so that other parallel models can do their updates first and
+    // we can avoid unnecessary cloning
+    const deferredUnknownKeys: string[] = [];
+
     for (const valueKey of valueKeys) {
       if (areKeysRegExps) {
         if (!keys.test(valueKey)) {
           if (this.allowUnknownKeys) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            container[valueKey] = container[valueKey] ?? _.cloneDeep(value[valueKey]);
+            deferredUnknownKeys.push(valueKey);
           }
           continue; // No validation necessary
         }
@@ -138,8 +142,7 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
         );
         if (isErrorResult(result)) {
           if (this.allowUnknownKeys) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            container[valueKey] = container[valueKey] ?? value[valueKey];
+            deferredUnknownKeys.push(valueKey);
           }
           continue; // No validation necessary
         }
@@ -163,6 +166,17 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
           return { ...errorResult, invalidValue: () => container };
         }
       }
+    }
+
+    if (deferredUnknownKeys.length > 0 && internalState.transformation !== 'none') {
+      internalState.defer(() => {
+        for (const key of deferredUnknownKeys) {
+          if (!(key in container)) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            container[key] = safeClone(value[key]);
+          }
+        }
+      });
     }
 
     return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
@@ -212,6 +226,10 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
     const keys = this.keys;
     const areKeysRegExps = keys instanceof RegExp;
 
+    // If there are unknown keys, we'll deferred their processing until later so that other parallel models can do their updates first and
+    // we can avoid unnecessary cloning
+    const deferredUnknownKeys: string[] = [];
+
     const processChunk = async (chunkStartIndex: number) => {
       if (internalState.shouldRelax()) {
         await internalState.relax();
@@ -223,8 +241,7 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
         if (areKeysRegExps) {
           if (!keys.test(valueKey)) {
             if (this.allowUnknownKeys) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              container[valueKey] = container[valueKey] ?? _.cloneDeep(value[valueKey]);
+              deferredUnknownKeys.push(valueKey);
             }
             continue; // No validation necessary
           }
@@ -247,8 +264,7 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
                 );
           if (isErrorResult(result)) {
             if (this.allowUnknownKeys) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              container[valueKey] = container[valueKey] ?? value[valueKey];
+              deferredUnknownKeys.push(valueKey);
             }
             continue; // No validation necessary
           }
@@ -293,6 +309,17 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
       if (chunkRes !== undefined) {
         return { ...chunkRes, invalidValue: () => container };
       }
+    }
+
+    if (deferredUnknownKeys.length > 0 && internalState.transformation !== 'none') {
+      internalState.defer(() => {
+        for (const key of deferredUnknownKeys) {
+          if (!(key in container)) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            container[key] = safeClone(value[key]);
+          }
+        }
+      });
     }
 
     return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);

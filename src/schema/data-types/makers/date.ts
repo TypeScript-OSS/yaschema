@@ -74,7 +74,7 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
       );
     }
 
-    return this.validateDeserializedForm_(_.cloneDeep(value), internalState, path, container, validationMode);
+    return this.validateDeserializedForm_(new Date(value), internalState, path, container, validationMode);
   };
 
   private readonly internalValidateSerialize_: InternalValidator = (value, internalState, path, container, validationMode) => {
