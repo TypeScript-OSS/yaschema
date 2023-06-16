@@ -13,9 +13,26 @@ import { makeErrorResultForValidationMode } from '../../internal/utils/make-erro
 import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
 import { appendPathComponent } from '../../internal/utils/path-utils';
 import { optional } from '../../marker-types/makers/optional';
-import type { InferRecordOfSchemasFromRecordOfValues } from '../internal/types/InferRecordOfSchemasFromRecordOfValues';
-import type { TreatUndefinedAsOptional } from '../internal/types/TreatUndefinedAsOptional';
 import type { ObjectSchema } from '../types/ObjectSchema';
+
+// DO NOT EXPORT THESE TYPES, IT MESSES UP TYPE INFERENCE
+
+/** Infers a record where the values of the original type are inferred to be the values of `Schemas` */
+type InferRecordOfSchemasFromRecordOfValues<ObjectT extends Record<string, any>> = {
+  [KeyT in keyof ObjectT]: Schema<ObjectT[KeyT]>;
+};
+/** Picks the fields of an object type that are never undefined */
+type PickAlwaysDefinedValues<Base> = Pick<
+  Base,
+  {
+    [Key in keyof Base]: Base[Key] extends Exclude<Base[Key], undefined> ? Key : never;
+  }[keyof Base]
+>;
+/** Picks the fields of an object type that might be undefined */
+type PickPossiblyUndefinedValues<Base> = Omit<Base, keyof PickAlwaysDefinedValues<Base>>;
+/** Converts types like `{ x: string, y: string | undefined }` to types like `{ x: string, y?: string }` */
+type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysDefinedValues<ObjectT> &
+  Partial<PickPossiblyUndefinedValues<ObjectT>>;
 
 /** Requires an object.  Separate schemas a specified per key. */
 export const object = <ObjectT extends Record<string, any>>(map: InferRecordOfSchemasFromRecordOfValues<ObjectT>): ObjectSchema<ObjectT> =>
