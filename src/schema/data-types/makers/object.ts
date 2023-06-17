@@ -174,7 +174,11 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
         for (const key of allKeys) {
           if (!(key in container)) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            container[key] = safeClone(value[key]);
+            const cloned = safeClone(value[key]);
+            if (cloned !== undefined) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              container[key] = cloned;
+            }
           }
         }
       });
@@ -197,8 +201,16 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
         container[key] ?? {},
         validationMode
       );
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      container[key] = isErrorResult(result) ? container[key] ?? result.invalidValue() : result.value;
+      const bestResult = isErrorResult(result) ? container[key] ?? result.invalidValue() : result.value;
+      if (bestResult !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        container[key] = bestResult;
+      } else {
+        delete container[key];
+      }
+
       if (isMoreSevereResult(result, errorResult)) {
         errorResult = result as InternalValidationErrorResult;
 
@@ -248,7 +260,11 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
         for (const key of allKeys) {
           if (!(key in container)) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            container[key] = safeClone(value[key]);
+            const cloned = safeClone(value[key]);
+            if (cloned !== undefined) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              container[key] = cloned;
+            }
           }
         }
       });
@@ -300,8 +316,16 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
                 container[key] ?? {},
                 validationMode
               );
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        container[key] = isErrorResult(result) ? container[key] ?? result.invalidValue() : result.value;
+        const bestResult = isErrorResult(result) ? container[key] ?? result.invalidValue() : result.value;
+        if (bestResult !== undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          container[key] = bestResult;
+        } else {
+          delete container[key];
+        }
+
         if (isMoreSevereResult(result, errorResult)) {
           errorResult = result as InternalValidationErrorResult;
 

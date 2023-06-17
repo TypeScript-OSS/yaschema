@@ -157,8 +157,16 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
         container[valueKey] ?? {},
         validationMode
       );
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      container[valueKey] = isErrorResult(result) ? container[valueKey] ?? result.invalidValue() : result.value;
+      const bestResult = isErrorResult(result) ? container[valueKey] ?? result.invalidValue() : result.value;
+      if (bestResult !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        container[valueKey] = bestResult;
+      } else {
+        delete container[valueKey];
+      }
+
       if (isMoreSevereResult(result, errorResult)) {
         errorResult = result as InternalValidationErrorResult;
 
@@ -173,7 +181,11 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
         for (const key of deferredUnknownKeys) {
           if (!(key in container)) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            container[key] = safeClone(value[key]);
+            const cloned = safeClone(value[key]);
+            if (cloned !== undefined) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              container[key] = cloned;
+            }
           }
         }
       });
@@ -290,8 +302,16 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
                 container[valueKey] ?? {},
                 validationMode
               );
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        container[valueKey] = isErrorResult(result) ? container[valueKey] ?? result.invalidValue() : result.value;
+        const bestResult = isErrorResult(result) ? container[valueKey] ?? result.invalidValue() : result.value;
+        if (bestResult !== undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          container[valueKey] = bestResult;
+        } else {
+          delete container[valueKey];
+        }
+
         if (isMoreSevereResult(result, errorResult)) {
           errorResult = result as InternalValidationErrorResult;
 
@@ -316,7 +336,11 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
         for (const key of deferredUnknownKeys) {
           if (!(key in container)) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            container[key] = safeClone(value[key]);
+            const cloned = safeClone(value[key]);
+            if (cloned !== undefined) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              container[key] = cloned;
+            }
           }
         }
       });
