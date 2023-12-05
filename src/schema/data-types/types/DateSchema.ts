@@ -2,7 +2,6 @@ import type { Range } from '../../../types/range';
 import type { Schema } from '../../../types/schema';
 
 /** Requires a `Date`, which will be serialized as an ISO Date/Time string */
-
 export interface DateSchema extends Schema<Date> {
   schemaType: 'date';
   clone: () => DateSchema;

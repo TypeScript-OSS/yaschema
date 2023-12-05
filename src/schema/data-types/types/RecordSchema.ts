@@ -1,7 +1,6 @@
 import type { Schema } from '../../../types/schema';
 
 /** Requires a non-null, non-array object where all keys share a schema and all values share a schema */
-
 export interface RecordSchema<KeyT extends string, ValueT> extends Schema<Partial<Record<KeyT, ValueT>>> {
   readonly schemaType: 'record';
   readonly clone: () => RecordSchema<KeyT, ValueT>;

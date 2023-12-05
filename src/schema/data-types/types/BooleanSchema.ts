@@ -1,7 +1,6 @@
 import type { Schema } from '../../../types/schema';
 
 /** Requires a boolean, optionally matching one of the specified values. */
-
 export interface BooleanSchema<ValueT extends boolean> extends Schema<ValueT> {
   schemaType: 'boolean';
   clone: () => BooleanSchema<ValueT>;

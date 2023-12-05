@@ -1,7 +1,6 @@
 import type { Schema } from '../../../types/schema';
 
 /** Requires an array. */
-
 export interface ArraySchema<ItemT = any> extends Schema<ItemT[]> {
   schemaType: 'array';
   clone: () => ArraySchema<ItemT>;

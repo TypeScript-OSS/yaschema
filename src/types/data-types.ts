@@ -7,12 +7,14 @@ export const dataTypes = makeStringSubtypeArray(
   'boolean',
   'custom',
   'date',
+  'null',
   'number',
   'object',
   'record',
   'regex',
   'restrictedNumber',
   'string',
-  'tuple'
+  'tuple',
+  'undefined'
 );
 export type DataType = (typeof dataTypes)[0];

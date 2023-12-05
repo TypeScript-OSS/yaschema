@@ -1,7 +1,6 @@
 import type { Schema } from '../../../types/schema';
 
 /** Requires a real, finite number, optionally matching one of the specified values. */
-
 export interface NumberSchema<ValueT extends number> extends Schema<ValueT> {
   schemaType: 'number';
   clone: () => NumberSchema<ValueT>;

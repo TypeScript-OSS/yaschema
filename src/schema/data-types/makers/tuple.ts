@@ -203,14 +203,14 @@ class TupleSchemaImpl<TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
     TypeA extends void
       ? []
       : TypeB extends void
-      ? [TypeA]
-      : TypeC extends void
-      ? [TypeA, TypeB]
-      : TypeD extends void
-      ? [TypeA, TypeB, TypeC]
-      : TypeE extends void
-      ? [TypeA, TypeB, TypeC, TypeD]
-      : [TypeA, TypeB, TypeC, TypeD, TypeE]
+        ? [TypeA]
+        : TypeC extends void
+          ? [TypeA, TypeB]
+          : TypeD extends void
+            ? [TypeA, TypeB, TypeC]
+            : TypeE extends void
+              ? [TypeA, TypeB, TypeC, TypeD]
+              : [TypeA, TypeB, TypeC, TypeD, TypeE]
   >
   implements TupleSchema<TypeA, TypeB, TypeC, TypeD, TypeE>
 {
@@ -231,14 +231,14 @@ class TupleSchemaImpl<TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
   public override readonly valueType = undefined as any as TypeA extends void
     ? []
     : TypeB extends void
-    ? [TypeA]
-    : TypeC extends void
-    ? [TypeA, TypeB]
-    : TypeD extends void
-    ? [TypeA, TypeB, TypeC]
-    : TypeE extends void
-    ? [TypeA, TypeB, TypeC, TypeD]
-    : [TypeA, TypeB, TypeC, TypeD, TypeE];
+      ? [TypeA]
+      : TypeC extends void
+        ? [TypeA, TypeB]
+        : TypeD extends void
+          ? [TypeA, TypeB, TypeC]
+          : TypeE extends void
+            ? [TypeA, TypeB, TypeC, TypeD]
+            : [TypeA, TypeB, TypeC, TypeD, TypeE];
 
   public override readonly estimatedValidationTimeComplexity: number;
 
