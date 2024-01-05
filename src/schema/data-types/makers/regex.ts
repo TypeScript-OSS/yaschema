@@ -17,6 +17,10 @@ class RegexSchemaImpl extends InternalSchemaMakerImpl<string> implements RegexSc
 
   public readonly regex: RegExp;
 
+  public minLength: number | undefined;
+
+  public maxLength: number | undefined;
+
   // PureSchema Field Overrides
 
   public override readonly schemaType = 'regex';
@@ -37,11 +41,20 @@ class RegexSchemaImpl extends InternalSchemaMakerImpl<string> implements RegexSc
     super();
 
     this.regex = pattern;
+    this.minLength = undefined;
+    this.maxLength = undefined;
   }
 
   // Public Methods
 
-  public readonly clone = (): RegexSchema => copyMetaFields({ from: this, to: new RegexSchemaImpl(this.regex) });
+  public readonly clone = (): RegexSchema =>
+    copyMetaFields({ from: this, to: new RegexSchemaImpl(this.regex).setAllowedLengthRange(this.minLength, this.maxLength) });
+
+  public readonly setAllowedLengthRange = (minLength: number | undefined, maxLength: number | undefined): this => {
+    this.minLength = minLength;
+    this.maxLength = maxLength;
+    return this;
+  };
 
   // Method Overrides
 
@@ -57,6 +70,24 @@ class RegexSchemaImpl extends InternalSchemaMakerImpl<string> implements RegexSc
 
     if (validationMode === 'none') {
       return makeNoError(value);
+    }
+
+    const length = value.length;
+
+    if (this.minLength !== undefined && length < this.minLength) {
+      return makeErrorResultForValidationMode(
+        () => value,
+        validationMode,
+        () => `Expected at least ${this.minLength} characters in string, got ${length} characters`,
+        path
+      );
+    } else if (this.maxLength !== undefined && length > this.maxLength) {
+      return makeErrorResultForValidationMode(
+        () => value,
+        validationMode,
+        () => `Expected at most ${this.maxLength} characters in string, got ${length} characters`,
+        path
+      );
     }
 
     if (!this.regex.test(value)) {

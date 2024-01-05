@@ -23,6 +23,10 @@ class StringSchemaImpl<ValueT extends string> extends InternalSchemaMakerImpl<Va
 
   public readonly allowedValues: ValueT[];
 
+  public minLength: number | undefined;
+
+  public maxLength: number | undefined;
+
   // PureSchema Field Overrides
 
   public override readonly schemaType = 'string';
@@ -48,13 +52,22 @@ class StringSchemaImpl<ValueT extends string> extends InternalSchemaMakerImpl<Va
 
     this.allowedValues = allowedValues;
     this.equalsSet_ = new Set(allowedValues);
+    this.minLength = 1;
+    this.maxLength = undefined;
   }
 
   // Public Methods
 
   public readonly allowEmptyString = () => allowEmptyString(...this.allowedValues);
 
-  public readonly clone = (): StringSchema<ValueT> => copyMetaFields({ from: this, to: new StringSchemaImpl(...this.allowedValues) });
+  public readonly clone = (): StringSchema<ValueT> =>
+    copyMetaFields({ from: this, to: new StringSchemaImpl(...this.allowedValues).setAllowedLengthRange(this.minLength, this.maxLength) });
+
+  public readonly setAllowedLengthRange = (minLength: number | undefined, maxLength: number | undefined): this => {
+    this.minLength = minLength;
+    this.maxLength = maxLength;
+    return this;
+  };
 
   // Method Overrides
 
@@ -76,11 +89,29 @@ class StringSchemaImpl<ValueT extends string> extends InternalSchemaMakerImpl<Va
       return validateValue(value, { allowed: this.equalsSet_, path, validationMode });
     }
 
-    if (value.length === 0) {
+    const length = value.length;
+
+    if (this.minLength !== undefined && length < this.minLength) {
+      if (length === 0) {
+        return makeErrorResultForValidationMode(
+          () => value,
+          validationMode,
+          () => 'Expected non-empty string, found empty string',
+          path
+        );
+      } else {
+        return makeErrorResultForValidationMode(
+          () => value,
+          validationMode,
+          () => `Expected at least ${this.minLength} characters in string, got ${length} characters`,
+          path
+        );
+      }
+    } else if (this.maxLength !== undefined && length > this.maxLength) {
       return makeErrorResultForValidationMode(
         () => value,
         validationMode,
-        () => 'Expected non-empty string, found empty string',
+        () => `Expected at most ${this.maxLength} characters in string, got ${length} characters`,
         path
       );
     }

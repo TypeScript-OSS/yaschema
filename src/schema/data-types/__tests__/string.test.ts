@@ -43,9 +43,37 @@ describe('string schema', () => {
     setupBasicTypeOperationsShouldNotWorkTests({ schema: stringSchema, deserializedValues: ['hi', 'there'] });
   });
 
+  describe('with min length', () => {
+    const stringSchema = schema.string().setAllowedLengthRange(3, undefined);
+
+    setupBasicTypeOperationsShouldWorkTests({ schema: stringSchema, deserializedValues: ['hello', 'world'] });
+    setupBasicTypeOperationsShouldNotWorkTests({ schema: stringSchema, deserializedValues: ['', 'a', 'ab'] });
+  });
+
+  describe('with max length', () => {
+    const stringSchema = schema.string().setAllowedLengthRange(1, 3);
+
+    setupBasicTypeOperationsShouldWorkTests({ schema: stringSchema, deserializedValues: ['a', 'ab', 'abc'] });
+    setupBasicTypeOperationsShouldNotWorkTests({ schema: stringSchema, deserializedValues: ['', 'hello', 'world'] });
+  });
+
+  describe('with min and max length', () => {
+    const stringSchema = schema.string().setAllowedLengthRange(3, 5);
+
+    setupBasicTypeOperationsShouldWorkTests({ schema: stringSchema, deserializedValues: ['abc', 'abcd', 'abcde'] });
+    setupBasicTypeOperationsShouldNotWorkTests({ schema: stringSchema, deserializedValues: ['', 'a', 'ab', 'abcdef'] });
+  });
+
   describe('with allowEmptyString', () => {
     const stringSchema = schema.string().allowEmptyString();
 
     setupBasicTypeOperationsShouldWorkTests({ schema: stringSchema, deserializedValues: ['', 'hello', 'world'] });
+  });
+
+  describe('with allowEmptyString and min length', () => {
+    const stringSchema = schema.string().allowEmptyString().setAllowedLengthRange(3, undefined);
+
+    setupBasicTypeOperationsShouldWorkTests({ schema: stringSchema, deserializedValues: ['', 'hello', 'world'] });
+    setupBasicTypeOperationsShouldNotWorkTests({ schema: stringSchema, deserializedValues: ['a', 'ab'] });
   });
 });

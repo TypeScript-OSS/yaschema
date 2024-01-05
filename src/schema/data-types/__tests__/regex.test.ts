@@ -44,5 +44,15 @@ describe('regex schema', () => {
     describe('if both allowNull and optional are used', () => {
       setupBasicTypeOperationsShouldWorkTests({ schema: regexSchema.allowNull().optional(), deserializedValues: [null, undefined] });
     });
+    describe('with minLength', () => {
+      const regexSchema = schema.regex(/^a.*b$/i).setAllowedLengthRange(3, undefined);
+      setupBasicTypeOperationsShouldWorkTests({ schema: regexSchema, deserializedValues: ['acb', 'accb', 'acccb'] });
+      setupBasicTypeOperationsShouldNotWorkTests({ schema: regexSchema, deserializedValues: ['', 'a', 'ab'] });
+    });
+    describe('with minLength and maxLength', () => {
+      const regexSchema = schema.regex(/^a.*b$/i).setAllowedLengthRange(3, 5);
+      setupBasicTypeOperationsShouldWorkTests({ schema: regexSchema, deserializedValues: ['acb', 'accb', 'acccb'] });
+      setupBasicTypeOperationsShouldNotWorkTests({ schema: regexSchema, deserializedValues: ['', 'a', 'ab', 'accccb'] });
+    });
   });
 });

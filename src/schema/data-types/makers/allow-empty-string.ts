@@ -25,6 +25,10 @@ class AllowEmptyStringSchemaImpl<ValueT extends string>
 
   public readonly allowedValues: ValueT[];
 
+  public minLength: number | undefined;
+
+  public maxLength: number | undefined;
+
   // PureSchema Field Overrides
 
   public override readonly schemaType = 'allowEmptyString';
@@ -50,12 +54,23 @@ class AllowEmptyStringSchemaImpl<ValueT extends string>
 
     this.allowedValues = allowedValues;
     this.equalsSet_ = new Set(allowedValues);
+    this.minLength = 1;
+    this.maxLength = undefined;
   }
 
   // Public Methods
 
   public readonly clone = (): AllowEmptyStringSchema<ValueT> =>
-    copyMetaFields({ from: this, to: new AllowEmptyStringSchemaImpl(...this.allowedValues) });
+    copyMetaFields({
+      from: this,
+      to: new AllowEmptyStringSchemaImpl(...this.allowedValues).setAllowedLengthRange(this.minLength, this.maxLength)
+    });
+
+  public readonly setAllowedLengthRange = (minLength: number | undefined, maxLength: number | undefined): this => {
+    this.minLength = minLength;
+    this.maxLength = maxLength;
+    return this;
+  };
 
   // Method Overrides
 
@@ -75,6 +90,24 @@ class AllowEmptyStringSchemaImpl<ValueT extends string>
 
     if (this.allowedValues.length > 0) {
       return validateValue(value, { allowed: this.equalsSet_, path, validationMode });
+    }
+
+    const length = value.length;
+
+    if (this.minLength !== undefined && length < this.minLength) {
+      return makeErrorResultForValidationMode(
+        () => value,
+        validationMode,
+        () => `Expected at least ${this.minLength} characters in string, got ${length} characters`,
+        path
+      );
+    } else if (this.maxLength !== undefined && length > this.maxLength) {
+      return makeErrorResultForValidationMode(
+        () => value,
+        validationMode,
+        () => `Expected at most ${this.maxLength} characters in string, got ${length} characters`,
+        path
+      );
     }
 
     return makeNoError(value);
