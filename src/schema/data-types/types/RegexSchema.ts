@@ -1,9 +1,9 @@
 import type { Schema } from '../../../types/schema';
 
 /** Requires a string matching the specified regular expression. */
-export interface RegexSchema extends Schema<string> {
+export interface RegexSchema<ValueT extends string = string> extends Schema<ValueT> {
   schemaType: 'regex';
-  clone: () => RegexSchema;
+  clone: () => RegexSchema<ValueT>;
 
   regex: RegExp;
 

@@ -8,11 +8,11 @@ import { makeNoError } from '../../internal/utils/make-no-error';
 import type { RegexSchema } from '../types/RegexSchema';
 
 /** Requires a string matching the specified regular expression. */
-export const regex = (pattern: RegExp): RegexSchema => new RegexSchemaImpl(pattern);
+export const regex = <ValueT extends string = string>(pattern: RegExp): RegexSchema<ValueT> => new RegexSchemaImpl<ValueT>(pattern);
 
 // Helpers
 
-class RegexSchemaImpl extends InternalSchemaMakerImpl<string> implements RegexSchema {
+class RegexSchemaImpl<ValueT extends string = string> extends InternalSchemaMakerImpl<ValueT> implements RegexSchema<ValueT> {
   // Public Fields
 
   public readonly regex: RegExp;
@@ -25,7 +25,7 @@ class RegexSchemaImpl extends InternalSchemaMakerImpl<string> implements RegexSc
 
   public override readonly schemaType = 'regex';
 
-  public override readonly valueType = undefined as any as string;
+  public override readonly valueType = undefined as any as ValueT;
 
   public override readonly estimatedValidationTimeComplexity = 1;
 
@@ -47,8 +47,8 @@ class RegexSchemaImpl extends InternalSchemaMakerImpl<string> implements RegexSc
 
   // Public Methods
 
-  public readonly clone = (): RegexSchema =>
-    copyMetaFields({ from: this, to: new RegexSchemaImpl(this.regex).setAllowedLengthRange(this.minLength, this.maxLength) });
+  public readonly clone = (): RegexSchema<ValueT> =>
+    copyMetaFields({ from: this, to: new RegexSchemaImpl<ValueT>(this.regex).setAllowedLengthRange(this.minLength, this.maxLength) });
 
   public readonly setAllowedLengthRange = (minLength: number | undefined, maxLength: number | undefined): this => {
     this.minLength = minLength;
