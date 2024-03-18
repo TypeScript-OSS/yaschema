@@ -94,7 +94,8 @@ const validateTuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, T
       arrayItem,
       internalState,
       appendPathIndex(path, index),
-      container,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      container[index] ?? {},
       validationMode
     );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -174,14 +175,16 @@ const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, Type
             arrayItem,
             internalState,
             appendPathIndex(path, index),
-            container,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            container[index] ?? {},
             validationMode
           )
         : (item as any as InternalSchemaFunctions).internalValidate(
             arrayItem,
             internalState,
             appendPathIndex(path, index),
-            container,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            container[index] ?? {},
             validationMode
           );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

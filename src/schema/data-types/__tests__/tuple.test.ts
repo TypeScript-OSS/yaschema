@@ -60,4 +60,16 @@ describe('tuple schema', () => {
       setupBasicTypeOperationsShouldWorkTests({ schema: tupleSchema.allowNull().optional(), deserializedValues: [null, undefined] });
     });
   });
+
+  describe('with nested object', () => {
+    const tupleSchema = schema.tuple({ items: [schema.number(), schema.object({ a: schema.string(), b: schema.number() })] });
+
+    setupBasicTypeOperationsShouldWorkTests({
+      schema: tupleSchema,
+      deserializedValues: [
+        [1, { a: 'hello', b: 2 }],
+        [3, { a: 'goodbye', b: 4 }]
+      ]
+    });
+  });
 });
