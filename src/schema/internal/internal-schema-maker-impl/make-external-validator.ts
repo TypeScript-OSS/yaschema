@@ -1,7 +1,7 @@
 import type { Validator } from '../../../types/validator';
 import type { InternalValidator } from '../types/internal-validation';
-import { atPath, resolveLazyPath } from '../utils/path-utils';
-import { InternalState } from './internal-state';
+import { atPath, resolveLazyPath } from '../utils/path-utils.js';
+import { InternalState } from './internal-state.js';
 
 /** Makes the public synchronous validator interface */
 export const makeExternalValidator =

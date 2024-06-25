@@ -1,9 +1,9 @@
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { ValidationMode } from '../../../types/validation-options';
 import type { InternalValidationResult } from '../types/internal-validation';
 import type { LazyPath } from '../types/lazy-path';
-import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode';
-import { makeNoError } from './make-no-error';
+import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode.js';
+import { makeNoError } from './make-no-error.js';
 
 /** Checks that the specified value is one of the specified allowed values using `.has` on the set. */
 export const validateValue = <ValueT extends boolean | number | string>(

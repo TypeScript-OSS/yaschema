@@ -1,19 +1,17 @@
-import _ from 'lodash';
-
-import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
-import { safeClone } from '../../../internal/utils/safeClone';
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
+import { safeClone } from '../../../internal/utils/safeClone.js';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../../internal/types/internal-validation';
-import { cloner } from '../../internal/utils/cloner';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../../internal/utils/is-error-result';
-import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result';
-import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
-import { appendPathComponent } from '../../internal/utils/path-utils';
+import { cloner } from '../../internal/utils/cloner.js';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { isErrorResult } from '../../internal/utils/is-error-result.js';
+import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result.js';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode.js';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error.js';
+import { appendPathComponent } from '../../internal/utils/path-utils.js';
 import type { RecordSchema } from '../types/RecordSchema';
 
 const ESTIMATED_AVG_RECORD_SIZE = 25;

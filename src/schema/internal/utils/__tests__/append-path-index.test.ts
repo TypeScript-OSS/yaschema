@@ -1,4 +1,4 @@
-import { appendPathComponent, appendPathIndex, resolveLazyPath } from '../path-utils';
+import { appendPathComponent, appendPathIndex, resolveLazyPath } from '../path-utils.js';
 
 describe('appendPathIndex', () => {
   it('should work with empty path', () => {

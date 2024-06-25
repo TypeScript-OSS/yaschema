@@ -1,8 +1,8 @@
-import { schema } from '../../..';
+import { schema } from '../../../exports.js';
 import {
   setupBasicTypeOperationsShouldNotWorkTests,
   setupBasicTypeOperationsShouldWorkTests
-} from '../../__test_dependency__/schema-value-testing';
+} from '../../__test_dependency__/schema-value-testing.js';
 
 describe('undefined schema', () => {
   it('schemaType should be "undefined"', () => {

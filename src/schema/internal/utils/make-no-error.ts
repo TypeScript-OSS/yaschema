@@ -1,6 +1,4 @@
-import _ from 'lodash';
-
-import { safeClone } from '../../../internal/utils/safeClone';
+import { safeClone } from '../../../internal/utils/safeClone.js';
 import type { InternalValidationResult } from '../types/internal-validation';
 
 export const makeNoError = <ValueT>(value: ValueT): InternalValidationResult => ({ value });

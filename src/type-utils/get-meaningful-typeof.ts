@@ -1,4 +1,4 @@
-import { getMeaningfulTypeofExtractor } from '../config/meaningful-typeof';
+import { getMeaningfulTypeofExtractor } from '../config/meaningful-typeof.js';
 
 /**
  * Determines a human-meaningful type for a given value, especially if custom schema types have been added.

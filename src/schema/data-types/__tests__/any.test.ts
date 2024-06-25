@@ -1,11 +1,11 @@
 import { Blob } from 'node-fetch';
 
-import type { JsonObject } from '../../..';
-import { schema } from '../../..';
+import type { JsonObject } from '../../../exports';
+import { schema } from '../../../exports.js';
 import {
   setupBasicTypeOperationsShouldNotWorkTests,
   setupBasicTypeOperationsShouldWorkTests
-} from '../../__test_dependency__/schema-value-testing';
+} from '../../__test_dependency__/schema-value-testing.js';
 
 describe('any schema', () => {
   const anySchema = schema.any();

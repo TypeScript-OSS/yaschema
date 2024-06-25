@@ -1,10 +1,10 @@
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
 import type { InternalValidator } from '../types/internal-validation';
-import { cloner } from './cloner';
-import { isErrorResult } from './is-error-result';
-import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode';
-import { makeNoError } from './make-no-error';
+import { cloner } from './cloner.js';
+import { isErrorResult } from './is-error-result.js';
+import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode.js';
+import { makeNoError } from './make-no-error.js';
 
 const numberRegex = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/;
 

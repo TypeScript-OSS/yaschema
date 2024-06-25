@@ -1,11 +1,10 @@
 import BigNumber from 'bignumber.js';
 
-import { schema } from '../..';
-import { makeSerDes } from '../../types/ser-des';
+import { schema } from '../../exports.js';
+import { makeSerDes } from '../../types/ser-des.js';
 import type { CustomValidationResult } from '../data-types/makers/custom';
 
 const bigNumberSerDes = makeSerDes({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   deserialize: (value) => ({ deserialized: new BigNumber(value.bignumber) }),
   isValueType: (value): value is BigNumber => BigNumber.isBigNumber(value),
   serialize: (value) => ({ serialized: { bignumber: value.toFixed() } }),

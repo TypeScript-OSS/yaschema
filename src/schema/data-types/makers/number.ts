@@ -1,12 +1,12 @@
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
-import { cloner } from '../../internal/utils/cloner';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../../internal/utils/is-error-result';
-import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
-import { makeNoError } from '../../internal/utils/make-no-error';
-import { supportVariableSerializationFormsForNumericValues } from '../../internal/utils/support-variable-serialization-forms-for-numeric-values';
-import { validateValue } from '../../internal/utils/validate-value';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
+import { cloner } from '../../internal/utils/cloner.js';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { isErrorResult } from '../../internal/utils/is-error-result.js';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode.js';
+import { makeNoError } from '../../internal/utils/make-no-error.js';
+import { supportVariableSerializationFormsForNumericValues } from '../../internal/utils/support-variable-serialization-forms-for-numeric-values.js';
+import { validateValue } from '../../internal/utils/validate-value.js';
 import type { NumberSchema } from '../types/NumberSchema';
 
 /** Requires a real, finite number.  If one or more values are specified, the value must also be equal to one of the specified values */

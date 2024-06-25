@@ -1,4 +1,4 @@
-import { setAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold';
+import { setAsyncTimeComplexityThreshold } from '../../config/async-time-complexity-threshold.js';
 import type { Schema } from '../../types/schema';
 
 export const setupBasicTypeDeserializationShouldNotWorkTests = ({
@@ -12,7 +12,6 @@ export const setupBasicTypeDeserializationShouldNotWorkTests = ({
     for (const value of serializedValues) {
       describe('sync', () => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, () => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const validation = schema.deserialize(value as any);
           expect(validation.error).toBeDefined();
         });
@@ -20,7 +19,6 @@ export const setupBasicTypeDeserializationShouldNotWorkTests = ({
 
       setupAsyncTests(() => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, async () => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const validation = await schema.deserializeAsync(value as any);
           expect(validation.error).toBeDefined();
         });
@@ -45,7 +43,6 @@ export const setupBasicTypeDeserializationShouldWorkTests = ({
 
       describe('sync', () => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, () => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const validation = schema.deserialize(value as any);
           expect(validation.deserialized).toEqual(deserializedValues !== undefined ? deserializedValues[thisIndex] : value);
           expect(validation.error).toBeUndefined();
@@ -54,7 +51,6 @@ export const setupBasicTypeDeserializationShouldWorkTests = ({
 
       setupAsyncTests(() => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, async () => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const validation = await schema.deserializeAsync(value as any);
           expect(validation.deserialized).toEqual(deserializedValues !== undefined ? deserializedValues[thisIndex] : value);
           expect(validation.error).toBeUndefined();

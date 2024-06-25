@@ -1,2 +1,2 @@
-export * from './makers/exports';
-export * from './types/exports';
+export * from './makers/exports.js';
+export * from './types/exports.js';

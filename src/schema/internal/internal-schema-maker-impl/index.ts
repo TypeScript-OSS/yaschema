@@ -6,16 +6,16 @@ import type { SchemaPreferredValidationMode } from '../../../types/schema-prefer
 import type { SchemaType } from '../../../types/schema-type';
 import type { AsyncSerializer, Serializer } from '../../../types/serializer';
 import type { AsyncValidator, Validator } from '../../../types/validator';
-import { dynamicAllowNull, dynamicNot, dynamicOptional } from '../circular-support/funcs';
+import { dynamicAllowNull, dynamicNot, dynamicOptional } from '../circular-support/funcs.js';
 import type { InternalSchemaFunctions } from '../types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../types/internal-validation';
-import { pickNextTopValidationMode } from '../utils/pick-next-top-validation-mode';
-import { makeExternalAsyncDeserializer } from './make-external-async-deserializer';
-import { makeExternalAsyncSerializer } from './make-external-async-serializer';
-import { makeExternalAsyncValidator } from './make-external-async-validator';
-import { makeExternalDeserializer } from './make-external-deserializer';
-import { makeExternalSerializer } from './make-external-serializer';
-import { makeExternalValidator } from './make-external-validator';
+import { pickNextTopValidationMode } from '../utils/pick-next-top-validation-mode.js';
+import { makeExternalAsyncDeserializer } from './make-external-async-deserializer.js';
+import { makeExternalAsyncSerializer } from './make-external-async-serializer.js';
+import { makeExternalAsyncValidator } from './make-external-async-validator.js';
+import { makeExternalDeserializer } from './make-external-deserializer.js';
+import { makeExternalSerializer } from './make-external-serializer.js';
+import { makeExternalValidator } from './make-external-validator.js';
 
 export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<ValueT>, SchemaFunctions<ValueT>, InternalSchemaFunctions {
   /** A marker that can be used for testing if this is a YaSchema schema */

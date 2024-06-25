@@ -1,7 +1,7 @@
 import type { AsyncValidator } from '../../../types/validator';
 import type { InternalAsyncValidator } from '../types/internal-validation';
-import { atPath, resolveLazyPath } from '../utils/path-utils';
-import { InternalState } from './internal-state';
+import { atPath, resolveLazyPath } from '../utils/path-utils.js';
+import { InternalState } from './internal-state.js';
 
 /** Makes the public async validator interface */
 export const makeExternalAsyncValidator =

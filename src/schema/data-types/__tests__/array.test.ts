@@ -1,11 +1,11 @@
 import BigNumber from 'bignumber.js';
 
-import { schema } from '../../..';
-import { bigNumberSchema } from '../../__test_dependency__/big-number-schema';
+import { schema } from '../../../exports.js';
+import { bigNumberSchema } from '../../__test_dependency__/big-number-schema.js';
 import {
   setupBasicTypeOperationsShouldNotWorkTests,
   setupBasicTypeOperationsShouldWorkTests
-} from '../../__test_dependency__/schema-value-testing';
+} from '../../__test_dependency__/schema-value-testing.js';
 
 describe('array schema', () => {
   it('schemaType should be "array"', () => {

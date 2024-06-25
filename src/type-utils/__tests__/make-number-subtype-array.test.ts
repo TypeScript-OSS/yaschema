@@ -1,4 +1,4 @@
-import { makeNumberSubtypeArray } from '../make-number-subtype-array';
+import { makeNumberSubtypeArray } from '../make-number-subtype-array.js';
 
 describe('makeNumberSubtypeArray', () => {
   it('should work with flat list', () => {

@@ -1,11 +1,11 @@
-import { getLogger } from '../../../config/logging';
+import { getLogger } from '../../../config/logging.js';
 import type { Schema } from '../../../types/schema';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../../internal/utils/is-error-result';
-import { makeNoError } from '../../internal/utils/make-no-error';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { isErrorResult } from '../../internal/utils/is-error-result.js';
+import { makeNoError } from '../../internal/utils/make-no-error.js';
 import type { DeprecatedSchema } from '../types/DeprecatedSchema';
 
 const alreadyLogDeprecationWarnings = new Set<string>();

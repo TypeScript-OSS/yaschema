@@ -1,5 +1,5 @@
 import type { InternalValidationResult } from '../types/internal-validation';
-import { isErrorResult } from './is-error-result';
+import { isErrorResult } from './is-error-result.js';
 
 export const isMoreSevereResult = (result: InternalValidationResult, thanResult: InternalValidationResult | undefined) => {
   if (isErrorResult(result)) {

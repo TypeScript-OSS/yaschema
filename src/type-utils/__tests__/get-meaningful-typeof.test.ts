@@ -1,4 +1,4 @@
-import { getMeaningfulTypeof } from '../get-meaningful-typeof';
+import { getMeaningfulTypeof } from '../get-meaningful-typeof.js';
 
 describe('getMeaningfulTypeof', () => {
   it('should work with null', () => {

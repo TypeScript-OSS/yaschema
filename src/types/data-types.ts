@@ -1,4 +1,4 @@
-import { makeStringSubtypeArray } from '../type-utils/make-string-subtype-array';
+import { makeStringSubtypeArray } from '../type-utils/make-string-subtype-array.js';
 
 /** The built-in schema types that represent data types.  This is useful for code generation tools. */
 export const dataTypes = makeStringSubtypeArray(

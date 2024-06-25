@@ -1,8 +1,8 @@
-import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
 import type { ValidationMode } from '../../../types/validation-options';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
 import type { GenericContainer } from '../../internal/types/generic-container';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
@@ -13,13 +13,13 @@ import type {
   InternalValidator
 } from '../../internal/types/internal-validation';
 import type { LazyPath } from '../../internal/types/lazy-path';
-import { cloner } from '../../internal/utils/cloner';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../../internal/utils/is-error-result';
-import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result';
-import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
-import { appendPathIndex } from '../../internal/utils/path-utils';
+import { cloner } from '../../internal/utils/cloner.js';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { isErrorResult } from '../../internal/utils/is-error-result.js';
+import { isMoreSevereResult } from '../../internal/utils/is-more-severe-result.js';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode.js';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error.js';
+import { appendPathIndex } from '../../internal/utils/path-utils.js';
 import type { TupleSchema } from '../types/TupleSchema';
 
 /** Requires a value where items must positionally match the specified schemas */

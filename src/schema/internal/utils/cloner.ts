@@ -1,6 +1,4 @@
-import _ from 'lodash';
-
-import { safeClone } from '../../../internal/utils/safeClone';
+import { safeClone } from '../../../internal/utils/safeClone.js';
 
 export const cloner =
   <T>(value: T) =>

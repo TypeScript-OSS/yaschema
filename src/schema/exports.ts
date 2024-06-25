@@ -1,4 +1,4 @@
-import './internal/circular-support/init';
+import './internal/circular-support/init.js';
 
-export * from './data-types/exports';
-export * from './marker-types/exports';
+export * from './data-types/exports.js';
+export * from './marker-types/exports.js';

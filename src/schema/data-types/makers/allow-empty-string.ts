@@ -1,11 +1,11 @@
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalValidator } from '../../internal/types/internal-validation';
-import { cloner } from '../../internal/utils/cloner';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
-import { makeNoError } from '../../internal/utils/make-no-error';
-import { validateValue } from '../../internal/utils/validate-value';
+import { cloner } from '../../internal/utils/cloner.js';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode.js';
+import { makeNoError } from '../../internal/utils/make-no-error.js';
+import { validateValue } from '../../internal/utils/validate-value.js';
 import type { AllowEmptyStringSchema } from '../types/AllowEmptyStringSchema';
 
 /**

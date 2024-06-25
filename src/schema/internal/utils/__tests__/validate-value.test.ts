@@ -1,4 +1,4 @@
-import { validateValue } from '../validate-value';
+import { validateValue } from '../validate-value.js';
 
 describe('validateValue', () => {
   it('should work with number in the allowed set', () => {

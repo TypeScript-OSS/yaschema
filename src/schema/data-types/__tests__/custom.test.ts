@@ -1,10 +1,10 @@
 import BigNumber from 'bignumber.js';
 
-import { bigNumberSchema } from '../../__test_dependency__/big-number-schema';
+import { bigNumberSchema } from '../../__test_dependency__/big-number-schema.js';
 import {
   setupBasicTypeOperationsShouldNotWorkTests,
   setupBasicTypeOperationsShouldWorkTests
-} from '../../__test_dependency__/schema-value-testing';
+} from '../../__test_dependency__/schema-value-testing.js';
 
 describe('custom schema', () => {
   it('schemaType should be "custom"', () => {

@@ -1,9 +1,9 @@
 import type { JsonValue } from '../../../types/json-value';
 import type { AsyncSerializer } from '../../../types/serializer';
 import type { InternalAsyncValidator } from '../types/internal-validation';
-import { isErrorResult } from '../utils/is-error-result';
-import { atPath, resolveLazyPath } from '../utils/path-utils';
-import { InternalState } from './internal-state';
+import { isErrorResult } from '../utils/is-error-result.js';
+import { atPath, resolveLazyPath } from '../utils/path-utils.js';
+import { InternalState } from './internal-state.js';
 
 /** Makes the public async serializer interface */
 export const makeExternalAsyncSerializer =

@@ -1,4 +1,4 @@
-import { appendPathComponent, appendPathIndex, atPath } from '../path-utils';
+import { appendPathComponent, appendPathIndex, atPath } from '../path-utils.js';
 
 describe('atPath', () => {
   it('should work with undefined path', () => {

@@ -1,4 +1,4 @@
-import { makeStringSubtypeArray } from '../make-string-subtype-array';
+import { makeStringSubtypeArray } from '../make-string-subtype-array.js';
 
 describe('makeStringSubtypeArray', () => {
   it('should work with flat list', () => {

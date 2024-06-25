@@ -1,8 +1,8 @@
 import type { AsyncDeserializer } from '../../../types/deserializer';
 import type { InternalAsyncValidator } from '../types/internal-validation';
-import { isErrorResult } from '../utils/is-error-result';
-import { atPath, resolveLazyPath } from '../utils/path-utils';
-import { InternalState } from './internal-state';
+import { isErrorResult } from '../utils/is-error-result.js';
+import { atPath, resolveLazyPath } from '../utils/path-utils.js';
+import { InternalState } from './internal-state.js';
 
 /** Makes the public async deserializer interface */
 export const makeExternalAsyncDeserializer =

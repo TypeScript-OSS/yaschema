@@ -1,9 +1,9 @@
 import type { Schema } from '../../../types/schema';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { makeNoError } from '../../internal/utils/make-no-error';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { makeNoError } from '../../internal/utils/make-no-error.js';
 import type { AllowNullSchema } from '../types/AllowNullSchema';
 
 /** Requires that either the specified schema is satisfied or that the value is `null`. */

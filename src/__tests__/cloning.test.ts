@@ -1,4 +1,4 @@
-import { schema } from '..';
+import { schema } from '../exports.js';
 
 describe('cloning', () => {
   it('objects should work', () => {

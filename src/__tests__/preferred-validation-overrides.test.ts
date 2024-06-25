@@ -1,4 +1,4 @@
-import { schema } from '..';
+import { schema } from '../exports.js';
 
 describe('preferred validation overrides', () => {
   describe('with deep override', () => {

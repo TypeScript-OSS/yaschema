@@ -1,11 +1,11 @@
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalValidationResult } from '../../internal/types/internal-validation';
-import { cloner } from '../../internal/utils/cloner';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError } from '../../internal/utils/make-no-error';
-import { supportVariableSerializationFormsForBooleanValues } from '../../internal/utils/support-variable-serialization-forms-for-boolean-values';
+import { cloner } from '../../internal/utils/cloner.js';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode.js';
+import { makeClonedValueNoError } from '../../internal/utils/make-no-error.js';
+import { supportVariableSerializationFormsForBooleanValues } from '../../internal/utils/support-variable-serialization-forms-for-boolean-values.js';
 import type { AnySchema } from '../types/AnySchema';
 
 /** Requires a non-null, non-undefined value.  Use `allowNull` or `optional` if `null` or `undefined` values should also be allowed. */

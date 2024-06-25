@@ -1,19 +1,19 @@
-import { getLogger } from '../../../config/logging';
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { getLogger } from '../../../config/logging.js';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { JsonValue } from '../../../types/json-value';
 import type { SerDes } from '../../../types/ser-des';
 import type { ValidationMode } from '../../../types/validation-options';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
 import type { GenericContainer } from '../../internal/types/generic-container';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type { InternalTransformationType, InternalValidationResult, InternalValidator } from '../../internal/types/internal-validation';
 import type { LazyPath } from '../../internal/types/lazy-path';
-import { cloner } from '../../internal/utils/cloner';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../../internal/utils/is-error-result';
-import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
+import { cloner } from '../../internal/utils/cloner.js';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { isErrorResult } from '../../internal/utils/is-error-result.js';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode.js';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error.js';
 import type { CustomSchema } from '../types/CustomSchema';
 
 export type CustomValidationResult = { error?: string } | { error?: undefined };
@@ -136,7 +136,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
       return serialization;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return isErrorResult(validation) ? { ...validation, invalidValue: () => serialization.value } : makeNoError(serialization.value);
   };
 

@@ -1,5 +1,5 @@
 import type { Schema } from '../../../types/schema';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
 import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
 import type { RootSchema } from '../types/RootSchema';

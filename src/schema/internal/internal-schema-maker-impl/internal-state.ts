@@ -1,7 +1,7 @@
-import { getAsyncMaxWorkIntervalMSec } from '../../../config/async-max-work-interval-msec';
+import { getAsyncMaxWorkIntervalMSec } from '../../../config/async-max-work-interval-msec.js';
 import type { ValidationMode } from '../../../types/validation-options';
 import type { InternalTransformationType } from '../types/internal-validation';
-import { sleep } from '../utils/sleep';
+import { sleep } from '../utils/sleep.js';
 
 export class InternalState {
   public readonly transformation: InternalTransformationType;

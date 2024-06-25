@@ -1,8 +1,8 @@
-import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold';
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
 import type { ValidationMode } from '../../../types/validation-options';
-import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl';
+import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
 import type { GenericContainer } from '../../internal/types/generic-container';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
@@ -13,11 +13,11 @@ import type {
   InternalValidator
 } from '../../internal/types/internal-validation';
 import type { LazyPath } from '../../internal/types/lazy-path';
-import { cloner } from '../../internal/utils/cloner';
-import { copyMetaFields } from '../../internal/utils/copy-meta-fields';
-import { isErrorResult } from '../../internal/utils/is-error-result';
-import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode';
-import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error';
+import { cloner } from '../../internal/utils/cloner.js';
+import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
+import { isErrorResult } from '../../internal/utils/is-error-result.js';
+import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode.js';
+import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error.js';
 import type { OneOfSchema } from '../types/OneOfSchema';
 
 /**
@@ -72,7 +72,7 @@ const validateOneOf = <TypeA, TypeB>(
   let outInvalidValue: (() => any) | undefined = undefined;
   for (const subschema of schema.schemas) {
     const result = (subschema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     if (!isErrorResult(result)) {
       success = true;
 

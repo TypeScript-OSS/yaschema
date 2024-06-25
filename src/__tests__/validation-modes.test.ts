@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 
-import { schema } from '..';
-import { bigNumberSchema } from '../schema/__test_dependency__/big-number-schema';
+import { schema } from '../exports.js';
+import { bigNumberSchema } from '../schema/__test_dependency__/big-number-schema.js';
 
 describe('soft validation mode', () => {
   it('valid fields should serialize as expected even when there are validation errors', () => {

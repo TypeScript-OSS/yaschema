@@ -1,11 +1,11 @@
-import { schema } from '../../..';
+import { schema } from '../../../exports.js';
 import {
   setupBasicTypeDeserializationShouldWorkTests,
   setupBasicTypeOperationsShouldNotWorkTests,
   setupBasicTypeOperationsShouldWorkTests,
   setupBasicTypeSerializationShouldWorkTests,
   setupBasicTypeValidationShouldWorkTests
-} from '../../__test_dependency__/schema-value-testing';
+} from '../../__test_dependency__/schema-value-testing.js';
 
 describe('record schema', () => {
   it('schemaType should be "record"', () => {

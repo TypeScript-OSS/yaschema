@@ -1,10 +1,10 @@
-import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof';
+import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Range } from '../../../types/range';
 import type { ValidationMode } from '../../../types/validation-options';
 import type { InternalValidationResult } from '../types/internal-validation';
 import type { LazyPath } from '../types/lazy-path';
-import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode';
-import { makeNoError } from './make-no-error';
+import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode.js';
+import { makeNoError } from './make-no-error.js';
 
 export const validateValueInRange = <T extends number | Date>(
   value: T,
