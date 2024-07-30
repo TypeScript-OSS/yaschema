@@ -19,10 +19,10 @@ export const validateValueInRange = <T extends number | Date>(
           .map((range) => {
             const parts: string[] = [];
             if (range.min !== undefined) {
-              parts.push(`${range.minExclusive ?? false ? '>' : '>='} ${JSON.stringify(range.min)}`);
+              parts.push(`${(range.minExclusive ?? false) ? '>' : '>='} ${JSON.stringify(range.min)}`);
             }
             if (range.max !== undefined) {
-              parts.push(`${range.maxExclusive ?? false ? '<' : '<='} ${JSON.stringify(range.max)}`);
+              parts.push(`${(range.maxExclusive ?? false) ? '<' : '<='} ${JSON.stringify(range.max)}`);
             }
 
             return `(${parts.join(' and ')})`;

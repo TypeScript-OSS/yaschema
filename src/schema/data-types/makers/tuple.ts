@@ -99,7 +99,7 @@ const validateTuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, T
       validationMode
     );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    container[index] = isErrorResult(result) ? container[index] ?? result.invalidValue() : result.value;
+    container[index] = isErrorResult(result) ? (container[index] ?? result.invalidValue()) : result.value;
     if (isMoreSevereResult(result, errorResult)) {
       errorResult = result as InternalValidationErrorResult;
 
@@ -188,7 +188,7 @@ const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, Type
             validationMode
           );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    container[index] = isErrorResult(result) ? container[index] ?? result.invalidValue() : result.value;
+    container[index] = isErrorResult(result) ? (container[index] ?? result.invalidValue()) : result.value;
     if (isMoreSevereResult(result, errorResult)) {
       errorResult = result as InternalValidationErrorResult;
 

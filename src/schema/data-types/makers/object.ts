@@ -38,6 +38,54 @@ type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysD
 export const object = <ObjectT extends Record<string, any>>(map: InferRecordOfSchemasFromRecordOfValues<ObjectT>): ObjectSchema<ObjectT> =>
   new ObjectSchemaImpl(map);
 
+/** Creates an object type that extends another object type  */
+export const extendsObject = <ExtendedObjectT extends Record<string, any>, ObjectT extends Record<string, any>>(
+  baseSchema: ObjectSchema<ExtendedObjectT>,
+  subSchema: ObjectSchema<ObjectT>
+): ObjectSchema<ExtendedObjectT & ObjectT> =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  new ObjectSchemaImpl({
+    ...baseSchema.map,
+    ...subSchema.map
+  }) as any;
+
+/** Creates an object type that extends 2 other object types  */
+export const extendsObject2 = <
+  ExtendedObjectTA extends Record<string, any>,
+  ExtendedObjectTB extends Record<string, any>,
+  ObjectT extends Record<string, any>
+>(
+  baseSchemaA: ObjectSchema<ExtendedObjectTA>,
+  baseSchemaB: ObjectSchema<ExtendedObjectTB>,
+  subSchema: ObjectSchema<ObjectT>
+): ObjectSchema<ExtendedObjectTA & ExtendedObjectTB & ObjectT> =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  new ObjectSchemaImpl({
+    ...baseSchemaA.map,
+    ...baseSchemaB.map,
+    ...subSchema.map
+  }) as any;
+
+/** Creates an object type that extends 3 other object types  */
+export const extendsObject3 = <
+  ExtendedObjectTA extends Record<string, any>,
+  ExtendedObjectTB extends Record<string, any>,
+  ExtendedObjectTC extends Record<string, any>,
+  ObjectT extends Record<string, any>
+>(
+  baseSchemaA: ObjectSchema<ExtendedObjectTA>,
+  baseSchemaB: ObjectSchema<ExtendedObjectTB>,
+  baseSchemaC: ObjectSchema<ExtendedObjectTC>,
+  subSchema: ObjectSchema<ObjectT>
+): ObjectSchema<ExtendedObjectTA & ExtendedObjectTB & ExtendedObjectTC & ObjectT> =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  new ObjectSchemaImpl({
+    ...baseSchemaA.map,
+    ...baseSchemaB.map,
+    ...baseSchemaC.map,
+    ...subSchema.map
+  }) as any;
+
 /** Creates a version of the specified object schema where all values are optional.  This doesn't create a distinct schema type.  */
 export const partial = <ObjectT extends Record<string, any>>(schema: ObjectSchema<ObjectT>): ObjectSchema<Partial<ObjectT>> => {
   const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>> = {};
@@ -203,7 +251,7 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
       );
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const bestResult = isErrorResult(result) ? container[key] ?? result.invalidValue() : result.value;
+      const bestResult = isErrorResult(result) ? (container[key] ?? result.invalidValue()) : result.value;
       if (bestResult !== undefined) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         container[key] = bestResult;
@@ -318,7 +366,7 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
               );
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const bestResult = isErrorResult(result) ? container[key] ?? result.invalidValue() : result.value;
+        const bestResult = isErrorResult(result) ? (container[key] ?? result.invalidValue()) : result.value;
         if (bestResult !== undefined) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           container[key] = bestResult;

@@ -157,7 +157,7 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
       );
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const bestResult = isErrorResult(result) ? container[valueKey] ?? result.invalidValue() : result.value;
+      const bestResult = isErrorResult(result) ? (container[valueKey] ?? result.invalidValue()) : result.value;
       if (bestResult !== undefined) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         container[valueKey] = bestResult;
@@ -302,7 +302,7 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
               );
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const bestResult = isErrorResult(result) ? container[valueKey] ?? result.invalidValue() : result.value;
+        const bestResult = isErrorResult(result) ? (container[valueKey] ?? result.invalidValue()) : result.value;
         if (bestResult !== undefined) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           container[valueKey] = bestResult;
