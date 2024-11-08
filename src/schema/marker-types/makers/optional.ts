@@ -51,13 +51,7 @@ class OptionalSchemaImpl<DefinedValueT>
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => {
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (value === undefined) {
       return makeNoError(value);
     }

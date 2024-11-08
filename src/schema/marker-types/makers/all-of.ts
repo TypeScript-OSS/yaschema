@@ -1,4 +1,7 @@
+import { forOfAsync } from '../../../internal/utils/forOfAsync.js';
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import type { Schema } from '../../../types/schema';
+import type { TypeOrPromisedType } from '../../../types/TypeOrPromisedType.js';
 import type { ValidationMode } from '../../../types/validation-options';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
@@ -48,14 +51,14 @@ export const allOf5 = <TypeA, TypeB, TypeC, TypeD, TypeE>(
 
 // Helpers
 
-const validateAllOfAsync = async <TypeA, TypeB>(
+const validateAllOfAsync = <TypeA, TypeB>(
   value: any,
   schema: AllOfSchema<TypeA, TypeB>,
   internalState: InternalState,
   path: LazyPath,
   container: GenericContainer,
   validationMode: ValidationMode
-): Promise<InternalValidationResult> => {
+): TypeOrPromisedType<InternalValidationResult> => {
   const shouldStopOnFirstError =
     validationMode === 'hard' ||
     (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
@@ -67,35 +70,47 @@ const validateAllOfAsync = async <TypeA, TypeB>(
   let errorResult: InternalValidationErrorResult | undefined = undefined;
   let outValue: any = undefined;
   let outInvalidValue: (() => any) | undefined = undefined;
-  for (const subschema of schema.schemas) {
-    const result = await (subschema as any as InternalSchemaFunctions).internalValidateAsync(
+
+  const processSubSchema = (subschema: Schema<TypeA> | Schema<TypeB>) => {
+    const result = (subschema as any as InternalSchemaFunctions).internalValidateAsync(
       value,
       internalState,
       path,
       container,
       validationMode
     );
-    if (!isErrorResult(result)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      outValue = result.value;
-    } else {
-      if (outValue === undefined) {
-        outInvalidValue = result.invalidValue;
+    return withResolved(result, (result) => {
+      if (!isErrorResult(result)) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        outValue = result.value;
+      } else {
+        if (outValue === undefined) {
+          outInvalidValue = result.invalidValue;
+        }
       }
-    }
-    if (isMoreSevereResult(result, errorResult)) {
-      errorResult = result as InternalValidationErrorResult;
+      if (isMoreSevereResult(result, errorResult)) {
+        errorResult = result as InternalValidationErrorResult;
 
-      if (shouldStopOnFirstError) {
-        return errorResult!;
+        if (shouldStopOnFirstError) {
+          return errorResult!;
+        }
       }
-    }
-  }
 
-  return errorResult !== undefined
-    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      { ...errorResult, invalidValue: outValue !== undefined ? () => outValue : outInvalidValue! }
-    : makeNoError(outValue);
+      return undefined;
+    });
+  };
+
+  const processedSubSchemas = forOfAsync(schema.schemas, processSubSchema);
+  return withResolved(processedSubSchemas, (processedSubSchemas) => {
+    if (processedSubSchemas !== undefined) {
+      return processedSubSchemas;
+    }
+
+    return errorResult !== undefined
+      ? // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        { ...errorResult, invalidValue: outValue !== undefined ? () => outValue : outInvalidValue! }
+      : makeNoError(outValue);
+  });
 };
 
 class AllOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA & TypeB> implements AllOfSchema<TypeA, TypeB> {
@@ -137,13 +152,8 @@ class AllOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA & Type
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => validateAllOfAsync(value, this, internalState, path, container, validationMode);
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) =>
+    validateAllOfAsync(value, this, internalState, path, container, validationMode);
 
   protected override overridableGetExtraToStringFields = () => ({
     schemas: this.schemas

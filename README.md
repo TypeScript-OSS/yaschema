@@ -182,7 +182,7 @@ It's easy to extend Yaschema with custom types.  In the following example, we de
 - a schema that names the custom type, uses the serializer-deserializer, and adds custom validation logic
 
 ```typescript
-import BigNumber from 'bignumber.js';
+import { default as BigNumber } from 'bignumber.js';
 import { makeSerDes, schema, ValidationResult } from 'yaschema';
 
 // Defining the serializer-deserializer and a couple pre-requisite checking functions

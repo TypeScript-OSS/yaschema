@@ -48,13 +48,7 @@ class AllowNullSchemaImpl<NonNullValueT> extends InternalSchemaMakerImpl<NonNull
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => {
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (value === null) {
       return makeNoError(value);
     }

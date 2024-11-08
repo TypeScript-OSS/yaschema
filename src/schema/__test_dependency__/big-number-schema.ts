@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import { default as BigNumber } from 'bignumber.js';
 
 import { schema } from '../../exports.js';
 import { makeSerDes } from '../../types/ser-des.js';

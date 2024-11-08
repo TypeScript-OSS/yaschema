@@ -1,3 +1,5 @@
+import { forOfAsync } from '../../../internal/utils/forOfAsync.js';
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
 import type { ValidationMode } from '../../../types/validation-options';
@@ -47,7 +49,7 @@ export const oneOf5 = <TypeA, TypeB, TypeC, TypeD, TypeE>(
 // Helpers
 
 /** Requires one of the specified schemas to be satisfied */
-const validateOneOfAsync = async <TypeA, TypeB>(
+const validateOneOfAsync = <TypeA, TypeB>(
   value: any,
   schema: OneOfSchema<TypeA, TypeB>,
   internalState: InternalState,
@@ -64,41 +66,53 @@ const validateOneOfAsync = async <TypeA, TypeB>(
   let success = false;
   let outValue: any = undefined;
   let outInvalidValue: (() => any) | undefined = undefined;
-  for (const subschema of schema.schemas) {
-    const result = await (subschema as any as InternalSchemaFunctions).internalValidateAsync(
+
+  const processSubSchema = (subschema: Schema<TypeA> | Schema<TypeB>) => {
+    const result = (subschema as any as InternalSchemaFunctions).internalValidateAsync(
       value,
       internalState,
       path,
       container,
       validationMode
     );
-    if (!isErrorResult(result)) {
-      success = true;
+    return withResolved(result, (result) => {
+      if (!isErrorResult(result)) {
+        success = true;
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      outValue = result.value;
-      outInvalidValue = undefined;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        outValue = result.value;
+        outInvalidValue = undefined;
 
-      if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
-        return makeClonedValueNoError(value);
+        if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
+          return makeClonedValueNoError(value);
+        }
+      } else {
+        if (outValue === undefined) {
+          outInvalidValue = result.invalidValue;
+        }
+
+        validationErrors.push(result);
       }
-    } else {
-      if (outValue === undefined) {
-        outInvalidValue = result.invalidValue;
-      }
 
-      validationErrors.push(result);
+      return undefined;
+    });
+  };
+
+  const processedSubSchemas = forOfAsync(schema.schemas, processSubSchema);
+  return withResolved(processedSubSchemas, (processedSubSchemas) => {
+    if (processedSubSchemas !== undefined) {
+      return processedSubSchemas;
     }
-  }
 
-  return success
-    ? makeNoError(outValue)
-    : makeErrorResultForValidationMode(
-        outInvalidValue ?? cloner(value),
-        validationMode,
-        () => `Expected one of: ${validationErrors.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
-        path
-      );
+    return success
+      ? makeNoError(outValue)
+      : makeErrorResultForValidationMode(
+          outInvalidValue ?? cloner(value),
+          validationMode,
+          () => `Expected one of: ${validationErrors.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
+          path
+        );
+  });
 };
 
 class OneOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA | TypeB> implements OneOfSchema<TypeA, TypeB> {
@@ -140,13 +154,8 @@ class OneOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA | Type
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => validateOneOfAsync(value, this, internalState, path, container, validationMode);
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) =>
+    validateOneOfAsync(value, this, internalState, path, container, validationMode);
 
   protected override overridableGetExtraToStringFields = () => ({
     schemas: this.schemas

@@ -74,15 +74,12 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
   // InternalSchemaFunctions
 
   /** Validates and potentially transforms the specified value.  If not provided, internalValidate is used */
-  public readonly internalValidateAsync: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
-    if (internalState.shouldRelax()) {
-      await internalState.relax();
-    }
+  public readonly internalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) =>
+    internalState.relaxIfNeeded(() => {
+      const nextValidationMode = pickNextTopValidationMode(this.preferredValidationMode, internalState.operationValidation, validationMode);
 
-    const nextValidationMode = pickNextTopValidationMode(this.preferredValidationMode, internalState.operationValidation, validationMode);
-
-    return this.overridableInternalValidateAsync(value, internalState, path, container, nextValidationMode);
-  };
+      return this.overridableInternalValidateAsync(value, internalState, path, container, nextValidationMode);
+    });
 
   // SchemaFunctions
 

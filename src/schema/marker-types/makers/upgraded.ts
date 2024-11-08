@@ -1,4 +1,5 @@
 import { getLogger } from '../../../config/logging.js';
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
@@ -78,46 +79,44 @@ class UpgradedSchemaImpl<OldT, NewT> extends InternalSchemaMakerImpl<OldT | NewT
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => {
-    const newResult = await (this.newSchema as any as InternalSchemaFunctions).internalValidateAsync(
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
+    const newResult = (this.newSchema as any as InternalSchemaFunctions).internalValidateAsync(
       value,
       internalState,
       path,
       container,
       validationMode
     );
-    if (!isErrorResult(newResult)) {
-      return newResult;
-    }
-
-    const oldResult = await (this.oldSchema as any as InternalSchemaFunctions).internalValidateAsync(
-      value,
-      internalState,
-      path,
-      container,
-      validationMode
-    );
-    if (!isErrorResult(oldResult)) {
-      if (value !== undefined && !alreadyLogUpgradedWarnings.has(this.uniqueName)) {
-        alreadyLogUpgradedWarnings.add(this.uniqueName);
-        getLogger().warn?.(
-          `[DEPRECATION] The schema for ${this.uniqueName} has been upgraded and legacy support will be removed ${
-            this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
-          }.`,
-          'debug'
-        );
+    return withResolved(newResult, (newResult) => {
+      if (!isErrorResult(newResult)) {
+        return newResult;
       }
 
-      return oldResult;
-    } else {
-      return newResult;
-    }
+      const oldResult = (this.oldSchema as any as InternalSchemaFunctions).internalValidateAsync(
+        value,
+        internalState,
+        path,
+        container,
+        validationMode
+      );
+      return withResolved(oldResult, (oldResult) => {
+        if (!isErrorResult(oldResult)) {
+          if (value !== undefined && !alreadyLogUpgradedWarnings.has(this.uniqueName)) {
+            alreadyLogUpgradedWarnings.add(this.uniqueName);
+            getLogger().warn?.(
+              `[DEPRECATION] The schema for ${this.uniqueName} has been upgraded and legacy support will be removed ${
+                this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
+              }.`,
+              'debug'
+            );
+          }
+
+          return oldResult;
+        } else {
+          return newResult;
+        }
+      });
+    });
   };
 
   protected override overridableGetExtraToStringFields = () => ({

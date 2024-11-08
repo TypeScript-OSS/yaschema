@@ -1,3 +1,4 @@
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Range } from '../../../types/range';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
@@ -73,7 +74,7 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
     return this.validateDeserializedForm_(new Date(value), internalState, path, container, validationMode);
   };
 
-  private readonly internalValidateSerialize_: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
+  private readonly internalValidateSerialize_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (!(value instanceof Date)) {
       return makeErrorResultForValidationMode(
         cloner(value),
@@ -85,11 +86,12 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
     const dateValue = value;
 
-    const validation = await this.validateDeserializedForm_(dateValue, internalState, path, container, validationMode);
+    const validation = this.validateDeserializedForm_(dateValue, internalState, path, container, validationMode);
+    return withResolved(validation, (validation) => {
+      const isoStringValue = dateValue.toISOString();
 
-    const isoStringValue = dateValue.toISOString();
-
-    return isErrorResult(validation) ? { ...validation, invalidValue: () => isoStringValue } : makeNoError(isoStringValue);
+      return isErrorResult(validation) ? { ...validation, invalidValue: () => isoStringValue } : makeNoError(isoStringValue);
+    });
   };
 
   private readonly internalValidateDeserialize_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
@@ -114,7 +116,7 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
       }
 
       return this.validateDeserializedForm_(date, internalState, path, container, validationMode);
-    } catch (e) {
+    } catch (_e) {
       return makeErrorResultForValidationMode(cloner(value), validationMode, () => 'Failed to convert string to Date', path);
     }
   };

@@ -1,5 +1,8 @@
 import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
+import { forOfAsync } from '../../../internal/utils/forOfAsync.js';
 import { safeClone } from '../../../internal/utils/safeClone.js';
+import { whileAsync } from '../../../internal/utils/whileAsync.js';
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
@@ -195,13 +198,7 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => {
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     const shouldStopOnFirstError =
       validationMode === 'hard' ||
       (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
@@ -242,42 +239,26 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
       });
     }
 
-    let chunkStartIndex = 0;
-    const processChunk = async () => {
-      if (internalState.shouldRelax()) {
-        await internalState.relax();
+    const processKey = (key: string) => {
+      let valueForKey = undefined;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        valueForKey = value[key];
+      } catch (_e) {
+        // Ignoring just in case
       }
 
-      let estimatedValidationTimeComplexityForKeys = 0;
-      const chunkKeys: string[] = [];
-      let index = chunkStartIndex;
-      while (chunkKeys.length === 0 || (estimatedValidationTimeComplexityForKeys <= asyncTimeComplexityThreshold && index < numKeys)) {
-        const key = this.mapKeys_[index];
-        estimatedValidationTimeComplexityForKeys += this.map[key].estimatedValidationTimeComplexity;
-        chunkKeys.push(key);
+      const schemaForKey = this.map[key];
 
-        index += 1;
-      }
-
-      for (const key of chunkKeys) {
-        let valueForKey = undefined;
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          valueForKey = value[key];
-        } catch (e) {
-          // Ignoring just in case
-        }
-
-        const schemaForKey = this.map[key];
-
-        const result = await (schemaForKey as any as InternalSchemaFunctions).internalValidateAsync(
-          valueForKey,
-          internalState,
-          appendPathComponent(path, key),
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          container[key] ?? {},
-          validationMode
-        );
+      const result = (schemaForKey as any as InternalSchemaFunctions).internalValidateAsync(
+        valueForKey,
+        internalState,
+        appendPathComponent(path, key),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        container[key] ?? {},
+        validationMode
+      );
+      return withResolved(result, (result) => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const bestResult = isErrorResult(result) ? (container[key] ?? result.invalidValue()) : result.value;
         if (bestResult !== undefined) {
@@ -294,21 +275,45 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>>
             return errorResult;
           }
         }
-      }
 
-      chunkStartIndex += chunkKeys.length;
-
-      return undefined;
+        return undefined;
+      });
     };
 
-    while (chunkStartIndex < numKeys) {
-      const chunkRes = await processChunk();
-      if (chunkRes !== undefined) {
-        return { ...chunkRes, invalidValue: () => container };
-      }
-    }
+    let chunkStartIndex = 0;
+    const processChunk = () =>
+      internalState.relaxIfNeeded(() => {
+        let estimatedValidationTimeComplexityForKeys = 0;
+        const chunkKeys: string[] = [];
+        let index = chunkStartIndex;
+        while (chunkKeys.length === 0 || (estimatedValidationTimeComplexityForKeys <= asyncTimeComplexityThreshold && index < numKeys)) {
+          const key = this.mapKeys_[index];
+          estimatedValidationTimeComplexityForKeys += this.map[key].estimatedValidationTimeComplexity;
+          chunkKeys.push(key);
 
-    return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
+          index += 1;
+        }
+
+        const processedKeys = forOfAsync(chunkKeys, processKey);
+        return withResolved(processedKeys, (processedKeys) => {
+          if (processedKeys !== undefined) {
+            return processedKeys;
+          }
+
+          chunkStartIndex += chunkKeys.length;
+
+          return undefined;
+        });
+      });
+
+    const processedChunks = whileAsync(() => chunkStartIndex < numKeys, processChunk);
+    return withResolved(processedChunks, (processedChunks) => {
+      if (processedChunks !== undefined) {
+        return { ...processedChunks, invalidValue: () => container };
+      }
+
+      return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
+    });
   };
 
   protected override overridableGetExtraToStringFields = () => ({

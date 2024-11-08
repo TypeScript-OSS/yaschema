@@ -1,3 +1,4 @@
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
@@ -71,33 +72,29 @@ class NotSchemaImpl<ValueT, ExcludedT> extends InternalSchemaMakerImpl<Exclude<V
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => {
-    const result = await (this.notSchema as any as InternalSchemaFunctions).internalValidateAsync(
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
+    const result = (this.notSchema as any as InternalSchemaFunctions).internalValidateAsync(
       value,
       internalState,
       path,
       container,
       validationMode
     );
-    if (!isErrorResult(result)) {
-      return makeErrorResultForValidationMode(
-        cloner(value),
-        validationMode,
-        () =>
-          this.expectedTypeName !== undefined
-            ? `Expected ${this.expectedTypeName}, found ${getMeaningfulTypeof(value)}`
-            : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}`,
-        path
-      );
-    }
+    return withResolved(result, (result) => {
+      if (!isErrorResult(result)) {
+        return makeErrorResultForValidationMode(
+          cloner(value),
+          validationMode,
+          () =>
+            this.expectedTypeName !== undefined
+              ? `Expected ${this.expectedTypeName}, found ${getMeaningfulTypeof(value)}`
+              : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}`,
+          path
+        );
+      }
 
-    return (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, internalState, path, container, validationMode);
+      return (this.schema as any as InternalSchemaFunctions).internalValidateAsync(value, internalState, path, container, validationMode);
+    });
   };
 
   protected override overridableGetExtraToStringFields = () => ({

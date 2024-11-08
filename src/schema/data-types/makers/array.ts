@@ -1,6 +1,9 @@
 import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
+import { forAsync } from '../../../internal/utils/forAsync.js';
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
+import type { TypeOrPromisedType } from '../../../types/TypeOrPromisedType.js';
 import type { ValidationMode } from '../../../types/validation-options';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
@@ -43,7 +46,7 @@ export const array = <ItemT = any>(args?: {
  * Requires an array, optionally with items matching the specified schema, and/or a min and/or max
  * length
  */
-const asyncValidateArray = async <ItemT>(
+const asyncValidateArray = <ItemT>(
   value: any,
   {
     schema,
@@ -58,7 +61,7 @@ const asyncValidateArray = async <ItemT>(
     container: GenericContainer;
     validationMode: ValidationMode;
   }
-): Promise<InternalValidationResult> => {
+): TypeOrPromisedType<InternalValidationResult> => {
   const shouldStopOnFirstError =
     validationMode === 'hard' ||
     (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
@@ -125,32 +128,28 @@ const asyncValidateArray = async <ItemT>(
   const chunkSize = Math.max(1, Math.floor(asyncTimeComplexityThreshold / items.estimatedValidationTimeComplexity));
   const numValues = value.length;
 
-  const processChunk = async (chunkStartIndex: number) => {
-    if (internalState.shouldRelax()) {
-      await internalState.relax();
+  const processIndex = (index: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const arrayItem = value[index];
+
+    if (
+      !schema.usesCustomSerDes &&
+      !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
+      schema.maxEntriesToValidate !== undefined &&
+      index >= schema.maxEntriesToValidate
+    ) {
+      return false; // Reached the max number to validate
     }
 
-    for (let index = chunkStartIndex; index < numValues && index < chunkStartIndex + chunkSize; index += 1) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const arrayItem = value[index];
-
-      if (
-        !schema.usesCustomSerDes &&
-        !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
-        schema.maxEntriesToValidate !== undefined &&
-        index >= schema.maxEntriesToValidate
-      ) {
-        return false; // Reached the max number to validate
-      }
-
-      const result = await (items as any as InternalSchemaFunctions).internalValidateAsync(
-        arrayItem,
-        internalState,
-        appendPathIndex(path, index),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        container[index] ?? {},
-        validationMode
-      );
+    const result = (items as any as InternalSchemaFunctions).internalValidateAsync(
+      arrayItem,
+      internalState,
+      appendPathIndex(path, index),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      container[index] ?? {},
+      validationMode
+    );
+    return withResolved(result, (result) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       container[index] = isErrorResult(result) ? (container[index] ?? result.invalidValue()) : result.value;
       if (isMoreSevereResult(result, errorResult)) {
@@ -160,21 +159,24 @@ const asyncValidateArray = async <ItemT>(
           return errorResult;
         }
       }
-    }
 
-    return undefined;
+      return undefined;
+    });
   };
 
-  for (let chunkStartIndex = 0; chunkStartIndex < numValues; chunkStartIndex += chunkSize) {
-    const chunkRes = await processChunk(chunkStartIndex);
-    if (chunkRes === false) {
-      break; // Reached the max number to validate
-    } else if (chunkRes !== undefined) {
-      return { ...chunkRes, invalidValue: () => container };
-    }
-  }
+  const processChunk = (chunkStartIndex: number) =>
+    internalState.relaxIfNeeded(() =>
+      forAsync(chunkStartIndex, (index) => index < Math.min(numValues, chunkStartIndex + chunkSize), 1, processIndex)
+    );
 
-  return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
+  const processedChunks = forAsync(0, (chunkStartIndex) => chunkStartIndex < numValues, chunkSize, processChunk);
+  return withResolved(processedChunks, (processedChunks) => {
+    if (processedChunks !== false && processedChunks !== undefined) {
+      return { ...processedChunks, invalidValue: () => container };
+    }
+
+    return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
+  });
 };
 
 class ArraySchemaImpl<ItemT = any> extends InternalSchemaMakerImpl<ItemT[]> implements ArraySchema<ItemT> {

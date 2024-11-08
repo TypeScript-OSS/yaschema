@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import { default as BigNumber } from 'bignumber.js';
 
 import { schema } from '../exports.js';
 import { bigNumberSchema } from '../schema/__test_dependency__/big-number-schema.js';

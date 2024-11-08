@@ -20,6 +20,7 @@ describe('makeNumberSubtypeArray', () => {
   });
 
   it('to work with expected types', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const values = makeNumberSubtypeArray(1, 2);
     type Value = (typeof values)[0];
     const one: Value = 1;

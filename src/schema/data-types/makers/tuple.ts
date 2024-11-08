@@ -1,5 +1,8 @@
+import { forAsync } from '../../../internal/utils/forAsync.js';
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
+import type { TypeOrPromisedType } from '../../../types/TypeOrPromisedType.js';
 import type { ValidationMode } from '../../../types/validation-options';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
@@ -34,7 +37,7 @@ export const tuple = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
 // Helpers
 
 /** Requires an array, with items matching the specified schema */
-const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>(
+const validateTupleAsync = <TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>(
   value: any,
   {
     schema,
@@ -46,7 +49,7 @@ const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, Type
   path: LazyPath,
   container: GenericContainer,
   validationMode: ValidationMode
-): Promise<InternalValidationResult> => {
+): TypeOrPromisedType<InternalValidationResult> => {
   const shouldStopOnFirstError =
     validationMode === 'hard' ||
     (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
@@ -83,13 +86,12 @@ const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, Type
     container = [];
   }
 
-  const numItems = schema.items.length;
-  for (let index = 0; index < numItems; index += 1) {
+  const processIndex = (index: number) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const arrayItem = value[index];
 
     const item = schema.items[index];
-    const result = await (item as any as InternalSchemaFunctions).internalValidateAsync(
+    const result = (item as any as InternalSchemaFunctions).internalValidateAsync(
       arrayItem,
       internalState,
       appendPathIndex(path, index),
@@ -97,18 +99,30 @@ const validateTupleAsync = async <TypeA = void, TypeB = void, TypeC = void, Type
       container[index] ?? {},
       validationMode
     );
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    container[index] = isErrorResult(result) ? (container[index] ?? result.invalidValue()) : result.value;
-    if (isMoreSevereResult(result, errorResult)) {
-      errorResult = result as InternalValidationErrorResult;
+    return withResolved(result, (result) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      container[index] = isErrorResult(result) ? (container[index] ?? result.invalidValue()) : result.value;
+      if (isMoreSevereResult(result, errorResult)) {
+        errorResult = result as InternalValidationErrorResult;
 
-      if (shouldStopOnFirstError) {
-        return errorResult;
+        if (shouldStopOnFirstError) {
+          return errorResult;
+        }
       }
-    }
-  }
 
-  return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
+      return undefined;
+    });
+  };
+
+  const numItems = schema.items.length;
+  const processedIndices = forAsync(0, (index) => index < numItems, 1, processIndex);
+  return withResolved(processedIndices, (processedIndices) => {
+    if (processedIndices !== undefined) {
+      return processedIndices;
+    }
+
+    return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
+  });
 };
 
 class TupleSchemaImpl<TypeA = void, TypeB = void, TypeC = void, TypeD = void, TypeE = void>
@@ -205,13 +219,8 @@ class TupleSchemaImpl<TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => validateTupleAsync(value, { schema: this, internalState }, path, container, validationMode);
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) =>
+    validateTupleAsync(value, { schema: this, internalState }, path, container, validationMode);
 
   protected override overridableGetExtraToStringFields = () => ({
     items: this.items

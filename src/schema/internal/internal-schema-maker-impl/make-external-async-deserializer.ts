@@ -1,3 +1,4 @@
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import type { AsyncDeserializer } from '../../../types/deserializer';
 import type { InternalAsyncValidator } from '../types/internal-validation';
 import { isErrorResult } from '../utils/is-error-result.js';
@@ -7,26 +8,27 @@ import { InternalState } from './internal-state.js';
 /** Makes the public async deserializer interface */
 export const makeExternalAsyncDeserializer =
   <T>(validator: InternalAsyncValidator): AsyncDeserializer<T> =>
-  async (value, { validation = 'hard' } = {}) => {
+  (value, { validation = 'hard' } = {}) => {
     const internalState = new InternalState({
       transformation: 'deserialize',
       operationValidation: validation
     });
 
-    const output = await validator(value, internalState, () => {}, {}, validation);
+    const validated = validator(value, internalState, () => {}, {}, validation);
+    return withResolved(validated, (validated) => {
+      if (!isErrorResult(validated) || validated.errorLevel !== 'error') {
+        internalState.runDeferred();
+      }
 
-    if (!isErrorResult(output) || output.errorLevel !== 'error') {
-      internalState.runDeferred();
-    }
-
-    if (isErrorResult(output)) {
-      return {
-        error: `${output.error()}${atPath(output.errorPath)}`,
-        errorPath: resolveLazyPath(output.errorPath).string,
-        errorLevel: output.errorLevel,
-        deserialized: output.invalidValue() as T
-      };
-    } else {
-      return { deserialized: output.value as T };
-    }
+      if (isErrorResult(validated)) {
+        return {
+          error: `${validated.error()}${atPath(validated.errorPath)}`,
+          errorPath: resolveLazyPath(validated.errorPath).string,
+          errorLevel: validated.errorLevel,
+          deserialized: validated.invalidValue() as T
+        };
+      } else {
+        return { deserialized: validated.value as T };
+      }
+    });
   };

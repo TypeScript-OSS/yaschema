@@ -1,4 +1,5 @@
 import { getLogger } from '../../../config/logging.js';
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
@@ -65,39 +66,35 @@ class DeprecatedSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT | unde
 
   // Method Overrides
 
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => {
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (value === undefined) {
       return makeNoError(value);
     }
 
-    const result = await (this.schema as any as InternalSchemaFunctions).internalValidateAsync(
+    const result = (this.schema as any as InternalSchemaFunctions).internalValidateAsync(
       value,
       internalState,
       path,
       container,
       validationMode
     );
-    if (isErrorResult(result)) {
+    return withResolved(result, (result) => {
+      if (isErrorResult(result)) {
+        return result;
+      }
+
+      if (value !== undefined && !alreadyLogDeprecationWarnings.has(this.uniqueName)) {
+        alreadyLogDeprecationWarnings.add(this.uniqueName);
+        getLogger().warn?.(
+          `[DEPRECATION] ${this.uniqueName} is deprecated and will be removed ${
+            this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
+          }.`,
+          'debug'
+        );
+      }
+
       return result;
-    }
-
-    if (value !== undefined && !alreadyLogDeprecationWarnings.has(this.uniqueName)) {
-      alreadyLogDeprecationWarnings.add(this.uniqueName);
-      getLogger().warn?.(
-        `[DEPRECATION] ${this.uniqueName} is deprecated and will be removed ${
-          this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
-        }.`,
-        'debug'
-      );
-    }
-
-    return result;
+    });
   };
 
   protected override overridableGetExtraToStringFields = () => ({

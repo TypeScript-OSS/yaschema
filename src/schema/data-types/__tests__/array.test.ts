@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import { default as BigNumber } from 'bignumber.js';
 
 import { schema } from '../../../exports.js';
 import { bigNumberSchema } from '../../__test_dependency__/big-number-schema.js';
@@ -86,11 +86,11 @@ describe('array schema', () => {
     let lastTimeout: ReturnType<typeof setTimeout> | undefined;
     const count = () => {
       numCalls += 1;
-      lastTimeout = setTimeout(count, 10);
+      lastTimeout = setTimeout(count, 1);
     };
 
     beforeAll(() => {
-      lastTimeout = setTimeout(count, 10);
+      lastTimeout = setTimeout(count, 1);
     });
     afterAll(() => {
       if (lastTimeout !== undefined) {

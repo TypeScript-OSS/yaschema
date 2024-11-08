@@ -1,3 +1,4 @@
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
 import type { InternalAsyncValidator } from '../types/internal-validation';
@@ -13,7 +14,7 @@ export const supportVariableSerializationFormsForBooleanValues =
     getSchema: () => Schema<ValueT> & { allowedSerializationForms?: Array<'boolean' | 'string'> },
     normalizedValidator: InternalAsyncValidator
   ): InternalAsyncValidator =>
-  async (value, internalState, path, container, validationMode) => {
+  (value, internalState, path, container, validationMode) => {
     const schema = getSchema();
     if (
       internalState.transformation === 'none' ||
@@ -26,21 +27,24 @@ export const supportVariableSerializationFormsForBooleanValues =
 
     switch (internalState.transformation) {
       case 'serialize': {
-        const validation = await normalizedValidator(value, internalState, path, container, validationMode);
-        if (isErrorResult(validation)) {
-          return validation;
-        }
+        const validation = normalizedValidator(value, internalState, path, container, validationMode);
+        return withResolved(validation, (validation) => {
+          if (isErrorResult(validation)) {
+            return validation;
+          }
 
-        for (const form of schema.allowedSerializationForms ?? []) {
-          switch (form) {
-            case 'boolean':
-              return validation;
-            case 'string': {
-              return { ...validation, value: String(value) };
+          for (const form of schema.allowedSerializationForms ?? []) {
+            switch (form) {
+              case 'boolean':
+                return validation;
+              case 'string': {
+                return { ...validation, value: String(value) };
+              }
             }
           }
-        }
-        break;
+
+          return makeNoError(value);
+        });
       }
       case 'deserialize': {
         for (const form of schema.allowedSerializationForms ?? []) {
@@ -68,6 +72,4 @@ export const supportVariableSerializationFormsForBooleanValues =
         );
       }
     }
-
-    return makeNoError(value);
   };

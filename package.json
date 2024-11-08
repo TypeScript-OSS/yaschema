@@ -33,6 +33,7 @@
     "test:unit-tests": "yarn test:unit-tests: src"
   },
   "dependencies": {
+    "is-promise": "4.0.0",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21"
   },

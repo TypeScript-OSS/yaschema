@@ -6,6 +6,7 @@ export const pickNextTopValidationMode = (
   operationValidation: ValidationMode,
   validationMode: ValidationMode
 ) => {
+  // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
   switch (preferredValidationMode) {
     case 'inherit':
       return validationMode;

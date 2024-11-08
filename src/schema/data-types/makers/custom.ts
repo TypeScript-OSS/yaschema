@@ -1,4 +1,5 @@
 import { getLogger } from '../../../config/logging.js';
+import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { JsonValue } from '../../../types/json-value';
 import type { SerDes } from '../../../types/ser-des';
@@ -122,7 +123,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     return this.validateDeserializedForm_(value, internalState, path, container, validationMode);
   };
 
-  private readonly internalValidateSerialize_: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
+  private readonly internalValidateSerialize_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (!this.serDes.isValueType(value)) {
       return makeErrorResultForValidationMode(
         cloner(value),
@@ -132,41 +133,49 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
       );
     }
 
-    const validation = await this.validateDeserializedForm_(value, internalState, path, container, validationMode);
+    const validation = this.validateDeserializedForm_(value, internalState, path, container, validationMode);
 
     const serialization = this.serialize_(value as ValueT, internalState, path, container, validationMode);
-    if (isErrorResult(serialization)) {
-      return serialization;
-    }
+    return withResolved(serialization, (serialization) => {
+      if (isErrorResult(serialization)) {
+        return serialization;
+      }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return isErrorResult(validation) ? { ...validation, invalidValue: () => serialization.value } : makeNoError(serialization.value);
+      return withResolved(validation, (validation) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        isErrorResult(validation) ? { ...validation, invalidValue: () => serialization.value } : makeNoError(serialization.value)
+      );
+    });
   };
 
-  private readonly internalValidateDeserialize_: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
-    const serializedValidation = await this.validateSerializedForm_(value, internalState, path, container, validationMode);
-    if (isErrorResult(serializedValidation)) {
-      return serializedValidation;
-    }
+  private readonly internalValidateDeserialize_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
+    const serializedValidation = this.validateSerializedForm_(value, internalState, path, container, validationMode);
+    return withResolved(serializedValidation, (serializedValidation) => {
+      if (isErrorResult(serializedValidation)) {
+        return serializedValidation;
+      }
 
-    const deserialization = this.deserialize_(value as SerializedT, internalState, path, container, validationMode);
-    if (isErrorResult(deserialization)) {
-      return deserialization;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    value = deserialization.value;
+      const deserialization = this.deserialize_(value as SerializedT, internalState, path, container, validationMode);
+      return withResolved(deserialization, (deserialization) => {
+        if (isErrorResult(deserialization)) {
+          return deserialization;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        value = deserialization.value;
 
-    if (!this.serDes.isValueType(value)) {
-      return makeErrorResultForValidationMode(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-        () => value,
-        validationMode,
-        () => `Expected ${this.typeName}, found ${getMeaningfulTypeof(value)}`,
-        path
-      );
-    }
+        if (!this.serDes.isValueType(value)) {
+          return makeErrorResultForValidationMode(
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            () => value,
+            validationMode,
+            () => `Expected ${this.typeName}, found ${getMeaningfulTypeof(value)}`,
+            path
+          );
+        }
 
-    return this.validateDeserializedForm_(value, internalState, path, container, validationMode);
+        return this.validateDeserializedForm_(value, internalState, path, container, validationMode);
+      });
+    });
   };
 
   private readonly internalValidatorsByTransformationType_: Record<InternalTransformationType, InternalAsyncValidator> = {
@@ -181,26 +190,35 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     path: LazyPath,
     _container: GenericContainer,
     validationMode: ValidationMode
-  ): InternalValidationResult => {
-    try {
-      const serialization = this.serDes.serialize(value);
-
-      const serializedValue = serialization.serialized;
-
-      if (serialization.error !== undefined) {
-        return {
-          invalidValue: () => serializedValue,
-          error: () => serialization.error,
-          errorLevel: serialization.errorLevel,
-          errorPath: path
-        };
-      } else {
-        return makeClonedValueNoError(serializedValue);
-      }
-    } catch (e) {
+  ): TypeOrPromisedType<InternalValidationResult> => {
+    const onError = (e: any) => {
       getLogger().error?.(`Failed to serialize ${this.typeName}`, path, e);
 
       return makeErrorResultForValidationMode(cloner(value), validationMode, () => `Failed to serialize ${this.typeName}`, path);
+    };
+
+    try {
+      const serialization = this.serDes.serialize(value);
+      return withResolved(
+        serialization,
+        (serialization) => {
+          const serializedValue = serialization.serialized;
+
+          if (serialization.error !== undefined) {
+            return {
+              invalidValue: () => serializedValue,
+              error: () => serialization.error,
+              errorLevel: serialization.errorLevel,
+              errorPath: path
+            };
+          } else {
+            return makeClonedValueNoError(serializedValue);
+          }
+        },
+        onError
+      );
+    } catch (e) {
+      return onError(e);
     }
   };
 
@@ -210,30 +228,39 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     path: LazyPath,
     _container: GenericContainer,
     validationMode: ValidationMode
-  ): InternalValidationResult => {
-    try {
-      const deserialization = this.serDes.deserialize(value);
-
-      const deserializedValue = deserialization.deserialized;
-
-      if (deserialization.error !== undefined) {
-        return {
-          invalidValue: () => deserializedValue,
-          error: () => deserialization.error,
-          errorLevel: deserialization.errorLevel,
-          errorPath: path
-        };
-      } else {
-        return makeClonedValueNoError(deserializedValue);
-      }
-    } catch (e) {
+  ): TypeOrPromisedType<InternalValidationResult> => {
+    const onError = (e: any) => {
       getLogger().error?.(`Failed to deserialize ${this.typeName}`, path, e);
 
       return makeErrorResultForValidationMode(cloner(value), validationMode, () => `Failed to deserialize ${this.typeName}`, path);
+    };
+
+    try {
+      const deserialization = this.serDes.deserialize(value);
+      return withResolved(
+        deserialization,
+        (deserialization) => {
+          const deserializedValue = deserialization.deserialized;
+
+          if (deserialization.error !== undefined) {
+            return {
+              invalidValue: () => deserializedValue,
+              error: () => deserialization.error,
+              errorLevel: deserialization.errorLevel,
+              errorPath: path
+            };
+          } else {
+            return makeClonedValueNoError(deserializedValue);
+          }
+        },
+        onError
+      );
+    } catch (e) {
+      return onError(e);
     }
   };
 
-  private readonly validateDeserializedForm_: InternalAsyncValidator = async (
+  private readonly validateDeserializedForm_: InternalAsyncValidator = (
     value: any,
     _validatorOptions: InternalState,
     path: LazyPath,
@@ -244,33 +271,37 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
       return makeClonedValueNoError(value);
     }
 
-    const additionalValidation = await this.customValidation_?.(value as ValueT);
-    const additionalValidationError = additionalValidation?.error;
-    if (additionalValidationError !== undefined) {
-      return makeErrorResultForValidationMode(cloner(value), validationMode, () => `${additionalValidationError}`, path);
-    }
+    const additionalValidation = this.customValidation_?.(value as ValueT);
+    return withResolved(additionalValidation, (additionalValidation) => {
+      const additionalValidationError = additionalValidation?.error;
+      if (additionalValidationError !== undefined) {
+        return makeErrorResultForValidationMode(cloner(value), validationMode, () => `${additionalValidationError}`, path);
+      }
 
-    return makeClonedValueNoError(value);
+      return makeClonedValueNoError(value);
+    });
   };
 
-  private readonly validateSerializedForm_: InternalAsyncValidator = async (
+  private readonly validateSerializedForm_: InternalAsyncValidator = (
     value: any,
     internalState: InternalState,
     path: LazyPath,
     container: GenericContainer,
     validationMode: ValidationMode
   ) => {
-    const validation = await (this.serDes.serializedSchema() as any as InternalSchemaFunctions).internalValidateAsync(
+    const validation = (this.serDes.serializedSchema() as any as InternalSchemaFunctions).internalValidateAsync(
       value,
       internalState,
       path,
       container,
       validationMode
     );
-    if (isErrorResult(validation)) {
-      return validation;
-    }
+    return withResolved(validation, (validation) => {
+      if (isErrorResult(validation)) {
+        return validation;
+      }
 
-    return makeClonedValueNoError(value);
+      return makeClonedValueNoError(value);
+    });
   };
 }
