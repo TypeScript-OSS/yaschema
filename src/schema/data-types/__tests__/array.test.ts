@@ -72,40 +72,81 @@ describe('array schema', () => {
   });
 
   describe('with many BigNumber elements', () => {
-    const arraySchema = schema.array({ items: bigNumberSchema });
+    describe('with default options', () => {
+      const arraySchema = schema.array({ items: bigNumberSchema });
 
-    const values: BigNumber[] = [];
-    const serializedValues: Array<{ bignumber: string }> = [];
-    for (let i = 0; i < 10000; i += 1) {
-      const value = BigNumber.random(4).times(100);
-      values.push(value);
-      serializedValues.push({ bignumber: value.toFixed() });
-    }
-
-    let numCalls = 0;
-    let lastTimeout: ReturnType<typeof setTimeout> | undefined;
-    const count = () => {
-      numCalls += 1;
-      lastTimeout = setTimeout(count, 1);
-    };
-
-    beforeAll(() => {
-      lastTimeout = setTimeout(count, 1);
-    });
-    afterAll(() => {
-      if (lastTimeout !== undefined) {
-        clearTimeout(lastTimeout);
-        lastTimeout = undefined;
+      const values: BigNumber[] = [];
+      const serializedValues: Array<{ bignumber: string }> = [];
+      for (let i = 0; i < 10000; i += 1) {
+        const value = BigNumber.random(4).times(100);
+        values.push(value);
+        serializedValues.push({ bignumber: value.toFixed() });
       }
 
-      // Ensuring that validation / transformation are yielding periodically
-      expect(numCalls).toBeGreaterThan(5);
+      let numCalls = 0;
+      let lastTimeout: ReturnType<typeof setTimeout> | undefined;
+      const count = () => {
+        numCalls += 1;
+        lastTimeout = setTimeout(count, 1);
+      };
+
+      beforeAll(() => {
+        lastTimeout = setTimeout(count, 1);
+      });
+      afterAll(() => {
+        if (lastTimeout !== undefined) {
+          clearTimeout(lastTimeout);
+          lastTimeout = undefined;
+        }
+
+        // Ensuring that validation / transformation are yielding periodically
+        expect(numCalls).toBeGreaterThan(5);
+      });
+
+      setupBasicTypeOperationsShouldWorkTests({
+        schema: arraySchema,
+        deserializedValues: [values],
+        serializedValues: [serializedValues]
+      });
     });
 
-    setupBasicTypeOperationsShouldWorkTests({
-      schema: arraySchema,
-      deserializedValues: [values],
-      serializedValues: [serializedValues]
+    describe('with forceSync option', () => {
+      const arraySchema = schema.array({ items: bigNumberSchema });
+
+      const values: BigNumber[] = [];
+      const serializedValues: Array<{ bignumber: string }> = [];
+      for (let i = 0; i < 10000; i += 1) {
+        const value = BigNumber.random(4).times(100);
+        values.push(value);
+        serializedValues.push({ bignumber: value.toFixed() });
+      }
+
+      let numCalls = 0;
+      let lastTimeout: ReturnType<typeof setTimeout> | undefined;
+      const count = () => {
+        numCalls += 1;
+        lastTimeout = setTimeout(count, 1);
+      };
+
+      beforeAll(() => {
+        lastTimeout = setTimeout(count, 1);
+      });
+      afterAll(() => {
+        if (lastTimeout !== undefined) {
+          clearTimeout(lastTimeout);
+          lastTimeout = undefined;
+        }
+
+        // Ensuring that validation / transformation are yielding periodically
+        expect(numCalls).toEqual(0);
+      });
+
+      setupBasicTypeOperationsShouldWorkTests({
+        schema: arraySchema,
+        deserializedValues: [values],
+        serializedValues: [serializedValues],
+        validationOptions: { forceSync: true }
+      });
     });
   });
 });

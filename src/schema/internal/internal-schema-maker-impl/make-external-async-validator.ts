@@ -7,10 +7,11 @@ import { InternalState } from './internal-state.js';
 /** Makes the public async validator interface */
 export const makeExternalAsyncValidator =
   (validator: InternalAsyncValidator): AsyncValidator =>
-  (value) => {
+  (value, { forceSync = false, validation = 'hard' } = {}) => {
     const internalState = new InternalState({
       transformation: 'none',
-      operationValidation: 'hard'
+      operationValidation: validation,
+      asyncMaxWorkIntervalMSec: forceSync ? -1 : undefined
     });
 
     const validated = validator(value, internalState, () => {}, {}, 'hard');

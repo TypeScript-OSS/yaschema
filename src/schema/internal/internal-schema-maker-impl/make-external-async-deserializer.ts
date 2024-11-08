@@ -8,10 +8,11 @@ import { InternalState } from './internal-state.js';
 /** Makes the public async deserializer interface */
 export const makeExternalAsyncDeserializer =
   <T>(validator: InternalAsyncValidator): AsyncDeserializer<T> =>
-  (value, { validation = 'hard' } = {}) => {
+  (value, { forceSync = false, validation = 'hard' } = {}) => {
     const internalState = new InternalState({
       transformation: 'deserialize',
-      operationValidation: validation
+      operationValidation: validation,
+      asyncMaxWorkIntervalMSec: forceSync ? -1 : undefined
     });
 
     const validated = validator(value, internalState, () => {}, {}, validation);

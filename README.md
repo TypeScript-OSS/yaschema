@@ -13,9 +13,9 @@ With yaschema, you can define both runtime and compile-time validated types with
 
 Schemas supports three main operations:
 
-- `validate` / `validateAsync`  - validate without transforming
-- `serialize` / `serializeAsync` - validate and transform to a JSON-compatible value
-- `deserialize` / `deserializeAsync` - validate and transform from a JSON-compatible value
+- `validateAsync`  - validate without transforming
+- `serializeAsync` - validate and transform to a JSON-compatible value
+- `deserializeAsync` - validate and transform from a JSON-compatible value
 
 ## Basic Example
 
@@ -56,13 +56,13 @@ const personalInfo: PersonalInfo = {
 };
 
 // Checking if the data in personalInfo is valid according to personalInfoSchema
-const validation = personalInfoSchema.validate(personalInfo);
+const validation = await personalInfoSchema.validateAsync(personalInfo);
 if (validation.error !== undefined) {
   console.error('validation error', validation.error);
 }
 
 // Serializing, which converts into JSON-compatible values
-const serialization = personalInfoSchema.serialize(personalInfo);
+const serialization = await personalInfoSchema.serializeAsync(personalInfo);
 if (serialization.error !== undefined) {
   console.error('serialization error', serialization.error);
 } else {
@@ -70,7 +70,7 @@ if (serialization.error !== undefined) {
 }
 
 // Deserializing, which converts back into the original form
-const deserialization = personalInfoSchema.deserialize(serialization.serialized);
+const deserialization = await personalInfoSchema.deserializeAsync(serialization.serialized);
 if (deserialization.error !== undefined) {
   console.error('deserialization error', deserialization.error);
 }

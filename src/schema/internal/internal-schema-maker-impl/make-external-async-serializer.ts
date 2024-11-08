@@ -9,10 +9,11 @@ import { InternalState } from './internal-state.js';
 /** Makes the public async serializer interface */
 export const makeExternalAsyncSerializer =
   <T>(validator: InternalAsyncValidator): AsyncSerializer<T> =>
-  (value, { validation = 'hard' } = {}) => {
+  (value, { forceSync = false, validation = 'hard' } = {}) => {
     const internalState = new InternalState({
       transformation: 'serialize',
-      operationValidation: validation
+      operationValidation: validation,
+      asyncMaxWorkIntervalMSec: forceSync ? -1 : undefined
     });
 
     const validated = validator(value, internalState, () => {}, {}, validation);

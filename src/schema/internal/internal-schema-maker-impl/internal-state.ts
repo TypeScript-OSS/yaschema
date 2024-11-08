@@ -11,7 +11,8 @@ export class InternalState {
 
   // Private Fields
 
-  private readonly asyncMaxWorkIntervalMSec_ = getAsyncMaxWorkIntervalMSec();
+  /** If negative, operations never relax */
+  private asyncMaxWorkIntervalMSec_: number;
   private readonly deferred_: Array<() => void> = [];
   private lastYieldTimeMSec_ = performance.now();
 
@@ -19,13 +20,16 @@ export class InternalState {
 
   constructor({
     transformation,
-    operationValidation
+    operationValidation,
+    asyncMaxWorkIntervalMSec = getAsyncMaxWorkIntervalMSec()
   }: {
     transformation: InternalTransformationType;
     operationValidation: ValidationMode;
+    asyncMaxWorkIntervalMSec?: number;
   }) {
     this.transformation = transformation;
     this.operationValidation = operationValidation;
+    this.asyncMaxWorkIntervalMSec_ = asyncMaxWorkIntervalMSec;
   }
 
   public readonly defer = (operation: () => void) => this.deferred_.push(operation);
@@ -37,7 +41,8 @@ export class InternalState {
   };
 
   /** In async mode, returns true whenever enough time has elapsed that we should yield ("relax") to other work being done */
-  public readonly shouldRelax = () => performance.now() - this.lastYieldTimeMSec_ > this.asyncMaxWorkIntervalMSec_;
+  public readonly shouldRelax = () =>
+    this.asyncMaxWorkIntervalMSec_ >= 0 && performance.now() - this.lastYieldTimeMSec_ > this.asyncMaxWorkIntervalMSec_;
 
   public readonly relaxIfNeeded = <ReturnT>(callback: () => TypeOrPromisedType<ReturnT>) => {
     if (this.shouldRelax()) {
