@@ -1,6 +1,6 @@
 import { schema } from '../exports.js';
 
-describe('cloning', () => {
+describe('cloning schemas', () => {
   it('objects should work', () => {
     const mySchema = schema
       .object({

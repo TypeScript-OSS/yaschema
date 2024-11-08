@@ -18,6 +18,7 @@ export const supportVariableSerializationFormsForBooleanValues =
     const schema = getSchema();
     if (
       internalState.transformation === 'none' ||
+      internalState.transformation === 'clone' ||
       schema.allowedSerializationForms === undefined ||
       schema.allowedSerializationForms.length === 0 ||
       (schema.allowedSerializationForms.length === 1 && schema.allowedSerializationForms[0] === 'boolean')

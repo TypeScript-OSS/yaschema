@@ -22,6 +22,10 @@ import { makeErrorResultForValidationMode } from '../../internal/utils/make-erro
 import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error.js';
 import type { CustomSchema } from '../types/CustomSchema';
 
+export type CustomCloningResult<ValueT> = { error?: string; cloned?: undefined } | { error?: undefined; cloned: ValueT };
+
+export type CustomCloner<ValueT> = (value: ValueT) => TypeOrPromisedType<CustomCloningResult<ValueT>>;
+
 export type CustomValidationResult = { error?: string } | { error?: undefined };
 
 export type CustomValidation<ValueT> = (value: ValueT) => TypeOrPromisedType<CustomValidationResult>;
@@ -30,6 +34,10 @@ export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> {
   serDes: SerDes<ValueT, SerializedT>;
   typeName: string;
   isContainerType?: boolean;
+
+  /** Deeply clones a value.  By default, the value is serialized and then deserialized (which could be much more expensive than a custom
+   * operation). */
+  customClone?: CustomCloner<ValueT>;
 
   /** Performs validation logic.  By default, only `isValueType` is checked, using the `serDes` field. */
   customValidation?: CustomValidation<ValueT>;
@@ -73,15 +81,18 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
 
   // Private Fields
 
+  private readonly customClone_: CustomCloner<ValueT> | undefined;
+
   private readonly customValidation_: CustomValidation<ValueT> | undefined;
 
   // Initialization
 
-  constructor({ serDes, typeName, customValidation, isContainerType = false }: CustomSchemaOptions<ValueT, SerializedT>) {
+  constructor({ serDes, typeName, customClone, customValidation, isContainerType = false }: CustomSchemaOptions<ValueT, SerializedT>) {
     super();
 
     this.serDes = serDes;
     this.typeName = typeName;
+    this.customClone_ = customClone;
     this.customValidation_ = customValidation;
     this.isContainerType = isContainerType;
   }
@@ -148,6 +159,31 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     });
   };
 
+  private readonly internalValidateClone_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
+    if (!this.serDes.isValueType(value)) {
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected ${this.typeName}, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
+    }
+
+    const validation = this.validateDeserializedForm_(value, internalState, path, container, validationMode);
+
+    const cloned = this.clone_(value as ValueT, internalState, path, container, validationMode);
+    return withResolved(cloned, (cloned) => {
+      if (isErrorResult(cloned)) {
+        return cloned;
+      }
+
+      return withResolved(validation, (validation) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        isErrorResult(validation) ? { ...validation, invalidValue: () => cloned.value } : makeNoError(cloned.value)
+      );
+    });
+  };
+
   private readonly internalValidateDeserialize_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     const serializedValidation = this.validateSerializedForm_(value, internalState, path, container, validationMode);
     return withResolved(serializedValidation, (serializedValidation) => {
@@ -179,9 +215,82 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
   };
 
   private readonly internalValidatorsByTransformationType_: Record<InternalTransformationType, InternalAsyncValidator> = {
+    clone: this.internalValidateClone_,
     deserialize: this.internalValidateDeserialize_,
     none: this.internalValidateNoTransform_,
     serialize: this.internalValidateSerialize_
+  };
+
+  private readonly clone_ = (
+    value: ValueT,
+    _validatorOptions: InternalState,
+    path: LazyPath,
+    _container: GenericContainer,
+    validationMode: ValidationMode
+  ): TypeOrPromisedType<InternalValidationResult> => {
+    const onError = (e: any) => {
+      getLogger().error?.(`Failed to clone ${this.typeName}`, path, e);
+
+      return makeErrorResultForValidationMode(cloner(value), validationMode, () => `Failed to clone ${this.typeName}`, path);
+    };
+
+    try {
+      if (this.customClone_ !== undefined) {
+        // Using a custom cloning function
+
+        const cloned = this.customClone_(value);
+        return withResolved(cloned, (cloned) => {
+          if (cloned.error !== undefined) {
+            return {
+              invalidValue: () => value,
+              error: () => cloned.error!,
+              errorLevel: 'error',
+              errorPath: path
+            };
+          } else {
+            return makeClonedValueNoError(cloned.cloned);
+          }
+        });
+      } else {
+        // Using serialization followed by deserialization to clone
+
+        const serialization = this.serDes.serialize(value);
+        return withResolved(
+          serialization,
+          (serialization) => {
+            if (serialization.error !== undefined) {
+              return {
+                invalidValue: () => value,
+                error: () => serialization.error,
+                errorLevel: 'error',
+                errorPath: path
+              };
+            }
+
+            const deserialization = this.serDes.deserialize(serialization.serialized as SerializedT);
+            return withResolved(
+              deserialization,
+              (deserialization) => {
+                if (deserialization.error !== undefined) {
+                  return {
+                    invalidValue: () => value,
+                    error: () => deserialization.error,
+                    errorLevel: 'error',
+                    errorPath: path
+                  };
+                }
+
+                return makeClonedValueNoError(deserialization.deserialized);
+              },
+              onError
+            );
+          },
+          onError
+        );
+      }
+    } catch (e) {
+      return onError(e);
+    }
   };
 
   private readonly serialize_ = (

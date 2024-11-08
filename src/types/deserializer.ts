@@ -8,5 +8,5 @@ export type DeserializationResult<T> =
   | { error?: undefined; errorPath?: undefined; errorLevel?: undefined; deserialized: T }
   | { error: string; errorPath: string; errorLevel: ValidationErrorLevel; deserialized?: T };
 
-/** Asynchronously deserializes the specified value from JSON */
+/** Deserializes the specified value from JSON */
 export type AsyncDeserializer<T> = (value: any, options?: ValidationOptions) => TypeOrPromisedType<DeserializationResult<T>>;

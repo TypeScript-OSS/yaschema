@@ -94,6 +94,24 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
     });
   };
 
+  private readonly internalValidateClone_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
+    if (!(value instanceof Date)) {
+      return makeErrorResultForValidationMode(
+        cloner(value),
+        validationMode,
+        () => `Expected Date, found ${getMeaningfulTypeof(value)}`,
+        path
+      );
+    }
+
+    const dateValue = value;
+
+    const validation = this.validateDeserializedForm_(dateValue, internalState, path, container, validationMode);
+    return withResolved(validation, (validation) =>
+      isErrorResult(validation) ? { ...validation, invalidValue: () => dateValue } : makeNoError(dateValue)
+    );
+  };
+
   private readonly internalValidateDeserialize_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (typeof value !== 'string' || !dateRegex.test(value)) {
       return makeErrorResultForValidationMode(
@@ -122,6 +140,7 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
   };
 
   private readonly internalValidatorsByTransformationType_: Record<InternalTransformationType, InternalAsyncValidator> = {
+    clone: this.internalValidateClone_,
     deserialize: this.internalValidateDeserialize_,
     none: this.internalValidateNoTransform_,
     serialize: this.internalValidateSerialize_

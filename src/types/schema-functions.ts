@@ -1,3 +1,4 @@
+import type { AsyncCloner } from './cloner.js';
 import type { AsyncDeserializer } from './deserializer';
 import type { Schema } from './schema';
 import type { SchemaPreferredValidationMode } from './schema-preferred-validation';
@@ -33,10 +34,13 @@ export interface SchemaFunctions<ValueT> {
   /** Makes a string representation of this schema, mostly for debugging */
   toString: () => string;
 
-  /** Asynchronously deserialize (and validate) a value */
+  /** Deeply clones a value */
+  cloneValueAsync: AsyncCloner<ValueT>;
+
+  /** Deserialize (and validate) a value */
   deserializeAsync: AsyncDeserializer<ValueT>;
 
-  /** Asynchronously serialize (and validate) a value */
+  /** Serialize (and validate) a value */
   serializeAsync: AsyncSerializer<ValueT>;
 
   /** Validate a value */

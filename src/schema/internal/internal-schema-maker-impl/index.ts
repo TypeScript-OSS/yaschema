@@ -1,3 +1,4 @@
+import type { AsyncCloner } from '../../../types/cloner.js';
 import type { AsyncDeserializer } from '../../../types/deserializer';
 import type { PureSchema } from '../../../types/pure-schema';
 import type { Schema } from '../../../types/schema';
@@ -10,6 +11,7 @@ import { dynamicAllowNull, dynamicNot, dynamicOptional } from '../circular-suppo
 import type { InternalSchemaFunctions } from '../types/internal-schema-functions';
 import type { InternalAsyncValidator } from '../types/internal-validation';
 import { pickNextTopValidationMode } from '../utils/pick-next-top-validation-mode.js';
+import { makeExternalAsyncCloner } from './make-external-async-cloner.js';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer.js';
 import { makeExternalAsyncSerializer } from './make-external-async-serializer.js';
 import { makeExternalAsyncValidator } from './make-external-async-validator.js';
@@ -142,6 +144,9 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
       undefined,
       2
     );
+
+  /** Deeply clones a value */
+  public readonly cloneValueAsync: AsyncCloner<ValueT> = makeExternalAsyncCloner<ValueT>(this.internalValidateAsync);
 
   /** Deserialize (and validate) a value */
   public readonly deserializeAsync: AsyncDeserializer<ValueT> = makeExternalAsyncDeserializer<ValueT>(this.internalValidateAsync);

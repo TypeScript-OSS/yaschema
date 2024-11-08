@@ -9,8 +9,9 @@ import type { LazyPath } from './lazy-path';
  * - `'none'` - No transformation is performed (used for validation)
  * - `'serialize'` - The value is converted to JSON
  * - `'deserialize'` - The value is converted from JSON
+ * - `'clone'` - The value is deeply cloned
  */
-export type InternalTransformationType = 'none' | 'serialize' | 'deserialize';
+export type InternalTransformationType = 'none' | 'serialize' | 'deserialize' | 'clone';
 
 /** Validates and potentially transforms the specified value */
 export type InternalAsyncValidator = (

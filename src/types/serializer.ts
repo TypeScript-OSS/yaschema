@@ -8,5 +8,5 @@ export type SerializationResult =
   | { error?: undefined; errorPath?: string; errorLevel?: undefined; serialized: JsonValue }
   | { error: string; errorPath: string; errorLevel: ValidationErrorLevel; serialized?: JsonValue };
 
-/** Asynchronously serializes the specified value into JSON */
+/** Serializes the specified value into JSON */
 export type AsyncSerializer<T> = (value: T, options?: ValidationOptions) => TypeOrPromisedType<SerializationResult>;

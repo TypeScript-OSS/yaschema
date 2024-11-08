@@ -24,5 +24,12 @@ const validateBigNumber = (value: BigNumber): CustomValidationResult => {
 export const bigNumberSchema = schema.custom({
   typeName: 'BigNumber',
   serDes: bigNumberSerDes,
+  customClone: (value) => ({ cloned: new BigNumber(value) }),
+  customValidation: validateBigNumber
+});
+
+export const bigNumberWithoutCustomCloningSchema = schema.custom({
+  typeName: 'BigNumber',
+  serDes: bigNumberSerDes,
   customValidation: validateBigNumber
 });
