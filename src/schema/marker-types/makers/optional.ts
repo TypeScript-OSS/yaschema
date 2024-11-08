@@ -1,7 +1,7 @@
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator } from '../../internal/types/internal-validation';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
 import { makeNoError } from '../../internal/utils/make-no-error.js';
 import type { OptionalSchema } from '../types/OptionalSchema';
@@ -50,14 +50,6 @@ class OptionalSchemaImpl<DefinedValueT>
   public readonly clone = (): OptionalSchema<DefinedValueT> => copyMetaFields({ from: this, to: optional(this.schema) });
 
   // Method Overrides
-
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
-    if (value === undefined) {
-      return makeNoError(value);
-    }
-
-    return (this.schema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
-  };
 
   protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
     value,

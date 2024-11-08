@@ -14,12 +14,6 @@ describe('date schema', () => {
   describe('without expected values', () => {
     const dateSchema = schema.date();
 
-    it('of string matching schema should work with okToMutateInputValue=true', () => {
-      const validation = dateSchema.deserialize('2022-01-01T00:00:00.000Z', { okToMutateInputValue: true });
-      expect(validation.deserialized).toEqual(new Date('2022-01-01T00:00:00.000Z'));
-      expect(validation.error).toBeUndefined();
-    });
-
     setupBasicTypeOperationsShouldWorkTests({
       schema: dateSchema,
       deserializedValues: [new Date('2022-01-01T00:00:00.000Z')],

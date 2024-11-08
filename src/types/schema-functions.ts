@@ -1,8 +1,8 @@
-import type { AsyncDeserializer, Deserializer } from './deserializer';
+import type { AsyncDeserializer } from './deserializer';
 import type { Schema } from './schema';
 import type { SchemaPreferredValidationMode } from './schema-preferred-validation';
-import type { AsyncSerializer, Serializer } from './serializer';
-import type { AsyncValidator, Validator } from './validator';
+import type { AsyncSerializer } from './serializer';
+import type { AsyncValidator } from './validator';
 
 export interface SchemaFunctions<ValueT> {
   /** Returns a new schema that requires that either this schema is satisfied or that the value is `null`. */
@@ -33,18 +33,12 @@ export interface SchemaFunctions<ValueT> {
   /** Makes a string representation of this schema, mostly for debugging */
   toString: () => string;
 
-  /** Synchronously deserialize (and validate) a value */
-  deserialize: Deserializer<ValueT>;
   /** Asynchronously deserialize (and validate) a value */
   deserializeAsync: AsyncDeserializer<ValueT>;
 
-  /** Synchronously serialize (and validate) a value */
-  serialize: Serializer<ValueT>;
   /** Asynchronously serialize (and validate) a value */
   serializeAsync: AsyncSerializer<ValueT>;
 
-  /** Synchronously validate a value */
-  validate: Validator;
-  /** Asynchronously validate a value */
+  /** Validate a value */
   validateAsync: AsyncValidator;
 }

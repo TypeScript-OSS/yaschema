@@ -1,6 +1,6 @@
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
-import type { InternalValidator } from '../types/internal-validation';
+import type { InternalAsyncValidator } from '../types/internal-validation.js';
 import { cloner } from './cloner.js';
 import { isErrorResult } from './is-error-result.js';
 import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode.js';
@@ -11,9 +11,9 @@ const numberRegex = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/;
 export const supportVariableSerializationFormsForNumericValues =
   <ValueT extends number>(
     getSchema: () => Schema<ValueT> & { allowedSerializationForms?: Array<'number' | 'string'> },
-    normalizedValidator: InternalValidator
-  ): InternalValidator =>
-  (value, internalState, path, container, validationMode) => {
+    normalizedValidator: InternalAsyncValidator
+  ): InternalAsyncValidator =>
+  async (value, internalState, path, container, validationMode) => {
     const schema = getSchema();
     if (
       internalState.transformation === 'none' ||
@@ -26,7 +26,7 @@ export const supportVariableSerializationFormsForNumericValues =
 
     switch (internalState.transformation) {
       case 'serialize': {
-        const validation = normalizedValidator(value, internalState, path, container, validationMode);
+        const validation = await normalizedValidator(value, internalState, path, container, validationMode);
         if (isErrorResult(validation)) {
           return validation;
         }

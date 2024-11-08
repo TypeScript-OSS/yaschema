@@ -134,10 +134,10 @@ describe('restrictedNumber schema', () => {
       serializedValues: ['2', '3', '4', '6']
     });
 
-    it('serialization and deserialization should work', () => {
-      expect(restrictedNumberSchema.serialize(3).serialized).toBe('3');
-      expect(restrictedNumberSchema.deserialize('3').deserialized).toBe(3);
-      expect(restrictedNumberSchema.deserialize(3).error).toBeDefined();
+    it('serialization and deserialization should work', async () => {
+      expect((await restrictedNumberSchema.serializeAsync(3)).serialized).toBe('3');
+      expect((await restrictedNumberSchema.deserializeAsync('3')).deserialized).toBe(3);
+      expect((await restrictedNumberSchema.deserializeAsync(3)).error).toBeDefined();
     });
   });
 
@@ -150,10 +150,10 @@ describe('restrictedNumber schema', () => {
       serializedValues: ['2', '3', '4', '6']
     });
 
-    it('serialization and deserialization should work', () => {
-      expect(restrictedNumberSchema.serialize(3).serialized).toBe('3');
-      expect(restrictedNumberSchema.deserialize('3').deserialized).toBe(3);
-      expect(restrictedNumberSchema.deserialize(3).deserialized).toBe(3);
+    it('serialization and deserialization should work', async () => {
+      expect((await restrictedNumberSchema.serializeAsync(3)).serialized).toBe('3');
+      expect((await restrictedNumberSchema.deserializeAsync('3')).deserialized).toBe(3);
+      expect((await restrictedNumberSchema.deserializeAsync(3)).deserialized).toBe(3);
     });
   });
 
@@ -166,10 +166,10 @@ describe('restrictedNumber schema', () => {
       serializedValues: [2, 3, 4, 6]
     });
 
-    it('serialization and deserialization should work', () => {
-      expect(restrictedNumberSchema.serialize(3).serialized).toBe(3);
-      expect(restrictedNumberSchema.deserialize('3').deserialized).toBe(3);
-      expect(restrictedNumberSchema.deserialize(3).deserialized).toBe(3);
+    it('serialization and deserialization should work', async () => {
+      expect((await restrictedNumberSchema.serializeAsync(3)).serialized).toBe(3);
+      expect((await restrictedNumberSchema.deserializeAsync('3')).deserialized).toBe(3);
+      expect((await restrictedNumberSchema.deserializeAsync(3)).deserialized).toBe(3);
     });
   });
 });

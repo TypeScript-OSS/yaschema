@@ -1,4 +1,3 @@
-import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
 import type { ValidationMode } from '../../../types/validation-options';
@@ -6,12 +5,7 @@ import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-im
 import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
 import type { GenericContainer } from '../../internal/types/generic-container';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
-import type {
-  InternalAsyncValidator,
-  InternalValidationErrorResult,
-  InternalValidationResult,
-  InternalValidator
-} from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator, InternalValidationErrorResult } from '../../internal/types/internal-validation';
 import type { LazyPath } from '../../internal/types/lazy-path';
 import { cloner } from '../../internal/utils/cloner.js';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
@@ -53,56 +47,6 @@ export const oneOf5 = <TypeA, TypeB, TypeC, TypeD, TypeE>(
 // Helpers
 
 /** Requires one of the specified schemas to be satisfied */
-const validateOneOf = <TypeA, TypeB>(
-  value: any,
-  schema: OneOfSchema<TypeA, TypeB>,
-  internalState: InternalState,
-  path: LazyPath,
-  container: GenericContainer,
-  validationMode: ValidationMode
-): InternalValidationResult => {
-  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
-    return makeClonedValueNoError(value);
-  }
-
-  const validationErrors: InternalValidationErrorResult[] = [];
-
-  let success = false;
-  let outValue: any = undefined;
-  let outInvalidValue: (() => any) | undefined = undefined;
-  for (const subschema of schema.schemas) {
-    const result = (subschema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
-
-    if (!isErrorResult(result)) {
-      success = true;
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      outValue = result.value;
-      outInvalidValue = undefined;
-
-      if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) {
-        return makeClonedValueNoError(outValue);
-      }
-    } else {
-      if (outValue === undefined) {
-        outInvalidValue = result.invalidValue;
-      }
-
-      validationErrors.push(result);
-    }
-  }
-
-  return success
-    ? makeNoError(outValue)
-    : makeErrorResultForValidationMode(
-        outInvalidValue ?? cloner(value),
-        validationMode,
-        () => `Expected one of: ${validationErrors.map((r) => r.error?.() ?? '').join(' or ')}, found ${getMeaningfulTypeof(value)}`,
-        path
-      );
-};
-
-/** Requires one of the specified schemas to be satisfied */
 const validateOneOfAsync = async <TypeA, TypeB>(
   value: any,
   schema: OneOfSchema<TypeA, TypeB>,
@@ -115,18 +59,19 @@ const validateOneOfAsync = async <TypeA, TypeB>(
     return makeClonedValueNoError(value);
   }
 
-  const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
-
   const validationErrors: InternalValidationErrorResult[] = [];
 
   let success = false;
   let outValue: any = undefined;
   let outInvalidValue: (() => any) | undefined = undefined;
   for (const subschema of schema.schemas) {
-    const result =
-      subschema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-        ? await (subschema as any as InternalSchemaFunctions).internalValidateAsync(value, internalState, path, container, validationMode)
-        : (subschema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
+    const result = await (subschema as any as InternalSchemaFunctions).internalValidateAsync(
+      value,
+      internalState,
+      path,
+      container,
+      validationMode
+    );
     if (!isErrorResult(result)) {
       success = true;
 
@@ -194,9 +139,6 @@ class OneOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA | Type
     copyMetaFields({ from: this, to: new OneOfSchemaImpl(this.schemas[0], this.schemas[1]) });
 
   // Method Overrides
-
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) =>
-    validateOneOf(value, this, internalState, path, container, validationMode);
 
   protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
     value,

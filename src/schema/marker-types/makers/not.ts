@@ -2,7 +2,7 @@ import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.j
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator } from '../../internal/types/internal-validation';
 import { cloner } from '../../internal/utils/cloner.js';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
 import { isErrorResult } from '../../internal/utils/is-error-result.js';
@@ -70,29 +70,6 @@ class NotSchemaImpl<ValueT, ExcludedT> extends InternalSchemaMakerImpl<Exclude<V
     });
 
   // Method Overrides
-
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
-    const result = (this.notSchema as any as InternalSchemaFunctions).internalValidate(
-      value,
-      internalState,
-      path,
-      container,
-      validationMode
-    );
-    if (!isErrorResult(result)) {
-      return makeErrorResultForValidationMode(
-        cloner(value),
-        validationMode,
-        () =>
-          this.expectedTypeName !== undefined
-            ? `Expected ${this.expectedTypeName}, found ${getMeaningfulTypeof(value)}`
-            : `Encountered an unsupported value, found ${getMeaningfulTypeof(value)}`,
-        path
-      );
-    }
-
-    return (this.schema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
-  };
 
   protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
     value,

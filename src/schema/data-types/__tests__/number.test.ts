@@ -45,10 +45,10 @@ describe('number schema', () => {
 
     setupBasicTypeOperationsShouldWorkTests({ schema: numberSchema, deserializedValues: [3, 5], serializedValues: ['3', '5'] });
 
-    it('serialization and deserialization should work', () => {
-      expect(numberSchema.serialize(3).serialized).toBe('3');
-      expect(numberSchema.deserialize('3').deserialized).toBe(3);
-      expect(numberSchema.deserialize(3).error).toBeDefined();
+    it('serialization and deserialization should work', async () => {
+      expect((await numberSchema.serializeAsync(3)).serialized).toBe('3');
+      expect((await numberSchema.deserializeAsync('3')).deserialized).toBe(3);
+      expect((await numberSchema.deserializeAsync(3)).error).toBeDefined();
     });
   });
 
@@ -57,10 +57,10 @@ describe('number schema', () => {
 
     setupBasicTypeOperationsShouldWorkTests({ schema: numberSchema, deserializedValues: [3, 5], serializedValues: ['3', '5'] });
 
-    it('serialization and deserialization should work', () => {
-      expect(numberSchema.serialize(3).serialized).toBe('3');
-      expect(numberSchema.deserialize('3').deserialized).toBe(3);
-      expect(numberSchema.deserialize(3).deserialized).toBe(3);
+    it('serialization and deserialization should work', async () => {
+      expect((await numberSchema.serializeAsync(3)).serialized).toBe('3');
+      expect((await numberSchema.deserializeAsync('3')).deserialized).toBe(3);
+      expect((await numberSchema.deserializeAsync(3)).deserialized).toBe(3);
     });
   });
 
@@ -69,10 +69,10 @@ describe('number schema', () => {
 
     setupBasicTypeOperationsShouldWorkTests({ schema: numberSchema, deserializedValues: [3, 5], serializedValues: [3, 5] });
 
-    it('serialization and deserialization should work', () => {
-      expect(numberSchema.serialize(3).serialized).toBe(3);
-      expect(numberSchema.deserialize('3').deserialized).toBe(3);
-      expect(numberSchema.deserialize(3).deserialized).toBe(3);
+    it('serialization and deserialization should work', async () => {
+      expect((await numberSchema.serializeAsync(3)).serialized).toBe(3);
+      expect((await numberSchema.deserializeAsync('3')).deserialized).toBe(3);
+      expect((await numberSchema.deserializeAsync(3)).deserialized).toBe(3);
     });
   });
 });

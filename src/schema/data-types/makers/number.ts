@@ -74,7 +74,7 @@ class NumberSchemaImpl<ValueT extends number> extends InternalSchemaMakerImpl<Va
 
   // Method Overrides
 
-  protected override overridableInternalValidate = supportVariableSerializationFormsForNumericValues(
+  protected override overridableInternalValidateAsync = supportVariableSerializationFormsForNumericValues(
     () => this,
     (value, _validatorOptions, path, _container, validationMode) => {
       if (typeof value !== 'number') {
@@ -116,8 +116,6 @@ class NumberSchemaImpl<ValueT extends number> extends InternalSchemaMakerImpl<Va
       return makeNoError(value);
     }
   );
-
-  protected override overridableInternalValidateAsync = undefined;
 
   protected override overridableGetExtraToStringFields = () => ({
     allowedValues: this.allowedValues,

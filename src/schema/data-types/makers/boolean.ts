@@ -74,7 +74,7 @@ class BooleanSchemaImpl<ValueT extends boolean> extends InternalSchemaMakerImpl<
 
   // Method Overrides
 
-  protected override overridableInternalValidate = supportVariableSerializationFormsForBooleanValues(
+  protected override overridableInternalValidateAsync = supportVariableSerializationFormsForBooleanValues(
     () => this,
     (value, _validatorOptions, path, _container, validationMode): InternalValidationResult => {
       if (typeof value !== 'boolean') {
@@ -97,8 +97,6 @@ class BooleanSchemaImpl<ValueT extends boolean> extends InternalSchemaMakerImpl<
       return makeNoError(value);
     }
   );
-
-  protected override overridableInternalValidateAsync = undefined;
 
   protected override overridableGetExtraToStringFields = () => ({
     allowedValues: this.allowedValues,

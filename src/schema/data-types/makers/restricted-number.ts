@@ -141,7 +141,7 @@ class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> impleme
 
   // Method Overrides
 
-  protected override overridableInternalValidate = supportVariableSerializationFormsForNumericValues(
+  protected override overridableInternalValidateAsync = supportVariableSerializationFormsForNumericValues(
     () => this,
     (value, _validatorOptions, path, container, validationMode) => {
       if (typeof value !== 'number') {
@@ -199,8 +199,6 @@ class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> impleme
       return makeNoError(value);
     }
   );
-
-  protected override overridableInternalValidateAsync = undefined;
 
   protected override overridableGetExtraToStringFields = () => ({
     allowedValuesAndRanges: this.allowedValuesAndRanges,

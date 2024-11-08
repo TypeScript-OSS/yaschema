@@ -1,7 +1,7 @@
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator } from '../../internal/types/internal-validation';
 import type { RootSchema } from '../types/RootSchema';
 
 /**
@@ -48,9 +48,6 @@ class RootSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT> implements 
   }
 
   // Method Overrides
-
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) =>
-    (this.schema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
 
   protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
     value,

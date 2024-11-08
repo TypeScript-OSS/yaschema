@@ -1,9 +1,8 @@
-import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
 import { getLogger } from '../../../config/logging.js';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator } from '../../internal/types/internal-validation';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
 import { isErrorResult } from '../../internal/utils/is-error-result.js';
 import type { UpgradedSchema } from '../types/UpgradedSchema';
@@ -79,42 +78,6 @@ class UpgradedSchemaImpl<OldT, NewT> extends InternalSchemaMakerImpl<OldT | NewT
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
-    const newResult = (this.newSchema as any as InternalSchemaFunctions).internalValidate(
-      value,
-      internalState,
-      path,
-      container,
-      validationMode
-    );
-    if (!isErrorResult(newResult)) {
-      return newResult;
-    }
-
-    const oldResult = (this.oldSchema as any as InternalSchemaFunctions).internalValidate(
-      value,
-      internalState,
-      path,
-      container,
-      validationMode
-    );
-    if (!isErrorResult(oldResult)) {
-      if (value !== undefined && !alreadyLogUpgradedWarnings.has(this.uniqueName)) {
-        alreadyLogUpgradedWarnings.add(this.uniqueName);
-        getLogger().warn?.(
-          `[DEPRECATION] The schema for ${this.uniqueName} has been upgraded and legacy support will be removed ${
-            this.deadline !== undefined ? `after ${this.deadline}` : 'soon'
-          }.`,
-          'debug'
-        );
-      }
-
-      return oldResult;
-    } else {
-      return newResult;
-    }
-  };
-
   protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
     value,
     internalState,
@@ -122,32 +85,24 @@ class UpgradedSchemaImpl<OldT, NewT> extends InternalSchemaMakerImpl<OldT | NewT
     container,
     validationMode
   ) => {
-    const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
-
-    const newResult =
-      this.newSchema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-        ? await (this.newSchema as any as InternalSchemaFunctions).internalValidateAsync(
-            value,
-            internalState,
-            path,
-            container,
-            validationMode
-          )
-        : (this.newSchema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
+    const newResult = await (this.newSchema as any as InternalSchemaFunctions).internalValidateAsync(
+      value,
+      internalState,
+      path,
+      container,
+      validationMode
+    );
     if (!isErrorResult(newResult)) {
       return newResult;
     }
 
-    const oldResult =
-      this.oldSchema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-        ? await (this.oldSchema as any as InternalSchemaFunctions).internalValidateAsync(
-            value,
-            internalState,
-            path,
-            container,
-            validationMode
-          )
-        : (this.oldSchema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
+    const oldResult = await (this.oldSchema as any as InternalSchemaFunctions).internalValidateAsync(
+      value,
+      internalState,
+      path,
+      container,
+      validationMode
+    );
     if (!isErrorResult(oldResult)) {
       if (value !== undefined && !alreadyLogUpgradedWarnings.has(this.uniqueName)) {
         alreadyLogUpgradedWarnings.add(this.uniqueName);

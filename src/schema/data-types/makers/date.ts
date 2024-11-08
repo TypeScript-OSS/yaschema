@@ -1,7 +1,7 @@
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Range } from '../../../types/range';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
-import type { InternalTransformationType, InternalValidator } from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator, InternalTransformationType } from '../../internal/types/internal-validation';
 import { cloner } from '../../internal/utils/cloner.js';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
 import { isErrorResult } from '../../internal/utils/is-error-result.js';
@@ -51,10 +51,8 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) =>
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) =>
     this.internalValidatorsByTransformationType_[internalState.transformation](value, internalState, path, container, validationMode);
-
-  protected override overridableInternalValidateAsync = undefined;
 
   protected override overridableGetExtraToStringFields = () => ({
     allowedRanges: this.allowedRanges
@@ -62,7 +60,7 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
   // Private Methods
 
-  private readonly internalValidateNoTransform_: InternalValidator = (value, internalState, path, container, validationMode) => {
+  private readonly internalValidateNoTransform_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (!(value instanceof Date)) {
       return makeErrorResultForValidationMode(
         cloner(value),
@@ -75,7 +73,7 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
     return this.validateDeserializedForm_(new Date(value), internalState, path, container, validationMode);
   };
 
-  private readonly internalValidateSerialize_: InternalValidator = (value, internalState, path, container, validationMode) => {
+  private readonly internalValidateSerialize_: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
     if (!(value instanceof Date)) {
       return makeErrorResultForValidationMode(
         cloner(value),
@@ -87,14 +85,14 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
     const dateValue = value;
 
-    const validation = this.validateDeserializedForm_(dateValue, internalState, path, container, validationMode);
+    const validation = await this.validateDeserializedForm_(dateValue, internalState, path, container, validationMode);
 
     const isoStringValue = dateValue.toISOString();
 
     return isErrorResult(validation) ? { ...validation, invalidValue: () => isoStringValue } : makeNoError(isoStringValue);
   };
 
-  private readonly internalValidateDeserialize_: InternalValidator = (value, internalState, path, container, validationMode) => {
+  private readonly internalValidateDeserialize_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (typeof value !== 'string' || !dateRegex.test(value)) {
       return makeErrorResultForValidationMode(
         cloner(value),
@@ -121,13 +119,13 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
     }
   };
 
-  private readonly internalValidatorsByTransformationType_: Record<InternalTransformationType, InternalValidator> = {
+  private readonly internalValidatorsByTransformationType_: Record<InternalTransformationType, InternalAsyncValidator> = {
     deserialize: this.internalValidateDeserialize_,
     none: this.internalValidateNoTransform_,
     serialize: this.internalValidateSerialize_
   };
 
-  private readonly validateDeserializedForm_: InternalValidator = (value, _validatorOptions, path, _container, validationMode) => {
+  private readonly validateDeserializedForm_: InternalAsyncValidator = (value, _validatorOptions, path, _container, validationMode) => {
     if (validationMode === 'none') {
       return makeNoError(value);
     }

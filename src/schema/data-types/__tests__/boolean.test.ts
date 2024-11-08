@@ -66,10 +66,10 @@ describe('boolean schema', () => {
       serializedValues: ['true', 'false']
     });
 
-    it('serialization and deserialization should work', () => {
-      expect(booleanSchema.serialize(true).serialized).toBe('true');
-      expect(booleanSchema.deserialize('true').deserialized).toBe(true);
-      expect(booleanSchema.deserialize(true).error).toBeDefined();
+    it('serialization and deserialization should work', async () => {
+      expect((await booleanSchema.serializeAsync(true)).serialized).toBe('true');
+      expect((await booleanSchema.deserializeAsync('true')).deserialized).toBe(true);
+      expect((await booleanSchema.deserializeAsync(true)).error).toBeDefined();
     });
   });
 
@@ -82,10 +82,10 @@ describe('boolean schema', () => {
       serializedValues: ['true', 'false']
     });
 
-    it('serialization and deserialization should work', () => {
-      expect(booleanSchema.serialize(true).serialized).toBe('true');
-      expect(booleanSchema.deserialize('true').deserialized).toBe(true);
-      expect(booleanSchema.deserialize(true).deserialized).toBe(true);
+    it('serialization and deserialization should work', async () => {
+      expect((await booleanSchema.serializeAsync(true)).serialized).toBe('true');
+      expect((await booleanSchema.deserializeAsync('true')).deserialized).toBe(true);
+      expect((await booleanSchema.deserializeAsync(true)).deserialized).toBe(true);
     });
   });
 
@@ -94,10 +94,10 @@ describe('boolean schema', () => {
 
     setupBasicTypeOperationsShouldWorkTests({ schema: booleanSchema, deserializedValues: [true, false], serializedValues: [true, false] });
 
-    it('serialization and deserialization should work', () => {
-      expect(booleanSchema.serialize(true).serialized).toBe(true);
-      expect(booleanSchema.deserialize('true').deserialized).toBe(true);
-      expect(booleanSchema.deserialize(true).deserialized).toBe(true);
+    it('serialization and deserialization should work', async () => {
+      expect((await booleanSchema.serializeAsync(true)).serialized).toBe(true);
+      expect((await booleanSchema.deserializeAsync('true')).deserialized).toBe(true);
+      expect((await booleanSchema.deserializeAsync(true)).deserialized).toBe(true);
     });
   });
 });

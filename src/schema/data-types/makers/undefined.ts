@@ -1,6 +1,6 @@
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
-import type { InternalValidator } from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator } from '../../internal/types/internal-validation.js';
 import { cloner } from '../../internal/utils/cloner.js';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
 import { makeErrorResultForValidationMode } from '../../internal/utils/make-error-result-for-validation-mode.js';
@@ -33,7 +33,13 @@ class UndefinedSchemaImpl extends InternalSchemaMakerImpl<undefined> implements 
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, _validatorOptions, path, _container, validationMode) => {
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (
+    value,
+    _validatorOptions,
+    path,
+    _container,
+    validationMode
+  ) => {
     if (value !== undefined) {
       return makeErrorResultForValidationMode(
         cloner(value),
@@ -45,8 +51,6 @@ class UndefinedSchemaImpl extends InternalSchemaMakerImpl<undefined> implements 
 
     return makeNoError(value);
   };
-
-  protected override overridableInternalValidateAsync = undefined;
 
   protected override overridableGetExtraToStringFields = undefined;
 }

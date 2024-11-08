@@ -10,13 +10,6 @@ export const setupBasicTypeDeserializationShouldNotWorkTests = ({
 }) => {
   describe('deserialization', () => {
     for (const value of serializedValues) {
-      describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, () => {
-          const validation = schema.deserialize(value as any);
-          expect(validation.error).toBeDefined();
-        });
-      });
-
       setupAsyncTests(() => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, async () => {
           const validation = await schema.deserializeAsync(value as any);
@@ -41,14 +34,6 @@ export const setupBasicTypeDeserializationShouldWorkTests = ({
     for (const value of serializedValues) {
       const thisIndex = index;
 
-      describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, () => {
-          const validation = schema.deserialize(value as any);
-          expect(validation.deserialized).toEqual(deserializedValues !== undefined ? deserializedValues[thisIndex] : value);
-          expect(validation.error).toBeUndefined();
-        });
-      });
-
       setupAsyncTests(() => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, async () => {
           const validation = await schema.deserializeAsync(value as any);
@@ -71,13 +56,6 @@ export const setupBasicTypeSerializationShouldNotWorkTests = ({
 }) => {
   describe('serialization', () => {
     for (const value of deserializedValues) {
-      describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, () => {
-          const validation = schema.serialize(value as any);
-          expect(validation.error).toBeDefined();
-        });
-      });
-
       setupAsyncTests(() => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, async () => {
           const validation = await schema.serializeAsync(value as any);
@@ -102,14 +80,6 @@ export const setupBasicTypeSerializationShouldWorkTests = ({
     for (const value of deserializedValues) {
       const thisIndex = index;
 
-      describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, () => {
-          const validation = schema.serialize(value as any);
-          expect(validation.serialized).toEqual(serializedValues !== undefined ? serializedValues[thisIndex] : value);
-          expect(validation.error).toBeUndefined();
-        });
-      });
-
       setupAsyncTests(() => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, async () => {
           const validation = await schema.serializeAsync(value as any);
@@ -132,13 +102,6 @@ export const setupBasicTypeValidationShouldNotWorkTests = ({
 }) => {
   describe('validation', () => {
     for (const value of deserializedValues) {
-      describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, () => {
-          const validation = schema.validate(value as any);
-          expect(validation.error).toBeDefined();
-        });
-      });
-
       setupAsyncTests(() => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should not work`, async () => {
           const validation = await schema.validateAsync(value as any);
@@ -152,13 +115,6 @@ export const setupBasicTypeValidationShouldNotWorkTests = ({
 export const setupBasicTypeValidationShouldWorkTests = ({ schema, deserializedValues }: { schema: Schema; deserializedValues: any[] }) => {
   describe('validation', () => {
     for (const value of deserializedValues) {
-      describe('sync', () => {
-        it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, () => {
-          const validation = schema.validate(value as any);
-          expect(validation.error).toBeUndefined();
-        });
-      });
-
       setupAsyncTests(() => {
         it(`of ${String(JSON.stringify(value)).slice(0, 256)} should work`, async () => {
           const validation = await schema.validateAsync(value as any);

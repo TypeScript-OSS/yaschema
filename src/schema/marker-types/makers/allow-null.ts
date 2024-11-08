@@ -1,7 +1,7 @@
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator } from '../../internal/types/internal-validation';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
 import { makeNoError } from '../../internal/utils/make-no-error.js';
 import type { AllowNullSchema } from '../types/AllowNullSchema';
@@ -47,14 +47,6 @@ class AllowNullSchemaImpl<NonNullValueT> extends InternalSchemaMakerImpl<NonNull
   public readonly clone = (): AllowNullSchema<NonNullValueT> => copyMetaFields({ from: this, to: new AllowNullSchemaImpl(this.schema) });
 
   // Method Overrides
-
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
-    if (value === null) {
-      return makeNoError(value);
-    }
-
-    return (this.schema as any as InternalSchemaFunctions).internalValidate(value, internalState, path, container, validationMode);
-  };
 
   protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
     value,

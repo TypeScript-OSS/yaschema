@@ -4,14 +4,14 @@ import { schema } from '../exports.js';
 import { bigNumberSchema } from '../schema/__test_dependency__/big-number-schema.js';
 
 describe('soft validation mode', () => {
-  it('valid fields should serialize as expected even when there are validation errors', () => {
+  it('valid fields should serialize as expected even when there are validation errors', async () => {
     const mySchema = schema.object({
       date1: schema.date(),
       date2: schema.date(),
       value: bigNumberSchema
     });
 
-    const serialization = mySchema.serialize(
+    const serialization = await mySchema.serializeAsync(
       {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         date1: 'hello' as any,
@@ -31,14 +31,14 @@ describe('soft validation mode', () => {
 });
 
 describe('hard validation mode', () => {
-  it('valid fields should serialize as expected even when there are validation errors', () => {
+  it('valid fields should serialize as expected even when there are validation errors', async () => {
     const mySchema = schema.object({
       date1: schema.date(),
       date2: schema.date(),
       value: bigNumberSchema
     });
 
-    const serialization = mySchema.serialize(
+    const serialization = await mySchema.serializeAsync(
       {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         date1: 'hello' as any,
@@ -52,10 +52,10 @@ describe('hard validation mode', () => {
 });
 
 describe('none validation mode', () => {
-  it('valid fields should serialize as expected even when there are validation errors', () => {
+  it('valid fields should serialize as expected even when there are validation errors', async () => {
     const mySchema = schema.restrictedNumber([3]);
 
-    const serialization = mySchema.serialize(5, { validation: 'none' });
+    const serialization = await mySchema.serializeAsync(5, { validation: 'none' });
     expect(serialization.error).toBeUndefined();
     expect(serialization.serialized).toBe(5);
   });

@@ -9,8 +9,7 @@ import type { InternalSchemaFunctions } from '../../internal/types/internal-sche
 import type {
   InternalAsyncValidator,
   InternalValidationErrorResult,
-  InternalValidationResult,
-  InternalValidator
+  InternalValidationResult
 } from '../../internal/types/internal-validation';
 import type { LazyPath } from '../../internal/types/lazy-path';
 import { cloner } from '../../internal/utils/cloner.js';
@@ -39,120 +38,6 @@ export const array = <ItemT = any>(args?: {
 }): ArraySchema<ItemT> => new ArraySchemaImpl(args);
 
 // Helpers
-
-/**
- * Requires an array, optionally with items matching the specified schema, and/or a min and/or max
- * length
- */
-const validateArray = <ItemT>(
-  value: any,
-  {
-    schema,
-    path,
-    internalState,
-    container,
-    validationMode
-  }: {
-    schema: ArraySchema<ItemT>;
-    path: LazyPath;
-    internalState: InternalState;
-    container: GenericContainer;
-    validationMode: ValidationMode;
-  }
-): InternalValidationResult => {
-  const shouldStopOnFirstError =
-    validationMode === 'hard' ||
-    (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
-
-  if (!Array.isArray(value)) {
-    return makeErrorResultForValidationMode(
-      cloner(value),
-      validationMode,
-      () => `Expected array, found ${getMeaningfulTypeof(value)}`,
-      path
-    );
-  }
-
-  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
-    return makeClonedValueNoError(value);
-  }
-
-  let errorResult: InternalValidationErrorResult | undefined;
-
-  if (errorResult === undefined && value.length < schema.minLength) {
-    errorResult = makeErrorResultForValidationMode(
-      cloner(value),
-      validationMode,
-      () => `Expected an array with at least ${schema.minLength} element(s), found an array with ${value.length} element(s)`,
-      path
-    );
-
-    if (shouldStopOnFirstError) {
-      return errorResult;
-    }
-  }
-
-  if (errorResult === undefined && schema.maxLength !== undefined && value.length > schema.maxLength) {
-    errorResult = makeErrorResultForValidationMode(
-      cloner(value),
-      validationMode,
-      () => `Expected an array with at most ${schema.maxLength} element(s), found an array with ${value.length} element(s)`,
-      path
-    );
-
-    if (shouldStopOnFirstError) {
-      return errorResult;
-    }
-  }
-
-  if (!Array.isArray(container)) {
-    container = [];
-  }
-
-  const items = schema.items;
-  if (items !== undefined) {
-    let index = 0;
-    for (const arrayItem of value) {
-      if (
-        !schema.usesCustomSerDes &&
-        !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
-        schema.maxEntriesToValidate !== undefined &&
-        index >= schema.maxEntriesToValidate
-      ) {
-        break; // Reached the max number to validate
-      }
-
-      const result = (items as any as InternalSchemaFunctions).internalValidate(
-        arrayItem,
-        internalState,
-        appendPathIndex(path, index),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        container[index] ?? {},
-        validationMode
-      );
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      container[index] = isErrorResult(result) ? (container[index] ?? result.invalidValue()) : result.value;
-      if (isMoreSevereResult(result, errorResult)) {
-        errorResult = result as InternalValidationErrorResult;
-
-        if (shouldStopOnFirstError) {
-          return { ...errorResult, invalidValue: () => container };
-        }
-      }
-      index += 1;
-    }
-  } else {
-    let index = 0;
-    for (const arrayItem of value) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      container[index] = container[index] ?? arrayItem;
-
-      index += 1;
-    }
-  }
-
-  return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
-};
 
 /**
  * Requires an array, optionally with items matching the specified schema, and/or a min and/or max
@@ -258,24 +143,14 @@ const asyncValidateArray = async <ItemT>(
         return false; // Reached the max number to validate
       }
 
-      const result =
-        items.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-          ? await (items as any as InternalSchemaFunctions).internalValidateAsync(
-              arrayItem,
-              internalState,
-              appendPathIndex(path, index),
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-              container[index] ?? {},
-              validationMode
-            )
-          : (items as any as InternalSchemaFunctions).internalValidate(
-              arrayItem,
-              internalState,
-              appendPathIndex(path, index),
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-              container[index] ?? {},
-              validationMode
-            );
+      const result = await (items as any as InternalSchemaFunctions).internalValidateAsync(
+        arrayItem,
+        internalState,
+        appendPathIndex(path, index),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        container[index] ?? {},
+        validationMode
+      );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       container[index] = isErrorResult(result) ? (container[index] ?? result.invalidValue()) : result.value;
       if (isMoreSevereResult(result, errorResult)) {
@@ -370,16 +245,8 @@ class ArraySchemaImpl<ItemT = any> extends InternalSchemaMakerImpl<ItemT[]> impl
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) =>
-    validateArray(value, { schema: this, path, internalState, container, validationMode });
-
-  protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
-    value,
-    internalState,
-    path,
-    container,
-    validationMode
-  ) => asyncValidateArray(value, { schema: this, path, internalState, container, validationMode });
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) =>
+    asyncValidateArray(value, { schema: this, path, internalState, container, validationMode });
 
   protected override overridableGetExtraToStringFields = () => ({
     items: this.items,

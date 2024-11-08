@@ -1,21 +1,18 @@
-import type { AsyncDeserializer, Deserializer } from '../../../types/deserializer';
+import type { AsyncDeserializer } from '../../../types/deserializer';
 import type { PureSchema } from '../../../types/pure-schema';
 import type { Schema } from '../../../types/schema';
 import type { SchemaFunctions } from '../../../types/schema-functions';
 import type { SchemaPreferredValidationMode } from '../../../types/schema-preferred-validation';
 import type { SchemaType } from '../../../types/schema-type';
-import type { AsyncSerializer, Serializer } from '../../../types/serializer';
-import type { AsyncValidator, Validator } from '../../../types/validator';
+import type { AsyncSerializer } from '../../../types/serializer';
+import type { AsyncValidator } from '../../../types/validator';
 import { dynamicAllowNull, dynamicNot, dynamicOptional } from '../circular-support/funcs.js';
 import type { InternalSchemaFunctions } from '../types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidator } from '../types/internal-validation';
+import type { InternalAsyncValidator } from '../types/internal-validation';
 import { pickNextTopValidationMode } from '../utils/pick-next-top-validation-mode.js';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer.js';
 import { makeExternalAsyncSerializer } from './make-external-async-serializer.js';
 import { makeExternalAsyncValidator } from './make-external-async-validator.js';
-import { makeExternalDeserializer } from './make-external-deserializer.js';
-import { makeExternalSerializer } from './make-external-serializer.js';
-import { makeExternalValidator } from './make-external-validator.js';
 
 export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<ValueT>, SchemaFunctions<ValueT>, InternalSchemaFunctions {
   /** A marker that can be used for testing if this is a YaSchema schema */
@@ -67,11 +64,8 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
 
   // Abstract Methods
 
-  /** Synchronously validates and potentially transforms the specified value */
-  protected abstract overridableInternalValidate: InternalValidator;
-
-  /** Asynchronously validates and potentially transforms the specified value.  If `undefined`, `internalValidate` is used */
-  protected abstract overridableInternalValidateAsync?: InternalAsyncValidator;
+  /** Validates and potentially transforms the specified value.  If `undefined`, `internalValidate` is used */
+  protected abstract overridableInternalValidateAsync: InternalAsyncValidator;
 
   /** The fields from PureSchema are already included in `toString`, this method allows subclasses to add additional fields to the
    * `toString` output, which is just a JSON stringified object */
@@ -79,14 +73,7 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
 
   // InternalSchemaFunctions
 
-  /** Synchronously validates and potentially transforms the specified value */
-  public readonly internalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
-    const nextValidationMode = pickNextTopValidationMode(this.preferredValidationMode, internalState.operationValidation, validationMode);
-
-    return this.overridableInternalValidate(value, internalState, path, container, nextValidationMode);
-  };
-
-  /** Asynchronously validates and potentially transforms the specified value.  If not provided, internalValidate is used */
+  /** Validates and potentially transforms the specified value.  If not provided, internalValidate is used */
   public readonly internalValidateAsync: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
     if (internalState.shouldRelax()) {
       await internalState.relax();
@@ -94,13 +81,7 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
 
     const nextValidationMode = pickNextTopValidationMode(this.preferredValidationMode, internalState.operationValidation, validationMode);
 
-    return (this.overridableInternalValidateAsync ?? this.overridableInternalValidate)(
-      value,
-      internalState,
-      path,
-      container,
-      nextValidationMode
-    );
+    return this.overridableInternalValidateAsync(value, internalState, path, container, nextValidationMode);
   };
 
   // SchemaFunctions
@@ -165,19 +146,12 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
       2
     );
 
-  /** Synchronously deserialize (and validate) a value */
-  public readonly deserialize: Deserializer<ValueT> = makeExternalDeserializer<ValueT>(this.internalValidate);
-
-  /** Asynchronously deserialize (and validate) a value */
+  /** Deserialize (and validate) a value */
   public readonly deserializeAsync: AsyncDeserializer<ValueT> = makeExternalAsyncDeserializer<ValueT>(this.internalValidateAsync);
 
-  /** Synchronously serialize (and validate) a value */
-  public readonly serialize: Serializer<ValueT> = makeExternalSerializer<ValueT>(this.internalValidate);
-  /** Asynchronously serialize (and validate) a value */
+  /** Serialize (and validate) a value */
   public readonly serializeAsync: AsyncSerializer<ValueT> = makeExternalAsyncSerializer<ValueT>(this.internalValidateAsync);
 
-  /** Synchronously validate a value */
-  public readonly validate: Validator = makeExternalValidator(this.internalValidate);
-  /** Asynchronously validate a value */
+  /** Validate a value */
   public readonly validateAsync: AsyncValidator = makeExternalAsyncValidator(this.internalValidateAsync);
 }

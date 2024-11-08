@@ -1,6 +1,6 @@
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
-import type { InternalValidator } from '../types/internal-validation';
+import type { InternalAsyncValidator } from '../types/internal-validation';
 import { cloner } from './cloner.js';
 import { isErrorResult } from './is-error-result.js';
 import { makeErrorResultForValidationMode } from './make-error-result-for-validation-mode.js';
@@ -11,9 +11,9 @@ const booleanRegex = /^true|false$/;
 export const supportVariableSerializationFormsForBooleanValues =
   <ValueT extends boolean>(
     getSchema: () => Schema<ValueT> & { allowedSerializationForms?: Array<'boolean' | 'string'> },
-    normalizedValidator: InternalValidator
-  ): InternalValidator =>
-  (value, internalState, path, container, validationMode) => {
+    normalizedValidator: InternalAsyncValidator
+  ): InternalAsyncValidator =>
+  async (value, internalState, path, container, validationMode) => {
     const schema = getSchema();
     if (
       internalState.transformation === 'none' ||
@@ -26,7 +26,7 @@ export const supportVariableSerializationFormsForBooleanValues =
 
     switch (internalState.transformation) {
       case 'serialize': {
-        const validation = normalizedValidator(value, internalState, path, container, validationMode);
+        const validation = await normalizedValidator(value, internalState, path, container, validationMode);
         if (isErrorResult(validation)) {
           return validation;
         }

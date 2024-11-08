@@ -2,12 +2,17 @@ import { getLogger } from '../../../config/logging.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { JsonValue } from '../../../types/json-value';
 import type { SerDes } from '../../../types/ser-des';
+import type { TypeOrPromisedType } from '../../../types/TypeOrPromisedType.js';
 import type { ValidationMode } from '../../../types/validation-options';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalState } from '../../internal/internal-schema-maker-impl/internal-state';
 import type { GenericContainer } from '../../internal/types/generic-container';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
-import type { InternalTransformationType, InternalValidationResult, InternalValidator } from '../../internal/types/internal-validation';
+import type {
+  InternalAsyncValidator,
+  InternalTransformationType,
+  InternalValidationResult
+} from '../../internal/types/internal-validation';
 import type { LazyPath } from '../../internal/types/lazy-path';
 import { cloner } from '../../internal/utils/cloner.js';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
@@ -18,7 +23,7 @@ import type { CustomSchema } from '../types/CustomSchema';
 
 export type CustomValidationResult = { error?: string } | { error?: undefined };
 
-export type CustomValidation<ValueT> = (value: ValueT) => CustomValidationResult;
+export type CustomValidation<ValueT> = (value: ValueT) => TypeOrPromisedType<CustomValidationResult>;
 
 export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> {
   serDes: SerDes<ValueT, SerializedT>;
@@ -95,10 +100,8 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) =>
+  protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) =>
     this.internalValidatorsByTransformationType_[internalState.transformation](value, internalState, path, container, validationMode);
-
-  protected override overridableInternalValidateAsync = undefined;
 
   protected override overridableGetExtraToStringFields = () => ({
     typeName: this.typeName
@@ -106,7 +109,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
 
   // Private Methods
 
-  private readonly internalValidateNoTransform_: InternalValidator = (value, internalState, path, container, validationMode) => {
+  private readonly internalValidateNoTransform_: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     if (!this.serDes.isValueType(value)) {
       return makeErrorResultForValidationMode(
         cloner(value),
@@ -119,7 +122,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     return this.validateDeserializedForm_(value, internalState, path, container, validationMode);
   };
 
-  private readonly internalValidateSerialize_: InternalValidator = (value, internalState, path, container, validationMode) => {
+  private readonly internalValidateSerialize_: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
     if (!this.serDes.isValueType(value)) {
       return makeErrorResultForValidationMode(
         cloner(value),
@@ -129,7 +132,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
       );
     }
 
-    const validation = this.validateDeserializedForm_(value, internalState, path, container, validationMode);
+    const validation = await this.validateDeserializedForm_(value, internalState, path, container, validationMode);
 
     const serialization = this.serialize_(value as ValueT, internalState, path, container, validationMode);
     if (isErrorResult(serialization)) {
@@ -140,8 +143,8 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     return isErrorResult(validation) ? { ...validation, invalidValue: () => serialization.value } : makeNoError(serialization.value);
   };
 
-  private readonly internalValidateDeserialize_: InternalValidator = (value, internalState, path, container, validationMode) => {
-    const serializedValidation = this.validateSerializedForm_(value, internalState, path, container, validationMode);
+  private readonly internalValidateDeserialize_: InternalAsyncValidator = async (value, internalState, path, container, validationMode) => {
+    const serializedValidation = await this.validateSerializedForm_(value, internalState, path, container, validationMode);
     if (isErrorResult(serializedValidation)) {
       return serializedValidation;
     }
@@ -166,7 +169,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     return this.validateDeserializedForm_(value, internalState, path, container, validationMode);
   };
 
-  private readonly internalValidatorsByTransformationType_: Record<InternalTransformationType, InternalValidator> = {
+  private readonly internalValidatorsByTransformationType_: Record<InternalTransformationType, InternalAsyncValidator> = {
     deserialize: this.internalValidateDeserialize_,
     none: this.internalValidateNoTransform_,
     serialize: this.internalValidateSerialize_
@@ -230,7 +233,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     }
   };
 
-  private readonly validateDeserializedForm_: InternalValidator = (
+  private readonly validateDeserializedForm_: InternalAsyncValidator = async (
     value: any,
     _validatorOptions: InternalState,
     path: LazyPath,
@@ -241,7 +244,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
       return makeClonedValueNoError(value);
     }
 
-    const additionalValidation = this.customValidation_?.(value as ValueT);
+    const additionalValidation = await this.customValidation_?.(value as ValueT);
     const additionalValidationError = additionalValidation?.error;
     if (additionalValidationError !== undefined) {
       return makeErrorResultForValidationMode(cloner(value), validationMode, () => `${additionalValidationError}`, path);
@@ -250,14 +253,14 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     return makeClonedValueNoError(value);
   };
 
-  private readonly validateSerializedForm_: InternalValidator = (
+  private readonly validateSerializedForm_: InternalAsyncValidator = async (
     value: any,
     internalState: InternalState,
     path: LazyPath,
     container: GenericContainer,
     validationMode: ValidationMode
   ) => {
-    const validation = (this.serDes.serializedSchema() as any as InternalSchemaFunctions).internalValidate(
+    const validation = await (this.serDes.serializedSchema() as any as InternalSchemaFunctions).internalValidateAsync(
       value,
       internalState,
       path,

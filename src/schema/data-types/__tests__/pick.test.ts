@@ -26,13 +26,6 @@ describe('picked object schema', () => {
     deserializedValues: [null, undefined, '', [true], { one: 1 }, true, false]
   });
 
-  describe('deserialize', () => {
-    it("extra keys shouldn't be included", () => {
-      const deserialized = pickedSchema.deserialize({ one: 'ONE', two: "anything really since this isn't in the schema" });
-      expect(deserialized.error).toBeUndefined();
-      expectMatchingObjects(deserialized.deserialized, { one: 'ONE' });
-    });
-  });
   describe('deserializeAsync', () => {
     it("extra keys shouldn't be included", async () => {
       const deserialized = await pickedSchema.deserializeAsync({ one: 'ONE', two: "anything really since this isn't in the schema" });

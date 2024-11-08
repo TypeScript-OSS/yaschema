@@ -11,12 +11,6 @@ describe('custom schema', () => {
     expect(bigNumberSchema.schemaType).toBe('custom');
   });
 
-  it('of string matching schema should work with okToMutateInputValue=true', () => {
-    const validation = bigNumberSchema.deserialize({ bignumber: '3.14' }, { okToMutateInputValue: true });
-    expect(validation.deserialized).toEqual(new BigNumber('3.14'));
-    expect(validation.error).toBeUndefined();
-  });
-
   setupBasicTypeOperationsShouldWorkTests({
     schema: bigNumberSchema,
     deserializedValues: [new BigNumber('3.14')],

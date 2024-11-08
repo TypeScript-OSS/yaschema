@@ -4,7 +4,7 @@ import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.j
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
-import type { InternalAsyncValidator, InternalValidationErrorResult, InternalValidator } from '../../internal/types/internal-validation';
+import type { InternalAsyncValidator, InternalValidationErrorResult } from '../../internal/types/internal-validation';
 import { cloner } from '../../internal/utils/cloner.js';
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
 import { isErrorResult } from '../../internal/utils/is-error-result.js';
@@ -86,112 +86,6 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
 
   // Method Overrides
 
-  protected override overridableInternalValidate: InternalValidator = (value, internalState, path, container, validationMode) => {
-    const shouldStopOnFirstError =
-      validationMode === 'hard' ||
-      (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
-
-    if (value === null || Array.isArray(value) || typeof value !== 'object') {
-      return makeErrorResultForValidationMode(
-        cloner(value),
-        validationMode,
-        () => `Expected object, found ${getMeaningfulTypeof(value)}`,
-        path
-      );
-    }
-
-    if (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
-      return makeClonedValueNoError(value);
-    }
-
-    let errorResult: InternalValidationErrorResult | undefined;
-
-    let valueKeys: string[];
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      valueKeys = Object.keys(value);
-    } catch (e) {
-      // Ignoring just in case
-      valueKeys = [];
-    }
-
-    const keys = this.keys;
-    const areKeysRegExps = keys instanceof RegExp;
-
-    // If there are unknown keys, we'll deferred their processing until later so that other parallel models can do their updates first and
-    // we can avoid unnecessary cloning
-    const deferredUnknownKeys: string[] = [];
-
-    for (const valueKey of valueKeys) {
-      if (areKeysRegExps) {
-        if (!keys.test(valueKey)) {
-          if (this.allowUnknownKeys) {
-            deferredUnknownKeys.push(valueKey);
-          }
-          continue; // No validation necessary
-        }
-      } else {
-        const result = (keys as any as InternalSchemaFunctions).internalValidate(
-          valueKey,
-          internalState,
-          appendPathComponent(path, valueKey),
-          {},
-          validationMode
-        );
-        if (isErrorResult(result)) {
-          if (this.allowUnknownKeys) {
-            deferredUnknownKeys.push(valueKey);
-          }
-          continue; // No validation necessary
-        }
-      }
-
-      const result = (this.valueSchema as any as InternalSchemaFunctions).internalValidate(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        value[valueKey],
-        internalState,
-        appendPathComponent(path, valueKey),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        container[valueKey] ?? {},
-        validationMode
-      );
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const bestResult = isErrorResult(result) ? (container[valueKey] ?? result.invalidValue()) : result.value;
-      if (bestResult !== undefined) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        container[valueKey] = bestResult;
-      } else {
-        delete container[valueKey];
-      }
-
-      if (isMoreSevereResult(result, errorResult)) {
-        errorResult = result as InternalValidationErrorResult;
-
-        if (shouldStopOnFirstError) {
-          return { ...errorResult, invalidValue: () => container };
-        }
-      }
-    }
-
-    if (deferredUnknownKeys.length > 0 && internalState.transformation !== 'none') {
-      internalState.defer(() => {
-        for (const key of deferredUnknownKeys) {
-          if (!(key in container)) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            const cloned = safeClone(value[key]);
-            if (cloned !== undefined) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-              container[key] = cloned;
-            }
-          }
-        }
-      });
-    }
-
-    return errorResult !== undefined ? { ...errorResult, invalidValue: () => container } : makeNoError(container);
-  };
-
   protected override overridableInternalValidateAsync: InternalAsyncValidator = async (
     value,
     internalState,
@@ -256,22 +150,13 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
             continue; // No validation necessary
           }
         } else {
-          const result =
-            keys.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-              ? await (keys as any as InternalSchemaFunctions).internalValidateAsync(
-                  valueKey,
-                  internalState,
-                  appendPathComponent(path, valueKey),
-                  {},
-                  validationMode
-                )
-              : (keys as any as InternalSchemaFunctions).internalValidate(
-                  valueKey,
-                  internalState,
-                  appendPathComponent(path, valueKey),
-                  {},
-                  validationMode
-                );
+          const result = await (keys as any as InternalSchemaFunctions).internalValidateAsync(
+            valueKey,
+            internalState,
+            appendPathComponent(path, valueKey),
+            {},
+            validationMode
+          );
           if (isErrorResult(result)) {
             if (this.allowUnknownKeys) {
               deferredUnknownKeys.push(valueKey);
@@ -280,27 +165,15 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
           }
         }
 
-        const result =
-          this.valueSchema.estimatedValidationTimeComplexity > asyncTimeComplexityThreshold
-            ? await (this.valueSchema as any as InternalSchemaFunctions).internalValidateAsync(
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                value[valueKey],
-                internalState,
-                appendPathComponent(path, valueKey),
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                container[valueKey] ?? {},
-                validationMode
-              )
-            : (this.valueSchema as any as InternalSchemaFunctions).internalValidate(
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                value[valueKey],
-                internalState,
-                appendPathComponent(path, valueKey),
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                container[valueKey] ?? {},
-                validationMode
-              );
-
+        const result = await (this.valueSchema as any as InternalSchemaFunctions).internalValidateAsync(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          value[valueKey],
+          internalState,
+          appendPathComponent(path, valueKey),
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          container[valueKey] ?? {},
+          validationMode
+        );
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const bestResult = isErrorResult(result) ? (container[valueKey] ?? result.invalidValue()) : result.value;
         if (bestResult !== undefined) {

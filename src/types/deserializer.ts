@@ -1,3 +1,4 @@
+import type { TypeOrPromisedType } from './TypeOrPromisedType.js';
 import type { ValidationErrorLevel } from './validation-error-level';
 import type { ValidationOptions } from './validation-options';
 
@@ -7,8 +8,5 @@ export type DeserializationResult<T> =
   | { error?: undefined; errorPath?: undefined; errorLevel?: undefined; deserialized: T }
   | { error: string; errorPath: string; errorLevel: ValidationErrorLevel; deserialized?: T };
 
-/** Synchronously deserializes the specified value from JSON */
-export type Deserializer<T> = (value: any, options?: ValidationOptions) => DeserializationResult<T>;
-
 /** Asynchronously deserializes the specified value from JSON */
-export type AsyncDeserializer<T> = (value: any, options?: ValidationOptions) => Promise<DeserializationResult<T>>;
+export type AsyncDeserializer<T> = (value: any, options?: ValidationOptions) => TypeOrPromisedType<DeserializationResult<T>>;

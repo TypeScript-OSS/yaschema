@@ -35,7 +35,7 @@ class AnySchemaImpl extends InternalSchemaMakerImpl<any> implements AnySchema {
 
   // Method Overrides
 
-  protected override overridableInternalValidate = supportVariableSerializationFormsForBooleanValues(
+  protected override overridableInternalValidateAsync = supportVariableSerializationFormsForBooleanValues(
     () => this,
     (value, _validatorOptions, path, _container, validationMode): InternalValidationResult => {
       if (validationMode === 'none') {
@@ -54,8 +54,6 @@ class AnySchemaImpl extends InternalSchemaMakerImpl<any> implements AnySchema {
       return makeClonedValueNoError(value);
     }
   );
-
-  protected override overridableInternalValidateAsync = undefined;
 
   protected override overridableGetExtraToStringFields = undefined;
 }

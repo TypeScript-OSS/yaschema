@@ -34,10 +34,10 @@ describe('any schema', () => {
   });
 
   describe('complex objects', () => {
-    it('blob', () => {
+    it('blob', async () => {
       const complexSchema = schema.object({ blob: schema.any() });
 
-      const serialized = complexSchema.serialize({ blob: new Blob([Buffer.from('hi there', 'utf-8')]) });
+      const serialized = await complexSchema.serializeAsync({ blob: new Blob([Buffer.from('hi there', 'utf-8')]) });
       expect(serialized.error).toBeUndefined();
       expect((serialized.serialized! as JsonObject).blob).toBeInstanceOf(Blob);
     });

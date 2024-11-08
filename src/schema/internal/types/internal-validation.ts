@@ -1,3 +1,4 @@
+import type { TypeOrPromisedType } from '../../../types/TypeOrPromisedType.js';
 import type { ValidationErrorLevel } from '../../../types/validation-error-level';
 import type { ValidationMode } from '../../../types/validation-options';
 import type { InternalState } from '../internal-schema-maker-impl/internal-state';
@@ -11,23 +12,14 @@ import type { LazyPath } from './lazy-path';
  */
 export type InternalTransformationType = 'none' | 'serialize' | 'deserialize';
 
-/** Synchronously validates and potentially transforms the specified value */
-export type InternalValidator = (
-  value: any,
-  internalState: InternalState,
-  path: LazyPath,
-  container: GenericContainer,
-  validationMode: ValidationMode
-) => InternalValidationResult;
-
-/** Asynchronously validates and potentially transforms the specified value */
+/** Validates and potentially transforms the specified value */
 export type InternalAsyncValidator = (
   value: any,
   internalState: InternalState,
   path: LazyPath,
   container: GenericContainer,
   validationMode: ValidationMode
-) => Promise<InternalValidationResult> | InternalValidationResult;
+) => TypeOrPromisedType<InternalValidationResult>;
 
 export interface InternalValidationErrorResult<ValueT = any> {
   invalidValue: () => ValueT;
