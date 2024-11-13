@@ -1,6 +1,6 @@
 {
   "name": "yaschema",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "description": "Yet another schema",
   "keywords": [
     "schema",
@@ -44,8 +44,8 @@
     "@types/jest": "^29.5.14",
     "@types/lodash": "^4.17.13",
     "@types/lodash-es": "^4.17.12",
-    "@typescript-eslint/eslint-plugin": "^8.13.0",
-    "@typescript-eslint/parser": "^8.13.0",
+    "@typescript-eslint/eslint-plugin": "^8.14.0",
+    "@typescript-eslint/parser": "^8.14.0",
     "bignumber.js": "^9.1.2",
     "esbuild": "0.24.0",
     "esbuild-plugin-tsc": "0.4.0",
