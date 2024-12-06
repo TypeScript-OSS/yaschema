@@ -13,7 +13,7 @@ describe('optional schema', () => {
     });
     it('schema.schemaType should be "object"', () => {
       expect(optionalSchema.schema.schemaType).toBe('object');
-      expect((optionalSchema.schema as any as schema.ObjectSchema<any>).map?.one).toBeDefined();
+      expect((optionalSchema.schema as any as schema.ObjectSchema<any, any>).map?.one).toBeDefined();
     });
   });
 
@@ -29,7 +29,7 @@ describe('optional schema', () => {
     it('schema.schemaType should be "object"', () => {
       expect((optionalSchema as schema.OptionalSchema<any>).schema.schemaType).toBe('object');
       expect(objectSchema.map?.one).toBeDefined();
-      expect(((optionalSchema as schema.OptionalSchema<any>).schema as any as schema.ObjectSchema<any>).map?.one).toBeDefined();
+      expect(((optionalSchema as schema.OptionalSchema<any>).schema as any as schema.ObjectSchema<any, any>).map?.one).toBeDefined();
     });
   });
 });

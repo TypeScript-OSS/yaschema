@@ -1,3 +1,4 @@
+import type { ObjectInference } from '../../../types/ObjectInference.js';
 import type { Schema } from '../../../types/schema';
 
 // DO NOT EXPORT THESE TYPES, IT MESSES UP TYPE INFERENCE
@@ -20,9 +21,10 @@ type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysD
   Partial<PickPossiblyUndefinedValues<ObjectT>>;
 
 /** Requires an object, where each key has it's own schema. */
-export interface ObjectSchema<ObjectT extends Record<string, any>> extends Schema<TreatUndefinedAsOptional<ObjectT>> {
+export interface ObjectSchema<ObjectT extends Record<string, any>, InferT extends ObjectInference = 'infer'>
+  extends Schema<InferT extends 'infer' ? TreatUndefinedAsOptional<ObjectT> : ObjectT> {
   readonly schemaType: 'object';
-  readonly clone: () => ObjectSchema<ObjectT>;
+  readonly clone: () => ObjectSchema<ObjectT, InferT>;
 
   readonly map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
 
