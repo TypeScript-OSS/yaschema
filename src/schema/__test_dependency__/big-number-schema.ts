@@ -4,7 +4,7 @@ import { schema } from '../../exports.js';
 import { makeSerDes } from '../../types/ser-des.js';
 import type { CustomValidationResult } from '../data-types/makers/custom';
 
-const bigNumberSerDes = makeSerDes({
+const bigNumberSerDes = makeSerDes<BigNumber, { bignumber: string }>({
   deserialize: (value) => ({ deserialized: new BigNumber(value.bignumber) }),
   isValueType: (value): value is BigNumber => BigNumber.isBigNumber(value),
   serialize: (value) => ({ serialized: { bignumber: value.toFixed() } }),
