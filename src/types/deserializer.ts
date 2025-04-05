@@ -10,3 +10,6 @@ export type DeserializationResult<T> =
 
 /** Deserializes the specified value from JSON */
 export type AsyncDeserializer<T> = (value: any, options?: ValidationOptions) => TypeOrPromisedType<DeserializationResult<T>>;
+
+/** Deserializes the specified value from JSON.  This throws if the schema requires async deserialization. */
+export type SyncDeserializer<T> = (value: any, options?: Omit<ValidationOptions, 'forceSync'>) => DeserializationResult<T>;

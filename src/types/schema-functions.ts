@@ -1,9 +1,9 @@
-import type { AsyncCloner } from './cloner.js';
-import type { AsyncDeserializer } from './deserializer';
+import type { AsyncCloner, SyncCloner } from './cloner.js';
+import type { AsyncDeserializer, SyncDeserializer } from './deserializer';
 import type { Schema } from './schema';
 import type { SchemaPreferredValidationMode } from './schema-preferred-validation';
-import type { AsyncSerializer } from './serializer';
-import type { AsyncValidator } from './validator';
+import type { AsyncSerializer, SyncSerializer } from './serializer';
+import type { AsyncValidator, SyncValidator } from './validator';
 
 export interface SchemaFunctions<ValueT> {
   /** Returns a new schema that requires that either this schema is satisfied or that the value is `null`. */
@@ -37,12 +37,24 @@ export interface SchemaFunctions<ValueT> {
   /** Deeply clones a value */
   cloneValueAsync: AsyncCloner<ValueT>;
 
+  /** Deeply clones a value.  This throws if the schema requires async cloning. */
+  cloneValue: SyncCloner<ValueT>;
+
   /** Deserialize (and validate) a value */
   deserializeAsync: AsyncDeserializer<ValueT>;
+
+  /** Deserialize (and validate) a value.  This throws if the schema requires async deserialization. */
+  deserialize: SyncDeserializer<ValueT>;
 
   /** Serialize (and validate) a value */
   serializeAsync: AsyncSerializer<ValueT>;
 
+  /** Serialize (and validate) a value.  This throws if the schema requires async serialization. */
+  serialize: SyncSerializer<ValueT>;
+
   /** Validate a value */
   validateAsync: AsyncValidator;
+
+  /** Validate a value.  This throws if the schema requires async validation. */
+  validate: SyncValidator;
 }

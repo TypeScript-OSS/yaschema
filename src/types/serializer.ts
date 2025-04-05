@@ -10,3 +10,6 @@ export type SerializationResult =
 
 /** Serializes the specified value into JSON */
 export type AsyncSerializer<T> = (value: T, options?: ValidationOptions) => TypeOrPromisedType<SerializationResult>;
+
+/** Serializes the specified value into JSON.  This throws if the schema requires async serialization. */
+export type SyncSerializer<T> = (value: T, options?: Omit<ValidationOptions, 'forceSync'>) => SerializationResult;

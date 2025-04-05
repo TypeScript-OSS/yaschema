@@ -1,12 +1,12 @@
-import type { AsyncCloner } from '../../../types/cloner.js';
-import type { AsyncDeserializer } from '../../../types/deserializer';
+import type { AsyncCloner, SyncCloner } from '../../../types/cloner.js';
+import type { AsyncDeserializer, SyncDeserializer } from '../../../types/deserializer';
 import type { PureSchema } from '../../../types/pure-schema';
 import type { Schema } from '../../../types/schema';
 import type { SchemaFunctions } from '../../../types/schema-functions';
 import type { SchemaPreferredValidationMode } from '../../../types/schema-preferred-validation';
 import type { SchemaType } from '../../../types/schema-type';
-import type { AsyncSerializer } from '../../../types/serializer';
-import type { AsyncValidator } from '../../../types/validator';
+import type { AsyncSerializer, SyncSerializer } from '../../../types/serializer';
+import type { AsyncValidator, SyncValidator } from '../../../types/validator';
 import { dynamicAllowNull, dynamicNot, dynamicOptional } from '../circular-support/funcs.js';
 import type { InternalSchemaFunctions } from '../types/internal-schema-functions';
 import type { InternalAsyncValidator } from '../types/internal-validation';
@@ -15,6 +15,10 @@ import { makeExternalAsyncCloner } from './make-external-async-cloner.js';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer.js';
 import { makeExternalAsyncSerializer } from './make-external-async-serializer.js';
 import { makeExternalAsyncValidator } from './make-external-async-validator.js';
+import { makeExternalSyncCloner } from './make-external-sync-cloner.js';
+import { makeExternalSyncDeserializer } from './make-external-sync-deserializer.js';
+import { makeExternalSyncSerializer } from './make-external-sync-serializer.js';
+import { makeExternalSyncValidator } from './make-external-sync-validator.js';
 
 export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<ValueT>, SchemaFunctions<ValueT>, InternalSchemaFunctions {
   /** A marker that can be used for testing if this is a YaSchema schema */
@@ -148,12 +152,24 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
   /** Deeply clones a value */
   public readonly cloneValueAsync: AsyncCloner<ValueT> = makeExternalAsyncCloner<ValueT>(this.internalValidateAsync);
 
+  /** Deeply clones a value.  This throws if the schema requires async cloning. */
+  public readonly cloneValue: SyncCloner<ValueT> = makeExternalSyncCloner<ValueT>(this.cloneValueAsync);
+
   /** Deserialize (and validate) a value */
   public readonly deserializeAsync: AsyncDeserializer<ValueT> = makeExternalAsyncDeserializer<ValueT>(this.internalValidateAsync);
+
+  /** Deserialize (and validate) a value.  This throws if the schema requires async deserialization. */
+  public readonly deserialize: SyncDeserializer<ValueT> = makeExternalSyncDeserializer<ValueT>(this.deserializeAsync);
 
   /** Serialize (and validate) a value */
   public readonly serializeAsync: AsyncSerializer<ValueT> = makeExternalAsyncSerializer<ValueT>(this.internalValidateAsync);
 
+  /** Serialize (and validate) a value.  This throws if the schema requires async serialization. */
+  public readonly serialize: SyncSerializer<ValueT> = makeExternalSyncSerializer<ValueT>(this.serializeAsync);
+
   /** Validate a value */
   public readonly validateAsync: AsyncValidator = makeExternalAsyncValidator(this.internalValidateAsync);
+
+  /** Validate a value.  This throws if the schema requires async validation. */
+  public readonly validate: SyncValidator = makeExternalSyncValidator(this.validateAsync);
 }
