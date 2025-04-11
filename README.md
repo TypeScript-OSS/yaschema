@@ -11,11 +11,13 @@ We built yaschema as part of our type and API spec system, to be TypeScript firs
 
 With yaschema, you can define both runtime and compile-time validated types with a single definition.
 
-Schemas supports three main operations:
+Schemas supports these main operations:
 
-- `validateAsync`  - validate without transforming
-- `serializeAsync` - validate and transform to a JSON-compatible value
-- `deserializeAsync` - validate and transform from a JSON-compatible value
+- `validate` / `validateAsync`  - validate without transforming
+- `serialize` / `serializeAsync` - validate and transform to a JSON-compatible value
+- `deserialize` / `deserializeAsync` - validate and transform from a JSON-compatible value
+- `stringify` / `stringifyAsync` - validate and transform to a JSON string
+- `parse` / `parseAsync` - validate and transform from a JSON string
 
 ## Basic Example
 

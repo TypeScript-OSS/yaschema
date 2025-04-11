@@ -10,5 +10,9 @@ export type ValidationResult =
 /** Validates the specified value */
 export type AsyncValidator = (value: any, options?: ValidationOptions) => TypeOrPromisedType<ValidationResult>;
 
-/** Validates the specified value.  This throws if the schema requires async validation. */
+/**
+ * Validates the specified value
+ *
+ * @throws if the schema requires async validation
+ */
 export type SyncValidator = (value: any, options?: Omit<ValidationOptions, 'forceSync'>) => ValidationResult;

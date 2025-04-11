@@ -1,11 +1,11 @@
 import type { AsyncCloner, SyncCloner } from '../../../types/cloner.js';
-import type { AsyncDeserializer, SyncDeserializer } from '../../../types/deserializer';
+import type { AsyncDeserializer, AsyncParser, SyncDeserializer, SyncParser } from '../../../types/deserializer';
 import type { PureSchema } from '../../../types/pure-schema';
 import type { Schema } from '../../../types/schema';
 import type { SchemaFunctions } from '../../../types/schema-functions';
 import type { SchemaPreferredValidationMode } from '../../../types/schema-preferred-validation';
 import type { SchemaType } from '../../../types/schema-type';
-import type { AsyncSerializer, SyncSerializer } from '../../../types/serializer';
+import type { AsyncSerializer, AsyncStringifier, SyncSerializer, SyncStringifier } from '../../../types/serializer';
 import type { AsyncValidator, SyncValidator } from '../../../types/validator';
 import { dynamicAllowNull, dynamicNot, dynamicOptional } from '../circular-support/funcs.js';
 import type { InternalSchemaFunctions } from '../types/internal-schema-functions';
@@ -13,11 +13,15 @@ import type { InternalAsyncValidator } from '../types/internal-validation';
 import { pickNextTopValidationMode } from '../utils/pick-next-top-validation-mode.js';
 import { makeExternalAsyncCloner } from './make-external-async-cloner.js';
 import { makeExternalAsyncDeserializer } from './make-external-async-deserializer.js';
+import { makeExternalAsyncParser } from './make-external-async-parser.js';
 import { makeExternalAsyncSerializer } from './make-external-async-serializer.js';
+import { makeExternalAsyncStringifier } from './make-external-async-stringifier.js';
 import { makeExternalAsyncValidator } from './make-external-async-validator.js';
 import { makeExternalSyncCloner } from './make-external-sync-cloner.js';
 import { makeExternalSyncDeserializer } from './make-external-sync-deserializer.js';
+import { makeExternalSyncParser } from './make-external-sync-parser.js';
 import { makeExternalSyncSerializer } from './make-external-sync-serializer.js';
+import { makeExternalSyncStringifier } from './make-external-sync-stringifier.js';
 import { makeExternalSyncValidator } from './make-external-sync-validator.js';
 
 export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<ValueT>, SchemaFunctions<ValueT>, InternalSchemaFunctions {
@@ -152,20 +156,58 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
   /** Deeply clones a value */
   public readonly cloneValueAsync: AsyncCloner<ValueT> = makeExternalAsyncCloner<ValueT>(this.internalValidateAsync);
 
-  /** Deeply clones a value.  This throws if the schema requires async cloning. */
+  /**
+   * Deeply clones a value
+   *
+   * @throws if the schema requires async cloning
+   */
   public readonly cloneValue: SyncCloner<ValueT> = makeExternalSyncCloner<ValueT>(this.cloneValueAsync);
 
   /** Deserialize (and validate) a value */
   public readonly deserializeAsync: AsyncDeserializer<ValueT> = makeExternalAsyncDeserializer<ValueT>(this.internalValidateAsync);
 
-  /** Deserialize (and validate) a value.  This throws if the schema requires async deserialization. */
+  /**
+   * Deserialize (and validate) a value.
+   *
+   * @throws if the schema requires async deserialization
+   */
   public readonly deserialize: SyncDeserializer<ValueT> = makeExternalSyncDeserializer<ValueT>(this.deserializeAsync);
+
+  /** Parse and deserialize (and validate) a value from a JSON string */
+  public readonly parseAsync: AsyncParser<ValueT> = makeExternalAsyncParser<ValueT>(this.deserializeAsync);
+
+  /**
+   * Parse and deserialize (and validate) a value from a JSON string.
+   *
+   * @throws with a `DeserializationResult<T> & { error: string }` if parsing fails
+   * @throws if the schema requires async deserialization
+   */
+  public readonly parse: SyncParser<ValueT> = makeExternalSyncParser<ValueT>(this.parseAsync);
 
   /** Serialize (and validate) a value */
   public readonly serializeAsync: AsyncSerializer<ValueT> = makeExternalAsyncSerializer<ValueT>(this.internalValidateAsync);
 
-  /** Serialize (and validate) a value.  This throws if the schema requires async serialization. */
+  /**
+   * Serialize (and validate) a value
+   *
+   * @throws if the schema requires async serialization
+   */
   public readonly serialize: SyncSerializer<ValueT> = makeExternalSyncSerializer<ValueT>(this.serializeAsync);
+
+  /**
+   * Serialize and stringify the specified value into a JSON string
+   *
+   * @throws with a `SerializationResult<T> & { error: string }` if stringification fails
+   */
+  public readonly stringifyAsync: AsyncStringifier<ValueT> = makeExternalAsyncStringifier<ValueT>(this.serializeAsync);
+
+  /**
+   * Serialize and stringify the specified value into a JSON string
+   *
+   * @throws with a `SerializationResult<T> & { error: string }` if stringification fails
+   * @throws if the schema requires async serialization
+   */
+  public readonly stringify: SyncStringifier<ValueT> = makeExternalSyncStringifier<ValueT>(this.stringifyAsync);
 
   /** Validate a value */
   public readonly validateAsync: AsyncValidator = makeExternalAsyncValidator(this.internalValidateAsync);

@@ -11,5 +11,9 @@ export type CloningResult<T> =
 /** Deeply clones the specified value */
 export type AsyncCloner<T> = (value: T, options?: ValidationOptions) => TypeOrPromisedType<CloningResult<T>>;
 
-/** Deeply clones the specified value.  This throws if the schema requires async cloning. */
+/**
+ * Deeply clones the specified value
+ *
+ * @throws if the schema requires async cloning
+ */
 export type SyncCloner<T> = (value: T, options?: Omit<ValidationOptions, 'forceSync'>) => CloningResult<T>;
