@@ -11,6 +11,7 @@
   "main": "./lib/cjs/exports.js",
   "module": "./lib/mjs/exports.mjs",
   "exports": {
+    "types": "./lib/exports.d.ts",
     "import": "./lib/mjs/exports.mjs",
     "require": "./lib/cjs/exports.js"
   },
