@@ -1,6 +1,6 @@
 {
   "name": "yaschema",
-  "version": "4.4.5",
+  "version": "5.0.0",
   "description": "Yet another schema",
   "keywords": [
     "schema",
@@ -27,7 +27,10 @@
     "generate:docs": "npx typedoc src/exports.ts --skipErrorChecking",
     "lint": "eslint 'src/**/*.ts?(x)' --max-warnings 0",
     "prepublishOnly": "yarn clean && yarn test && yarn lint && yarn test:audit && yarn clean && yarn build && yarn generate:docs",
-    "test": "yarn test:check-circular-dependencies && yarn test:unit-tests",
+    "test": "yarn test:check-circular-dependencies && yarn test:unit-tests && yarn test:additional-tests",
+    "test:additional-tests": "yarn test:compilation-tests && yarn test:anti-compilation-tests",
+    "test:anti-compilation-tests": "for f in `ls additional-tests/should-not-compile/*.ts`; do echo $f; (tsc --noEmit $f > /dev/null) && echo $f 'compiled successfully and should NOT have' && exit 1 || true; done",
+    "test:compilation-tests": "for f in `ls additional-tests/should-compile/*.ts`; do echo $f; tsc --noEmit $f; done",
     "test:audit": "yarn audit --level moderate; [[ $? -ge 4 ]] && exit 1 || exit 0",
     "test:check-circular-dependencies": "yarn build && npx madge --circular ./lib",
     "test:unit-tests:": "NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand --coverage",

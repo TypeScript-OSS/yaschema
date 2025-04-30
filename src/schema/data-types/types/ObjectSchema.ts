@@ -1,4 +1,3 @@
-import type { ObjectInference } from '../../../types/ObjectInference.js';
 import type { Schema } from '../../../types/schema';
 
 // DO NOT EXPORT THESE TYPES, IT MESSES UP TYPE INFERENCE
@@ -21,10 +20,8 @@ type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysD
   Partial<PickPossiblyUndefinedValues<ObjectT>>;
 
 /** Requires an object, where each key has it's own schema. */
-export interface ObjectSchema<ObjectT extends Record<string, any>, InferT extends ObjectInference = 'infer'>
-  extends Schema<InferT extends 'infer' ? TreatUndefinedAsOptional<ObjectT> : ObjectT> {
+interface BaseObjectSchema<ObjectT extends Record<string, any>> {
   readonly schemaType: 'object';
-  readonly clone: () => ObjectSchema<ObjectT, InferT>;
 
   readonly map: InferRecordOfSchemasFromRecordOfValues<ObjectT>;
 
@@ -32,3 +29,23 @@ export interface ObjectSchema<ObjectT extends Record<string, any>, InferT extend
   allowUnknownKeys: boolean;
   readonly setAllowUnknownKeys: (allow: boolean) => this;
 }
+
+/** Requires an object, where each key has it's own schema.  The keys of values that may be `undefined` are treated as optional. */
+export interface ObjectSchema<ObjectT extends Record<string, any>>
+  extends BaseObjectSchema<ObjectT>,
+    Schema<TreatUndefinedAsOptional<ObjectT>> {
+  readonly schemaType: 'object';
+
+  readonly clone: () => ObjectSchema<ObjectT>;
+}
+
+/** Requires an object, where each key has it's own schema.  Unlike with `ObjectSchema`, the keys of values that may be `undefined` are not
+ * automatically treated as optional.  You may explicitly provide a type parameter when using `…_noAutoOptional` methods, and that may
+ * include optional keys. */
+export interface ObjectSchema_noAutoOptional<ObjectT extends Record<string, any>> extends BaseObjectSchema<ObjectT>, Schema<ObjectT> {
+  readonly schemaType: 'object';
+  readonly clone: () => ObjectSchema_noAutoOptional<ObjectT>;
+}
+
+/** An object schema that either automatically infers optional keys or does not. */
+export type AnyObjectSchema<ObjectT extends Record<string, any>> = ObjectSchema<ObjectT> | ObjectSchema_noAutoOptional<ObjectT>;

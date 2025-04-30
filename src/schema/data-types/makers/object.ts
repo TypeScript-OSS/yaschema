@@ -4,7 +4,6 @@ import { safeClone } from '../../../internal/utils/safeClone.js';
 import { whileAsync } from '../../../internal/utils/whileAsync.js';
 import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
-import type { ObjectInference } from '../../../types/ObjectInference.js';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
@@ -17,7 +16,7 @@ import { makeErrorResultForValidationMode } from '../../internal/utils/make-erro
 import { makeClonedValueNoError, makeNoError } from '../../internal/utils/make-no-error.js';
 import { appendPathComponent } from '../../internal/utils/path-utils.js';
 import { optional } from '../../marker-types/makers/optional.js';
-import type { ObjectSchema } from '../types/ObjectSchema';
+import type { AnyObjectSchema, ObjectSchema, ObjectSchema_noAutoOptional } from '../types/ObjectSchema';
 
 // DO NOT EXPORT THESE TYPES, IT MESSES UP TYPE INFERENCE
 
@@ -38,42 +37,50 @@ type PickPossiblyUndefinedValues<Base> = Omit<Base, keyof PickAlwaysDefinedValue
 type TreatUndefinedAsOptional<ObjectT extends Record<string, any>> = PickAlwaysDefinedValues<ObjectT> &
   Partial<PickPossiblyUndefinedValues<ObjectT>>;
 
-/** Requires an object.  Separate schemas a specified per key. */
-export const object = <ObjectT extends Record<string, any>, InferT extends ObjectInference = 'infer'>(
-  map: InferRecordOfSchemasFromRecordOfValues<ObjectT>
-): ObjectSchema<ObjectT, InferT> => new ObjectSchemaImpl<ObjectT, InferT>(map);
+/** Requires an object.  Separate schemas a specified per key.  The keys of values that may be `undefined` are treated as optional. */
+export const object = <ObjectT extends Record<string, any>>(map: InferRecordOfSchemasFromRecordOfValues<ObjectT>): ObjectSchema<ObjectT> =>
+  new ObjectSchemaImpl<ObjectT>(map);
 
-/** Creates an object type that extends another object type  */
-export const extendsObject = <
-  ExtendedObjectT extends Record<string, any>,
-  ObjectT extends Record<string, any>,
-  ExtendedObjectInferT extends ObjectInference = 'infer',
-  ObjectInferT extends ObjectInference = 'infer',
-  OutInferT extends ObjectInference = ExtendedObjectInferT | ObjectInferT
->(
-  baseSchema: ObjectSchema<ExtendedObjectT, ExtendedObjectInferT>,
-  subSchema: ObjectSchema<ObjectT, ObjectInferT>
-): ObjectSchema<ExtendedObjectT & ObjectT, OutInferT> =>
+/** Requires an object.  Separate schemas a specified per key.  Unlike with `object`, the keys of values that may be `undefined` are not
+ * automatically treated as optional.  You may explicitly provide a type parameter when using `…_noAutoOptional` methods, and that may
+ * include optional keys. */
+export const object_noAutoOptional = <ObjectT extends Record<string, any>>(
+  map: InferRecordOfSchemasFromRecordOfValues<ObjectT>
+): ObjectSchema_noAutoOptional<ObjectT> => new ObjectSchemaImpl_noAutoOptional<ObjectT>(map);
+
+/** Creates an object type that extends another object type.  The keys of values that may be `undefined` are treated as optional. */
+export const extendsObject = <ExtendedObjectT extends Record<string, any>, ObjectT extends Record<string, any>>(
+  baseSchema: AnyObjectSchema<ExtendedObjectT>,
+  subSchema: AnyObjectSchema<ObjectT>
+): ObjectSchema<ExtendedObjectT & ObjectT> =>
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   new ObjectSchemaImpl({
     ...baseSchema.map,
     ...subSchema.map
   }) as any;
 
+/** Creates an object type that extends another object type.  Unlike with `extendsObject`, the keys of values that may be `undefined` are
+ * not automatically treated as optional.  You may explicitly provide type parameters when using `…_noAutoOptional` methods, and those may
+ * include optional keys. */
+export const extendsObject_noAutoOptional = <ExtendedObjectT extends Record<string, any>, ObjectT extends Record<string, any>>(
+  baseSchema: AnyObjectSchema<ExtendedObjectT>,
+  subSchema: AnyObjectSchema<ObjectT>
+): ObjectSchema_noAutoOptional<ExtendedObjectT & ObjectT> =>
+  new ObjectSchemaImpl_noAutoOptional<ExtendedObjectT & ObjectT>({
+    ...baseSchema.map,
+    ...subSchema.map
+  } as ExtendedObjectT & ObjectT);
+
 /** Creates an object type that extends 2 other object types  */
 export const extendsObject2 = <
   ExtendedObjectTA extends Record<string, any>,
   ExtendedObjectTB extends Record<string, any>,
-  ObjectT extends Record<string, any>,
-  ExtendedObjectInferTA extends ObjectInference = 'infer',
-  ExtendedObjectInferTB extends ObjectInference = 'infer',
-  ObjectInferT extends ObjectInference = 'infer',
-  OutInferT extends ObjectInference = ExtendedObjectInferTA | ExtendedObjectInferTB | ObjectInferT
+  ObjectT extends Record<string, any>
 >(
-  baseSchemaA: ObjectSchema<ExtendedObjectTA, ExtendedObjectInferTA>,
-  baseSchemaB: ObjectSchema<ExtendedObjectTB, ExtendedObjectInferTB>,
-  subSchema: ObjectSchema<ObjectT, ObjectInferT>
-): ObjectSchema<ExtendedObjectTA & ExtendedObjectTB & ObjectT, OutInferT> =>
+  baseSchemaA: AnyObjectSchema<ExtendedObjectTA>,
+  baseSchemaB: AnyObjectSchema<ExtendedObjectTB>,
+  subSchema: AnyObjectSchema<ObjectT>
+): ObjectSchema<ExtendedObjectTA & ExtendedObjectTB & ObjectT> =>
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   new ObjectSchemaImpl({
     ...baseSchemaA.map,
@@ -81,23 +88,34 @@ export const extendsObject2 = <
     ...subSchema.map
   }) as any;
 
+/** Creates an object type that extends 2 other object types  */
+export const extendsObject2_noAutoOptional = <
+  ExtendedObjectTA extends Record<string, any>,
+  ExtendedObjectTB extends Record<string, any>,
+  ObjectT extends Record<string, any>
+>(
+  baseSchemaA: AnyObjectSchema<ExtendedObjectTA>,
+  baseSchemaB: AnyObjectSchema<ExtendedObjectTB>,
+  subSchema: AnyObjectSchema<ObjectT>
+): ObjectSchema_noAutoOptional<ExtendedObjectTA & ExtendedObjectTB & ObjectT> =>
+  new ObjectSchemaImpl_noAutoOptional<ExtendedObjectTA & ExtendedObjectTB & ObjectT>({
+    ...baseSchemaA.map,
+    ...baseSchemaB.map,
+    ...subSchema.map
+  } as ExtendedObjectTA & ExtendedObjectTB & ObjectT);
+
 /** Creates an object type that extends 3 other object types  */
 export const extendsObject3 = <
   ExtendedObjectTA extends Record<string, any>,
   ExtendedObjectTB extends Record<string, any>,
   ExtendedObjectTC extends Record<string, any>,
-  ObjectT extends Record<string, any>,
-  ExtendedObjectInferTA extends ObjectInference = 'infer',
-  ExtendedObjectInferTB extends ObjectInference = 'infer',
-  ExtendedObjectInferTC extends ObjectInference = 'infer',
-  ObjectInferT extends ObjectInference = 'infer',
-  OutInferT extends ObjectInference = ExtendedObjectInferTA | ExtendedObjectInferTB | ExtendedObjectInferTC | ObjectInferT
+  ObjectT extends Record<string, any>
 >(
-  baseSchemaA: ObjectSchema<ExtendedObjectTA, ExtendedObjectInferTA>,
-  baseSchemaB: ObjectSchema<ExtendedObjectTB, ExtendedObjectInferTB>,
-  baseSchemaC: ObjectSchema<ExtendedObjectTC, ExtendedObjectInferTC>,
-  subSchema: ObjectSchema<ObjectT, ObjectInferT>
-): ObjectSchema<ExtendedObjectTA & ExtendedObjectTB & ExtendedObjectTC & ObjectT, OutInferT> =>
+  baseSchemaA: AnyObjectSchema<ExtendedObjectTA>,
+  baseSchemaB: AnyObjectSchema<ExtendedObjectTB>,
+  baseSchemaC: AnyObjectSchema<ExtendedObjectTC>,
+  subSchema: AnyObjectSchema<ObjectT>
+): ObjectSchema<ExtendedObjectTA & ExtendedObjectTB & ExtendedObjectTC & ObjectT> =>
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   new ObjectSchemaImpl({
     ...baseSchemaA.map,
@@ -106,33 +124,42 @@ export const extendsObject3 = <
     ...subSchema.map
   }) as any;
 
-/** Creates a version of the specified object schema where all values are optional.  This doesn't create a distinct schema type.  */
-export const partial = <
-  ObjectT extends Record<string, any>,
-  InferT extends ObjectInference = 'infer',
-  OutInferT extends ObjectInference = InferT
+/** Creates an object type that extends 3 other object types  */
+export const extendsObject3_noAutoOptional = <
+  ExtendedObjectTA extends Record<string, any>,
+  ExtendedObjectTB extends Record<string, any>,
+  ExtendedObjectTC extends Record<string, any>,
+  ObjectT extends Record<string, any>
 >(
-  schema: ObjectSchema<ObjectT, InferT>
-): ObjectSchema<Partial<ObjectT>, OutInferT> => {
+  baseSchemaA: AnyObjectSchema<ExtendedObjectTA>,
+  baseSchemaB: AnyObjectSchema<ExtendedObjectTB>,
+  baseSchemaC: AnyObjectSchema<ExtendedObjectTC>,
+  subSchema: AnyObjectSchema<ObjectT>
+): ObjectSchema_noAutoOptional<ExtendedObjectTA & ExtendedObjectTB & ExtendedObjectTC & ObjectT> =>
+  new ObjectSchemaImpl_noAutoOptional<ExtendedObjectTA & ExtendedObjectTB & ExtendedObjectTC & ObjectT>({
+    ...baseSchemaA.map,
+    ...baseSchemaB.map,
+    ...baseSchemaC.map,
+    ...subSchema.map
+  } as ExtendedObjectTA & ExtendedObjectTB & ExtendedObjectTC & ObjectT);
+
+/** Creates a version of the specified object schema where all values are optional.  This doesn't create a distinct schema type.  */
+export const partial = <ObjectT extends Record<string, any>>(schema: AnyObjectSchema<ObjectT>): ObjectSchema<Partial<ObjectT>> => {
   const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>> = {};
   for (const key of Object.keys(schema.map) as Array<keyof typeof schema.map>) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     outputMap[key] = optional(schema.map[key]) as any;
   }
 
-  return new ObjectSchemaImpl<Partial<ObjectT>, OutInferT>(outputMap as InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>);
+  return new ObjectSchemaImpl<Partial<ObjectT>>(outputMap as InferRecordOfSchemasFromRecordOfValues<Partial<ObjectT>>);
 };
 
-/** Creates a version of the specified object schema with the same number or fewer keys, by picking keys */
-export const pick = <
-  ObjectT extends Record<string, any>,
-  KeyT extends keyof ObjectT,
-  InferT extends ObjectInference = 'infer',
-  OutInferT extends ObjectInference = InferT
->(
-  schema: ObjectSchema<ObjectT, InferT>,
+/** Creates a version of the specified object schema with the same number or fewer keys, by picking keys.  The keys of values that may be
+ * `undefined` are treated as optional. */
+export const pick = <ObjectT extends Record<string, any>, KeyT extends keyof ObjectT>(
+  schema: AnyObjectSchema<ObjectT>,
   pickedKeys: KeyT[]
-): ObjectSchema<Pick<ObjectT, KeyT>, OutInferT> => {
+): ObjectSchema<Pick<ObjectT, KeyT>> => {
   const pickedKeysSet = new Set<keyof ObjectT>(pickedKeys);
 
   const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Pick<ObjectT, KeyT>>> = {};
@@ -143,19 +170,35 @@ export const pick = <
     }
   }
 
-  return new ObjectSchemaImpl<Pick<ObjectT, KeyT>, OutInferT>(outputMap as InferRecordOfSchemasFromRecordOfValues<Pick<ObjectT, KeyT>>);
+  return new ObjectSchemaImpl<Pick<ObjectT, KeyT>>(outputMap as InferRecordOfSchemasFromRecordOfValues<Pick<ObjectT, KeyT>>);
 };
 
-/** Creates a version of the specified object schema with the same number or fewer keys, by omitting keys */
-export const omit = <
-  ObjectT extends Record<string, any>,
-  KeyT extends keyof ObjectT,
-  InferT extends ObjectInference = 'infer',
-  OutInferT extends ObjectInference = InferT
->(
-  schema: ObjectSchema<ObjectT, InferT>,
+/** Creates a version of the specified object schema with the same number or fewer keys, by picking keys.  Unlike with `pick`, the keys of
+ * values that may be `undefined` are not automatically treated as optional.  You may explicitly provide type parameters when using
+ * `…_noAutoOptional` methods, and those may include optional keys. */
+export const pick_noAutoOptional = <ObjectT extends Record<string, any>, KeyT extends keyof ObjectT>(
+  schema: AnyObjectSchema<ObjectT>,
+  pickedKeys: KeyT[]
+): ObjectSchema_noAutoOptional<Pick<ObjectT, KeyT>> => {
+  const pickedKeysSet = new Set<keyof ObjectT>(pickedKeys);
+
+  const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Pick<ObjectT, KeyT>>> = {};
+  for (const key of Object.keys(schema.map) as Array<keyof typeof schema.map>) {
+    if (pickedKeysSet.has(key)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      outputMap[key as KeyT] = schema.map[key] as any;
+    }
+  }
+
+  return new ObjectSchemaImpl_noAutoOptional<Pick<ObjectT, KeyT>>(outputMap as InferRecordOfSchemasFromRecordOfValues<Pick<ObjectT, KeyT>>);
+};
+
+/** Creates a version of the specified object schema with the same number or fewer keys, by omitting keys.  The keys of values that may be
+ * `undefined` are treated as optional. */
+export const omit = <ObjectT extends Record<string, any>, KeyT extends keyof ObjectT>(
+  schema: AnyObjectSchema<ObjectT>,
   omittedKeys: KeyT[]
-): ObjectSchema<Omit<ObjectT, KeyT>, OutInferT> => {
+): ObjectSchema<Omit<ObjectT, KeyT>> => {
   const omittedKeysSet = new Set<keyof ObjectT>(omittedKeys);
 
   const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Omit<ObjectT, KeyT>>> = {};
@@ -166,17 +209,36 @@ export const omit = <
     }
   }
 
-  return new ObjectSchemaImpl<Omit<ObjectT, KeyT>, OutInferT>(
+  return new ObjectSchemaImpl<Omit<ObjectT, KeyT>>(
     outputMap as InferRecordOfSchemasFromRecordOfValues<Omit<ObjectT, KeyT>>
-  ) as any as ObjectSchema<Omit<ObjectT, KeyT>, OutInferT>;
+  ) as any as ObjectSchema<Omit<ObjectT, KeyT>>;
+};
+
+/** Creates a version of the specified object schema with the same number or fewer keys, by omitting keys.  Unlike with `omit`, the keys of
+ * values that may be `undefined` are not automatically treated as optional.  You may explicitly provide type parameters when using
+ * `…_noAutoOptional` methods, and those may include optional keys. */
+export const omit_noAutoOptional = <ObjectT extends Record<string, any>, KeyT extends keyof ObjectT>(
+  schema: AnyObjectSchema<ObjectT>,
+  omittedKeys: KeyT[]
+): ObjectSchema_noAutoOptional<Omit<ObjectT, KeyT>> => {
+  const omittedKeysSet = new Set<keyof ObjectT>(omittedKeys);
+
+  const outputMap: Partial<InferRecordOfSchemasFromRecordOfValues<Omit<ObjectT, KeyT>>> = {};
+  for (const key of Object.keys(schema.map) as Array<keyof typeof schema.map>) {
+    if (!omittedKeysSet.has(key)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      outputMap[key as Exclude<keyof ObjectT, KeyT>] = schema.map[key] as any;
+    }
+  }
+
+  return new ObjectSchemaImpl_noAutoOptional<Omit<ObjectT, KeyT>>(
+    outputMap as InferRecordOfSchemasFromRecordOfValues<Omit<ObjectT, KeyT>>
+  ) as any as ObjectSchema_noAutoOptional<Omit<ObjectT, KeyT>>;
 };
 
 // Helpers
 
-class ObjectSchemaImpl<ObjectT extends Record<string, any>, InferT extends ObjectInference = 'infer'>
-  extends InternalSchemaMakerImpl<InferT extends 'infer' ? TreatUndefinedAsOptional<ObjectT> : ObjectT>
-  implements ObjectSchema<ObjectT, InferT>
-{
+abstract class BaseObjectSchemaImpl<ObjectT extends Record<string, any>, ValueT> extends InternalSchemaMakerImpl<ValueT> {
   // Public Fields
 
   public allowUnknownKeys = false;
@@ -187,7 +249,7 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>, InferT extends Objec
 
   public override readonly schemaType = 'object';
 
-  public override readonly valueType = undefined as any as ObjectT;
+  public override readonly valueType = undefined as any as ValueT;
 
   public override readonly estimatedValidationTimeComplexity: number;
 
@@ -222,8 +284,6 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>, InferT extends Objec
   }
 
   // Public Methods
-
-  public readonly clone = (): ObjectSchema<ObjectT, InferT> => copyMetaFields({ from: this, to: object(this.map) });
 
   public readonly setAllowUnknownKeys = (allow: boolean) => {
     this.allowUnknownKeys = allow;
@@ -354,4 +414,18 @@ class ObjectSchemaImpl<ObjectT extends Record<string, any>, InferT extends Objec
   protected override overridableGetExtraToStringFields = () => ({
     map: this.map
   });
+}
+
+class ObjectSchemaImpl<ObjectT extends Record<string, any>>
+  extends BaseObjectSchemaImpl<ObjectT, TreatUndefinedAsOptional<ObjectT>>
+  implements ObjectSchema<ObjectT>
+{
+  public readonly clone = (): ObjectSchema<ObjectT> => copyMetaFields({ from: this, to: object(this.map) });
+}
+
+class ObjectSchemaImpl_noAutoOptional<ObjectT extends Record<string, any>>
+  extends BaseObjectSchemaImpl<ObjectT, ObjectT>
+  implements ObjectSchema_noAutoOptional<ObjectT>
+{
+  public readonly clone = (): ObjectSchema_noAutoOptional<ObjectT> => copyMetaFields({ from: this, to: object_noAutoOptional(this.map) });
 }

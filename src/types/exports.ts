@@ -2,7 +2,6 @@ export * from './data-types.js';
 export * from './deserializer.js';
 export * from './json-value.js';
 export * from './marker-types.js';
-export * from './ObjectInference.js';
 export * from './pure-schema.js';
 export * from './range.js';
 export * from './schema.js';
