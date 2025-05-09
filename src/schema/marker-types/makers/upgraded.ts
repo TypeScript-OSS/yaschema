@@ -1,4 +1,5 @@
 import { getLogger } from '../../../config/logging.js';
+import { once } from '../../../internal/utils/once.js';
 import { withResolved } from '../../../internal/utils/withResolved.js';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
@@ -41,13 +42,13 @@ class UpgradedSchemaImpl<OldT, NewT> extends InternalSchemaMakerImpl<OldT | NewT
 
   public override readonly valueType = undefined as any as OldT | NewT;
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
-  public override readonly usesCustomSerDes: boolean;
+  public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Initialization
 
@@ -63,10 +64,15 @@ class UpgradedSchemaImpl<OldT, NewT> extends InternalSchemaMakerImpl<OldT | NewT
     this.newSchema = newSchema;
     this.deadline = deadline;
 
-    this.estimatedValidationTimeComplexity = oldSchema.estimatedValidationTimeComplexity + newSchema.estimatedValidationTimeComplexity;
-    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
-      oldSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || newSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
-    this.usesCustomSerDes = oldSchema.usesCustomSerDes || newSchema.usesCustomSerDes;
+    this.estimatedValidationTimeComplexity = once(
+      () => oldSchema.estimatedValidationTimeComplexity() + newSchema.estimatedValidationTimeComplexity()
+    );
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = once(
+      () =>
+        oldSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() ||
+        newSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval()
+    );
+    this.usesCustomSerDes = once(() => oldSchema.usesCustomSerDes() || newSchema.usesCustomSerDes());
   }
 
   // Public Methods

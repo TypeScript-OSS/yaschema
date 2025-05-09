@@ -37,13 +37,13 @@ class DeprecatedSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT | unde
 
   public override readonly valueType = undefined as any as ValueT | undefined;
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
-  public override readonly usesCustomSerDes: boolean;
+  public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Initialization
 

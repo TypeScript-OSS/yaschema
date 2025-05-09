@@ -71,13 +71,13 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
 
   public override readonly valueType = undefined as any as ValueT;
 
-  public override readonly estimatedValidationTimeComplexity = 1;
+  public override readonly estimatedValidationTimeComplexity = () => 1;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () => false;
 
-  public override readonly usesCustomSerDes = true;
+  public override readonly usesCustomSerDes = () => true;
 
-  public override readonly isContainerType: boolean;
+  public override readonly isContainerType;
 
   // Private Fields
 
@@ -94,7 +94,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
     this.typeName = typeName;
     this.customClone_ = customClone;
     this.customValidation_ = customValidation;
-    this.isContainerType = isContainerType;
+    this.isContainerType = () => isContainerType;
   }
 
   // Public Methods
@@ -106,7 +106,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
         serDes: this.serDes,
         typeName: this.typeName,
         customValidation: this.customValidation_,
-        isContainerType: this.isContainerType
+        isContainerType: this.isContainerType()
       })
     });
 

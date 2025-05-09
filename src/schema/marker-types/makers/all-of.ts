@@ -1,4 +1,5 @@
 import { forOfAsync } from '../../../internal/utils/forOfAsync.js';
+import { once } from '../../../internal/utils/once.js';
 import { withResolved } from '../../../internal/utils/withResolved.js';
 import type { Schema } from '../../../types/schema';
 import type { TypeOrPromisedType } from '../../../types/TypeOrPromisedType.js';
@@ -61,9 +62,11 @@ const validateAllOfAsync = <TypeA, TypeB>(
 ): TypeOrPromisedType<InternalValidationResult> => {
   const shouldStopOnFirstError =
     validationMode === 'hard' ||
-    (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
+    (!schema.usesCustomSerDes() &&
+      !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() &&
+      internalState.transformation === 'none');
 
-  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+  if (!schema.usesCustomSerDes() && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() && validationMode === 'none') {
     return makeClonedValueNoError(value);
   }
 
@@ -124,13 +127,13 @@ class AllOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA & Type
 
   public override readonly valueType = undefined as any as TypeA & TypeB;
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
-  public override readonly usesCustomSerDes: boolean;
+  public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Initialization
 
@@ -139,10 +142,14 @@ class AllOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA & Type
 
     this.schemas = [schemaA, schemaB];
 
-    this.estimatedValidationTimeComplexity = schemaA.estimatedValidationTimeComplexity + schemaB.estimatedValidationTimeComplexity;
-    this.usesCustomSerDes = schemaA.usesCustomSerDes || schemaB.usesCustomSerDes;
-    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
-      schemaA.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval || schemaB.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
+    this.estimatedValidationTimeComplexity = once(
+      () => schemaA.estimatedValidationTimeComplexity() + schemaB.estimatedValidationTimeComplexity()
+    );
+    this.usesCustomSerDes = once(() => schemaA.usesCustomSerDes() || schemaB.usesCustomSerDes());
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = once(
+      () =>
+        schemaA.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() || schemaB.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval()
+    );
   }
 
   // Public Methods

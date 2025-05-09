@@ -60,17 +60,17 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
 
   /** An estimate of the time complexity for validating this element, which should be on the same order of the number of items to be
    * validated */
-  public abstract readonly estimatedValidationTimeComplexity: number;
+  public abstract readonly estimatedValidationTimeComplexity: () => number;
 
   /** If `true`, this schema or any sub-elements have the potential to represent an object value that might need unknown-key removal */
-  public abstract readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  public abstract readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: () => boolean;
 
   /** If `true`, this schema or any sub-elements have a custom serializer-deserializer */
-  public abstract readonly usesCustomSerDes: boolean;
+  public abstract readonly usesCustomSerDes: () => boolean;
 
   /** If `true`, `"shallow"` ancestor validation mode preferences won't be used when this schemas validation mode preference is
    * `"inherit"`, like other built-in container types */
-  public abstract readonly isContainerType: boolean;
+  public abstract readonly isContainerType: () => boolean;
 
   // Abstract Methods
 

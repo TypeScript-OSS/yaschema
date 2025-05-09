@@ -19,13 +19,13 @@ class NullSchemaImpl extends InternalSchemaMakerImpl<null> implements NullSchema
 
   public override readonly valueType = undefined as any as null;
 
-  public override readonly estimatedValidationTimeComplexity = 1;
+  public override readonly estimatedValidationTimeComplexity = () => 1;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () => false;
 
-  public override readonly usesCustomSerDes = false;
+  public override readonly usesCustomSerDes = () => false;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Public Methods
 

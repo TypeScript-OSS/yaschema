@@ -1,3 +1,4 @@
+import { once } from '../../../internal/utils/once.js';
 import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
@@ -40,13 +41,13 @@ class NotSchemaImpl<ValueT, ExcludedT> extends InternalSchemaMakerImpl<Exclude<V
 
   public override readonly valueType = undefined as any as Exclude<ValueT, ExcludedT>;
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
-  public override readonly usesCustomSerDes: boolean;
+  public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Initialization
 
@@ -57,7 +58,9 @@ class NotSchemaImpl<ValueT, ExcludedT> extends InternalSchemaMakerImpl<Exclude<V
     this.notSchema = notSchema;
     this.expectedTypeName = expectedTypeName;
 
-    this.estimatedValidationTimeComplexity = schema.estimatedValidationTimeComplexity + notSchema.estimatedValidationTimeComplexity;
+    this.estimatedValidationTimeComplexity = once(
+      () => schema.estimatedValidationTimeComplexity() + notSchema.estimatedValidationTimeComplexity()
+    );
     this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
     this.usesCustomSerDes = schema.usesCustomSerDes;
   }

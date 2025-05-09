@@ -1,4 +1,5 @@
 import { forAsync } from '../../../internal/utils/forAsync.js';
+import { once } from '../../../internal/utils/once.js';
 import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
@@ -52,7 +53,9 @@ const validateTupleAsync = <TypeA = void, TypeB = void, TypeC = void, TypeD = vo
 ): TypeOrPromisedType<InternalValidationResult> => {
   const shouldStopOnFirstError =
     validationMode === 'hard' ||
-    (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
+    (!schema.usesCustomSerDes() &&
+      !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() &&
+      internalState.transformation === 'none');
 
   if (!Array.isArray(value)) {
     return makeErrorResultForValidationMode(
@@ -63,7 +66,7 @@ const validateTupleAsync = <TypeA = void, TypeB = void, TypeC = void, TypeD = vo
     );
   }
 
-  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+  if (!schema.usesCustomSerDes() && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() && validationMode === 'none') {
     return makeClonedValueNoError(value);
   }
 
@@ -167,13 +170,13 @@ class TupleSchemaImpl<TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
             ? [TypeA, TypeB, TypeC, TypeD]
             : [TypeA, TypeB, TypeC, TypeD, TypeE];
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
-  public override readonly usesCustomSerDes: boolean;
+  public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = true;
+  public override readonly isContainerType = () => true;
 
   // Initialization
 
@@ -192,24 +195,30 @@ class TupleSchemaImpl<TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
 
     this.items = items;
 
-    this.estimatedValidationTimeComplexity =
-      (items[0]?.estimatedValidationTimeComplexity ?? 0) +
-      (items[1]?.estimatedValidationTimeComplexity ?? 0) +
-      (items[2]?.estimatedValidationTimeComplexity ?? 0) +
-      (items[3]?.estimatedValidationTimeComplexity ?? 0) +
-      (items[4]?.estimatedValidationTimeComplexity ?? 0);
-    this.usesCustomSerDes =
-      (items[0]?.usesCustomSerDes ?? false) ||
-      (items[1]?.usesCustomSerDes ?? false) ||
-      (items[2]?.usesCustomSerDes ?? false) ||
-      (items[3]?.usesCustomSerDes ?? false) ||
-      (items[4]?.usesCustomSerDes ?? false);
-    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
-      (items[0]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false) ||
-      (items[1]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false) ||
-      (items[2]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false) ||
-      (items[3]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false) ||
-      (items[4]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false);
+    this.estimatedValidationTimeComplexity = once(
+      () =>
+        (items[0]?.estimatedValidationTimeComplexity() ?? 0) +
+        (items[1]?.estimatedValidationTimeComplexity() ?? 0) +
+        (items[2]?.estimatedValidationTimeComplexity() ?? 0) +
+        (items[3]?.estimatedValidationTimeComplexity() ?? 0) +
+        (items[4]?.estimatedValidationTimeComplexity() ?? 0)
+    );
+    this.usesCustomSerDes = once(
+      () =>
+        (items[0]?.usesCustomSerDes() ?? false) ||
+        (items[1]?.usesCustomSerDes() ?? false) ||
+        (items[2]?.usesCustomSerDes() ?? false) ||
+        (items[3]?.usesCustomSerDes() ?? false) ||
+        (items[4]?.usesCustomSerDes() ?? false)
+    );
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = once(
+      () =>
+        (items[0]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() ?? false) ||
+        (items[1]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() ?? false) ||
+        (items[2]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() ?? false) ||
+        (items[3]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() ?? false) ||
+        (items[4]?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() ?? false)
+    );
   }
 
   // Public Methods

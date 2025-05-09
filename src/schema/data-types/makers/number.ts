@@ -27,15 +27,13 @@ class NumberSchemaImpl<ValueT extends number> extends InternalSchemaMakerImpl<Va
 
   public override readonly valueType = undefined as any as ValueT;
 
-  public override readonly estimatedValidationTimeComplexity = 1;
+  public override readonly estimatedValidationTimeComplexity = () => 1;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () => false;
 
-  public override get usesCustomSerDes() {
-    return this.usesCustomSerDes_;
-  }
+  public override readonly usesCustomSerDes = () => this.usesCustomSerDes_;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Private Fields
 

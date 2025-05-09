@@ -30,13 +30,13 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
   public override readonly valueType = undefined as any as Date;
 
-  public override readonly estimatedValidationTimeComplexity = 1;
+  public override readonly estimatedValidationTimeComplexity = () => 1;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () => false;
 
-  public override readonly usesCustomSerDes = true;
+  public override readonly usesCustomSerDes = () => true;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Initialization
 

@@ -34,15 +34,15 @@ export interface PureSchema<ValueT> extends CommonSchemaMeta {
 
   /** An estimate of the time complexity for validating this element, which should be on the same order of the number of items to be
    * validated */
-  estimatedValidationTimeComplexity: number;
+  estimatedValidationTimeComplexity: () => number;
 
   /** If `true`, this schema or any sub-elements have the potential to represent an object value that might need unknown-key removal */
-  isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: () => boolean;
 
   /** If `true`, this schema or any sub-elements have a custom serializer-deserializer */
-  usesCustomSerDes: boolean;
+  usesCustomSerDes: () => boolean;
 
   /** If `true`, `"shallow"` ancestor validation mode preferences won't be used when this schemas validation mode preference is
    * `"inherit"`, like other built-in container types */
-  isContainerType: boolean;
+  isContainerType: () => boolean;
 }

@@ -4,5 +4,6 @@ export * from './deprecated.js';
 export * from './not.js';
 export * from './one-of.js';
 export * from './optional.js';
+export * from './ref.js';
 export * from './root.js';
 export * from './upgraded.js';

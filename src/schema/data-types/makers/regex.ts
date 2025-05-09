@@ -27,13 +27,13 @@ class RegexSchemaImpl<ValueT extends string = string> extends InternalSchemaMake
 
   public override readonly valueType = undefined as any as ValueT;
 
-  public override readonly estimatedValidationTimeComplexity = 1;
+  public override readonly estimatedValidationTimeComplexity = () => 1;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () => false;
 
-  public override readonly usesCustomSerDes = false;
+  public override readonly usesCustomSerDes = () => false;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Initialization
 

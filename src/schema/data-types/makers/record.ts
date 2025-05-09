@@ -1,5 +1,6 @@
 import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
 import { forAsync } from '../../../internal/utils/forAsync.js';
+import { once } from '../../../internal/utils/once.js';
 import { safeClone } from '../../../internal/utils/safeClone.js';
 import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
@@ -44,17 +45,17 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
 
   public override readonly valueType = undefined as any as Partial<Record<KeyT, ValueT>>;
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
-  public override readonly usesCustomSerDes: boolean;
+  public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = true;
+  public override readonly isContainerType = () => true;
 
   // Private Fields
 
-  private readonly estimatedValidationTimeComplexityPerItem_: number;
+  private readonly estimatedValidationTimeComplexityPerItem_: () => number;
 
   // Initialization
 
@@ -66,14 +67,17 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
 
     const areKeysRegExps = keys instanceof RegExp;
 
-    this.estimatedValidationTimeComplexityPerItem_ =
-      (areKeysRegExps ? 1 : keys.estimatedValidationTimeComplexity) + valueSchema.estimatedValidationTimeComplexity;
-    this.estimatedValidationTimeComplexity = this.estimatedValidationTimeComplexityPerItem_ * ESTIMATED_AVG_RECORD_SIZE;
+    this.estimatedValidationTimeComplexityPerItem_ = once(
+      () => (areKeysRegExps ? 1 : keys.estimatedValidationTimeComplexity()) + valueSchema.estimatedValidationTimeComplexity()
+    );
+    this.estimatedValidationTimeComplexity = once(() => this.estimatedValidationTimeComplexityPerItem_() * ESTIMATED_AVG_RECORD_SIZE);
 
-    this.usesCustomSerDes = (!areKeysRegExps && keys.usesCustomSerDes) || valueSchema.usesCustomSerDes;
-    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval =
-      (!areKeysRegExps && keys.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval) ||
-      valueSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
+    this.usesCustomSerDes = once(() => (!areKeysRegExps && keys.usesCustomSerDes()) || valueSchema.usesCustomSerDes());
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = once(
+      () =>
+        (!areKeysRegExps && keys.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval()) ||
+        valueSchema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval()
+    );
   }
 
   // Public Methods
@@ -91,7 +95,9 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
   protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     const shouldStopOnFirstError =
       validationMode === 'hard' ||
-      (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
+      (!this.usesCustomSerDes() &&
+        !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() &&
+        internalState.transformation === 'none');
 
     if (value === null || Array.isArray(value) || typeof value !== 'object') {
       return makeErrorResultForValidationMode(
@@ -102,7 +108,7 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
       );
     }
 
-    if (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+    if (!this.usesCustomSerDes() && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() && validationMode === 'none') {
       return makeClonedValueNoError(value);
     }
 
@@ -121,7 +127,7 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
     const numValueKeys = valueKeys.length;
 
     const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
-    const chunkSize = Math.max(1, Math.floor(asyncTimeComplexityThreshold / this.estimatedValidationTimeComplexityPerItem_));
+    const chunkSize = Math.max(1, Math.floor(asyncTimeComplexityThreshold / this.estimatedValidationTimeComplexityPerItem_()));
 
     const keys = this.keys;
     const areKeysRegExps = keys instanceof RegExp;

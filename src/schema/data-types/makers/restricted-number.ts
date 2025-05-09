@@ -1,3 +1,4 @@
+import { once } from '../../../internal/utils/once.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Range } from '../../../types/range';
 import type { Schema } from '../../../types/schema';
@@ -83,15 +84,13 @@ class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> impleme
 
   public override readonly valueType = undefined as any as number;
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () => false;
 
-  public override get usesCustomSerDes() {
-    return this.usesCustomSerDes_;
-  }
+  public override readonly usesCustomSerDes = () => this.usesCustomSerDes_;
 
-  public override readonly isContainerType = false;
+  public override readonly isContainerType = () => false;
 
   // Private Fields
 
@@ -114,7 +113,7 @@ class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> impleme
 
     this.allowedRanges_ = allowedValuesAndRanges.filter((v): v is Range<number> => typeof v !== 'number');
 
-    this.estimatedValidationTimeComplexity = this.allowedRanges_.length + 1;
+    this.estimatedValidationTimeComplexity = once(() => this.allowedRanges_.length + 1);
   }
 
   // Public Methods

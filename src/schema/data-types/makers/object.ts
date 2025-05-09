@@ -1,5 +1,6 @@
 import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
 import { forOfAsync } from '../../../internal/utils/forOfAsync.js';
+import { once } from '../../../internal/utils/once.js';
 import { safeClone } from '../../../internal/utils/safeClone.js';
 import { whileAsync } from '../../../internal/utils/whileAsync.js';
 import { withResolved } from '../../../internal/utils/withResolved.js';
@@ -251,13 +252,13 @@ abstract class BaseObjectSchemaImpl<ObjectT extends Record<string, any>, ValueT>
 
   public override readonly valueType = undefined as any as ValueT;
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean = true;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () => true;
 
-  public override readonly usesCustomSerDes: boolean;
+  public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = true;
+  public override readonly isContainerType = () => true;
 
   // Private Fields
 
@@ -274,13 +275,15 @@ abstract class BaseObjectSchemaImpl<ObjectT extends Record<string, any>, ValueT>
 
     const mapValues = Object.values(map) as Schema[];
 
-    this.estimatedValidationTimeComplexity = mapValues.reduce((out, schema) => {
-      out += schema.estimatedValidationTimeComplexity;
+    this.estimatedValidationTimeComplexity = once(() =>
+      mapValues.reduce((out, schema) => {
+        out += schema.estimatedValidationTimeComplexity();
 
-      return out;
-    }, 0);
+        return out;
+      }, 0)
+    );
 
-    this.usesCustomSerDes = mapValues.findIndex((schema) => schema.usesCustomSerDes) >= 0;
+    this.usesCustomSerDes = once(() => mapValues.findIndex((schema) => schema.usesCustomSerDes()) >= 0);
   }
 
   // Public Methods
@@ -296,7 +299,9 @@ abstract class BaseObjectSchemaImpl<ObjectT extends Record<string, any>, ValueT>
   protected override overridableInternalValidateAsync: InternalAsyncValidator = (value, internalState, path, container, validationMode) => {
     const shouldStopOnFirstError =
       validationMode === 'hard' ||
-      (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
+      (!this.usesCustomSerDes() &&
+        !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() &&
+        internalState.transformation === 'none');
 
     if (value === null || Array.isArray(value) || typeof value !== 'object') {
       return makeErrorResultForValidationMode(
@@ -307,7 +312,7 @@ abstract class BaseObjectSchemaImpl<ObjectT extends Record<string, any>, ValueT>
       );
     }
 
-    if (!this.usesCustomSerDes && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+    if (!this.usesCustomSerDes() && !this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() && validationMode === 'none') {
       return makeClonedValueNoError(value);
     }
 
@@ -383,7 +388,7 @@ abstract class BaseObjectSchemaImpl<ObjectT extends Record<string, any>, ValueT>
         let index = chunkStartIndex;
         while (chunkKeys.length === 0 || (estimatedValidationTimeComplexityForKeys <= asyncTimeComplexityThreshold && index < numKeys)) {
           const key = this.mapKeys_[index];
-          estimatedValidationTimeComplexityForKeys += this.map[key].estimatedValidationTimeComplexity;
+          estimatedValidationTimeComplexityForKeys += this.map[key].estimatedValidationTimeComplexity();
           chunkKeys.push(key);
 
           index += 1;

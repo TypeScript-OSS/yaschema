@@ -1,5 +1,6 @@
 import { getAsyncTimeComplexityThreshold } from '../../../config/async-time-complexity-threshold.js';
 import { forAsync } from '../../../internal/utils/forAsync.js';
+import { once } from '../../../internal/utils/once.js';
 import { withResolved } from '../../../internal/utils/withResolved.js';
 import { getMeaningfulTypeof } from '../../../type-utils/get-meaningful-typeof.js';
 import type { Schema } from '../../../types/schema';
@@ -64,7 +65,9 @@ const asyncValidateArray = <ItemT>(
 ): TypeOrPromisedType<InternalValidationResult> => {
   const shouldStopOnFirstError =
     validationMode === 'hard' ||
-    (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && internalState.transformation === 'none');
+    (!schema.usesCustomSerDes() &&
+      !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() &&
+      internalState.transformation === 'none');
 
   if (!Array.isArray(value)) {
     return makeErrorResultForValidationMode(
@@ -75,7 +78,7 @@ const asyncValidateArray = <ItemT>(
     );
   }
 
-  if (!schema.usesCustomSerDes && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval && validationMode === 'none') {
+  if (!schema.usesCustomSerDes() && !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() && validationMode === 'none') {
     return makeClonedValueNoError(value);
   }
 
@@ -125,7 +128,7 @@ const asyncValidateArray = <ItemT>(
   }
 
   const asyncTimeComplexityThreshold = getAsyncTimeComplexityThreshold();
-  const chunkSize = Math.max(1, Math.floor(asyncTimeComplexityThreshold / items.estimatedValidationTimeComplexity));
+  const chunkSize = Math.max(1, Math.floor(asyncTimeComplexityThreshold / items.estimatedValidationTimeComplexity()));
   const numValues = value.length;
 
   const processIndex = (index: number) => {
@@ -133,8 +136,8 @@ const asyncValidateArray = <ItemT>(
     const arrayItem = value[index];
 
     if (
-      !schema.usesCustomSerDes &&
-      !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval &&
+      !schema.usesCustomSerDes() &&
+      !schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() &&
       schema.maxEntriesToValidate !== undefined &&
       index >= schema.maxEntriesToValidate
     ) {
@@ -196,13 +199,13 @@ class ArraySchemaImpl<ItemT = any> extends InternalSchemaMakerImpl<ItemT[]> impl
 
   public override readonly valueType = undefined as any as ItemT[];
 
-  public override readonly estimatedValidationTimeComplexity: number;
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: boolean;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
-  public override readonly usesCustomSerDes: boolean;
+  public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = true;
+  public override readonly isContainerType = () => true;
 
   // Initialization
 
@@ -224,12 +227,16 @@ class ArraySchemaImpl<ItemT = any> extends InternalSchemaMakerImpl<ItemT[]> impl
     this.maxLength = maxLength ?? Number.MAX_SAFE_INTEGER;
     this.maxEntriesToValidate = maxEntriesToValidate;
 
-    this.usesCustomSerDes = items?.usesCustomSerDes ?? false;
-    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = items?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval ?? false;
+    this.usesCustomSerDes = once(() => items?.usesCustomSerDes() ?? false);
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = once(
+      () => items?.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval() ?? false
+    );
 
-    this.estimatedValidationTimeComplexity =
-      (items?.estimatedValidationTimeComplexity ?? 1) *
-      ((this.usesCustomSerDes ? maxLength : maxEntriesToValidate) ?? ESTIMATED_AVG_ARRAY_LENGTH);
+    this.estimatedValidationTimeComplexity = once(
+      () =>
+        (items?.estimatedValidationTimeComplexity() ?? 1) *
+        ((this.usesCustomSerDes() ? maxLength : maxEntriesToValidate) ?? ESTIMATED_AVG_ARRAY_LENGTH)
+    );
   }
 
   // Public Methods
