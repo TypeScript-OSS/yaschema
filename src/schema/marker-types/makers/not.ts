@@ -47,8 +47,6 @@ class NotSchemaImpl<ValueT, ExcludedT> extends InternalSchemaMakerImpl<Exclude<V
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => false;
-
   // Initialization
 
   constructor(schema: Schema<ValueT>, notSchema: Schema<ExcludedT>, { expectedTypeName }: { expectedTypeName?: string } = {}) {

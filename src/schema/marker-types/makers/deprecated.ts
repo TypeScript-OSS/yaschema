@@ -43,8 +43,6 @@ class DeprecatedSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT | unde
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => false;
-
   // Initialization
 
   constructor(uniqueName: string, schema: Schema<ValueT>, { deadline }: { deadline?: string } = {}) {

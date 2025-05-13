@@ -133,8 +133,6 @@ class AllOfSchemaImpl<TypeA, TypeB> extends InternalSchemaMakerImpl<TypeA & Type
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => false;
-
   // Initialization
 
   constructor(schemaA: Schema<TypeA>, schemaB: Schema<TypeB>) {

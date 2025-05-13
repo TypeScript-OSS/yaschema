@@ -205,8 +205,6 @@ class ArraySchemaImpl<ItemT = any> extends InternalSchemaMakerImpl<ItemT[]> impl
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => true;
-
   // Initialization
 
   constructor({

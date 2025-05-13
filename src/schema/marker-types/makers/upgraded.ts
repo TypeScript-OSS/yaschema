@@ -48,8 +48,6 @@ class UpgradedSchemaImpl<OldT, NewT> extends InternalSchemaMakerImpl<OldT | NewT
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => false;
-
   // Initialization
 
   constructor(

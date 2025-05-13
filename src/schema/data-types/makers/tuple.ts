@@ -176,8 +176,6 @@ class TupleSchemaImpl<TypeA = void, TypeB = void, TypeC = void, TypeD = void, Ty
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => true;
-
   // Initialization
 
   constructor({

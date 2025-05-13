@@ -90,8 +90,6 @@ class RestrictedNumberSchemaImpl extends InternalSchemaMakerImpl<number> impleme
 
   public override readonly usesCustomSerDes = () => this.usesCustomSerDes_;
 
-  public override readonly isContainerType = () => false;
-
   // Private Fields
 
   private readonly allowedNumbersSet_: Set<number>;

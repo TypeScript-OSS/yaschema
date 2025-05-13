@@ -25,8 +25,6 @@ class NullSchemaImpl extends InternalSchemaMakerImpl<null> implements NullSchema
 
   public override readonly usesCustomSerDes = () => false;
 
-  public override readonly isContainerType = () => false;
-
   // Public Methods
 
   public readonly clone = (): NullSchema => copyMetaFields({ from: this, to: new NullSchemaImpl() });

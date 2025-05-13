@@ -41,8 +41,6 @@ class AllowEmptyStringSchemaImpl<ValueT extends string>
 
   public override readonly usesCustomSerDes = () => false;
 
-  public override readonly isContainerType = () => false;
-
   // Private Fields
 
   private readonly equalsSet_: Set<ValueT>;

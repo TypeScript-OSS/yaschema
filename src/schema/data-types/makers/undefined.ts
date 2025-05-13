@@ -25,8 +25,6 @@ class UndefinedSchemaImpl extends InternalSchemaMakerImpl<undefined> implements 
 
   public override readonly usesCustomSerDes = () => false;
 
-  public override readonly isContainerType = () => false;
-
   // Public Methods
 
   public readonly clone = (): UndefinedSchema => copyMetaFields({ from: this, to: new UndefinedSchemaImpl() });

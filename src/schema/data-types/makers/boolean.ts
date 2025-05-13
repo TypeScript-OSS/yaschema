@@ -34,8 +34,6 @@ class BooleanSchemaImpl<ValueT extends boolean> extends InternalSchemaMakerImpl<
 
   public override readonly usesCustomSerDes = () => this.usesCustomSerDes_;
 
-  public override readonly isContainerType = () => false;
-
   // Private Fields
 
   private readonly equalsSet_: Set<ValueT>;

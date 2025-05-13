@@ -51,8 +51,6 @@ class RecordSchemaImpl<KeyT extends string, ValueT>
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => true;
-
   // Private Fields
 
   private readonly estimatedValidationTimeComplexityPerItem_: () => number;

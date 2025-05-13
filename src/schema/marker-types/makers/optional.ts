@@ -31,8 +31,6 @@ class OptionalSchemaImpl<DefinedValueT>
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => false;
-
   // Initialization
 
   constructor(schema: Schema<DefinedValueT>) {

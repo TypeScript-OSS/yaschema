@@ -258,8 +258,6 @@ abstract class BaseObjectSchemaImpl<ObjectT extends Record<string, any>, ValueT>
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => true;
-
   // Private Fields
 
   private readonly mapKeys_: string[];

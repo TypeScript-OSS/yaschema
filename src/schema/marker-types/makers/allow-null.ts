@@ -28,8 +28,6 @@ class AllowNullSchemaImpl<NonNullValueT> extends InternalSchemaMakerImpl<NonNull
 
   public override readonly usesCustomSerDes;
 
-  public override readonly isContainerType = () => false;
-
   // Initialization
 
   constructor(schema: Schema<NonNullValueT>) {

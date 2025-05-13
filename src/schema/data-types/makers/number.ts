@@ -33,8 +33,6 @@ class NumberSchemaImpl<ValueT extends number> extends InternalSchemaMakerImpl<Va
 
   public override readonly usesCustomSerDes = () => this.usesCustomSerDes_;
 
-  public override readonly isContainerType = () => false;
-
   // Private Fields
 
   private readonly equalsNumbersSet_: Set<number>;

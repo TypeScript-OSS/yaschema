@@ -41,8 +41,4 @@ export interface PureSchema<ValueT> extends CommonSchemaMeta {
 
   /** If `true`, this schema or any sub-elements have a custom serializer-deserializer */
   usesCustomSerDes: () => boolean;
-
-  /** If `true`, `"shallow"` ancestor validation mode preferences won't be used when this schemas validation mode preference is
-   * `"inherit"`, like other built-in container types */
-  isContainerType: () => boolean;
 }

@@ -68,10 +68,6 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
   /** If `true`, this schema or any sub-elements have a custom serializer-deserializer */
   public abstract readonly usesCustomSerDes: () => boolean;
 
-  /** If `true`, `"shallow"` ancestor validation mode preferences won't be used when this schemas validation mode preference is
-   * `"inherit"`, like other built-in container types */
-  public abstract readonly isContainerType: () => boolean;
-
   // Abstract Methods
 
   /** Validates and potentially transforms the specified value.  If `undefined`, `internalValidate` is used */
@@ -143,7 +139,6 @@ export abstract class InternalSchemaMakerImpl<ValueT> implements PureSchema<Valu
         estimatedValidationTimeComplexity: this.estimatedValidationTimeComplexity,
         isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval: this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval,
         usesCustomSerDes: this.usesCustomSerDes,
-        isContainerType: this.isContainerType,
         description: this.description,
         example: this.example,
         preferredValidationMode: this.preferredValidationMode,

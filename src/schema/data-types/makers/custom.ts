@@ -33,7 +33,6 @@ export type CustomValidation<ValueT> = (value: ValueT) => TypeOrPromisedType<Cus
 export interface CustomSchemaOptions<ValueT, SerializedT extends JsonValue> {
   serDes: SerDes<ValueT, SerializedT>;
   typeName: string;
-  isContainerType?: boolean;
 
   /** Deeply clones a value.  By default, the value is serialized and then deserialized (which could be much more expensive than a custom
    * operation). */
@@ -77,8 +76,6 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
 
   public override readonly usesCustomSerDes = () => true;
 
-  public override readonly isContainerType;
-
   // Private Fields
 
   private readonly customClone_: CustomCloner<ValueT> | undefined;
@@ -87,14 +84,13 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
 
   // Initialization
 
-  constructor({ serDes, typeName, customClone, customValidation, isContainerType = false }: CustomSchemaOptions<ValueT, SerializedT>) {
+  constructor({ serDes, typeName, customClone, customValidation }: CustomSchemaOptions<ValueT, SerializedT>) {
     super();
 
     this.serDes = serDes;
     this.typeName = typeName;
     this.customClone_ = customClone;
     this.customValidation_ = customValidation;
-    this.isContainerType = () => isContainerType;
   }
 
   // Public Methods
@@ -105,8 +101,7 @@ class CustomSchemaImpl<ValueT, SerializedT extends JsonValue>
       to: new CustomSchemaImpl<ValueT, SerializedT>({
         serDes: this.serDes,
         typeName: this.typeName,
-        customValidation: this.customValidation_,
-        isContainerType: this.isContainerType()
+        customValidation: this.customValidation_
       })
     });
 

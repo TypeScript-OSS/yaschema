@@ -26,13 +26,12 @@ class RootSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT> implements 
 
   public override readonly valueType = undefined as any as ValueT;
 
-  public override readonly estimatedValidationTimeComplexity;
+  public override readonly estimatedValidationTimeComplexity = () => this.schema.estimatedValidationTimeComplexity();
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () =>
+    this.schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval();
 
-  public override readonly usesCustomSerDes;
-
-  public override readonly isContainerType = () => false;
+  public override readonly usesCustomSerDes = () => this.schema.usesCustomSerDes();
 
   // Initialization
 
@@ -41,10 +40,6 @@ class RootSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT> implements 
 
     this.name = name;
     this.schema = schema;
-
-    this.estimatedValidationTimeComplexity = schema.estimatedValidationTimeComplexity;
-    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = schema.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
-    this.usesCustomSerDes = schema.usesCustomSerDes;
   }
 
   // Method Overrides

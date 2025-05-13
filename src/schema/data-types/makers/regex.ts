@@ -33,8 +33,6 @@ class RegexSchemaImpl<ValueT extends string = string> extends InternalSchemaMake
 
   public override readonly usesCustomSerDes = () => false;
 
-  public override readonly isContainerType = () => false;
-
   // Initialization
 
   constructor(pattern: RegExp) {

@@ -11,6 +11,8 @@ describe('ref schema', () => {
     value: schema.number(),
     a: schema.ref((): Schema<Container> => containerSchema).optional()
   });
+  const recordOfContainersSchema = schema.record(schema.string(), containerSchema);
+  const arrayOfContainersSchema = schema.array({ items: containerSchema });
 
   setupBasicTypeOperationsShouldWorkTests({
     schema: containerSchema,
@@ -25,4 +27,14 @@ describe('ref schema', () => {
     schema: containerSchema,
     deserializedValues: [null, undefined, '', [true], { one: 1 }, true, false]
   });
+
+  expect(containerSchema.stringify({ value: 3.14, a: { value: -1 } })).toEqual(JSON.stringify({ value: 3.14, a: { value: -1 } }));
+
+  expect(recordOfContainersSchema.stringify({ hello: { value: 3.14, a: { value: -1 } } })).toEqual(
+    JSON.stringify({ hello: { value: 3.14, a: { value: -1 } } })
+  );
+
+  expect(arrayOfContainersSchema.stringify([{ value: 3.14, a: { value: -1 } }])).toEqual(
+    JSON.stringify([{ value: 3.14, a: { value: -1 } }])
+  );
 });

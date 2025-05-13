@@ -1,3 +1,4 @@
+import { once } from '../../../internal/utils/once.js';
 import type { Schema } from '../../../types/schema';
 import { InternalSchemaMakerImpl } from '../../internal/internal-schema-maker-impl/index.js';
 import type { InternalSchemaFunctions } from '../../internal/types/internal-schema-functions';
@@ -5,8 +6,15 @@ import type { InternalAsyncValidator } from '../../internal/types/internal-valid
 import { copyMetaFields } from '../../internal/utils/copy-meta-fields.js';
 import type { RefSchema } from '../types/RefSchema.js';
 
+export interface RefOptions {
+  estimatedValidationTimeComplexity?: number;
+  isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval?: boolean;
+  usesCustomSerDes?: boolean;
+}
+
 /** References a schema dynamically, which is helpful with cyclical types */
-export const ref = <ValueT>(getSchema: () => Schema<ValueT>): RefSchema<ValueT> => new RefSchemaImpl(getSchema);
+export const ref = <ValueT>(getSchema: () => Schema<ValueT>, options?: RefOptions): RefSchema<ValueT> =>
+  new RefSchemaImpl(getSchema, options);
 
 // Helpers
 
@@ -21,21 +29,31 @@ class RefSchemaImpl<ValueT> extends InternalSchemaMakerImpl<ValueT> implements R
 
   public override readonly valueType = undefined as any as ValueT;
 
-  public override readonly estimatedValidationTimeComplexity = () => this.getSchema().estimatedValidationTimeComplexity();
+  public override readonly estimatedValidationTimeComplexity;
 
-  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = () =>
-    this.getSchema().isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval();
+  public override readonly isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval;
 
-  public override readonly usesCustomSerDes = () => this.getSchema().usesCustomSerDes();
-
-  public override readonly isContainerType = () => this.getSchema().isContainerType();
+  public override readonly usesCustomSerDes;
 
   // Initialization
 
-  constructor(getSchema: () => Schema<ValueT>) {
+  constructor(
+    getSchema: () => Schema<ValueT>,
+    {
+      estimatedValidationTimeComplexity = 1,
+      isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = false,
+      usesCustomSerDes = false
+    }: RefOptions = {}
+  ) {
     super();
 
     this.getSchema = getSchema;
+
+    this.estimatedValidationTimeComplexity = () => estimatedValidationTimeComplexity;
+
+    this.isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval = once(() => isOrContainsObjectPotentiallyNeedingUnknownKeyRemoval);
+
+    this.usesCustomSerDes = once(() => usesCustomSerDes);
   }
 
   // Public Methods

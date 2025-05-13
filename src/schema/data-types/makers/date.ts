@@ -36,8 +36,6 @@ class DateSchemaImpl extends InternalSchemaMakerImpl<Date> implements DateSchema
 
   public override readonly usesCustomSerDes = () => true;
 
-  public override readonly isContainerType = () => false;
-
   // Initialization
 
   constructor(...allowedRanges: Array<Range<Date>>) {

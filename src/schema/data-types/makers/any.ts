@@ -27,8 +27,6 @@ class AnySchemaImpl extends InternalSchemaMakerImpl<any> implements AnySchema {
 
   public override readonly usesCustomSerDes = () => false;
 
-  public override readonly isContainerType = () => false;
-
   // Public Methods
 
   public readonly clone: () => AnySchema = () => copyMetaFields({ from: this, to: new AnySchemaImpl() });
